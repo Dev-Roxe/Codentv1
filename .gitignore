@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+
+# Tailwind output CSS
+src/renderer/styles/output.css
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Electron
+/dist/
+*.asar
+*.asar.pack
+
+# Configuración local de IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

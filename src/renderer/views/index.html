@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login - App Dental</title>
+  <link href="../styles/output.css" rel="stylesheet">
+</head>
+<body class="flex items-center justify-center h-screen bg-gray-100">
+
+  <div class="flex w-[800px] h-[400px] rounded-xl shadow-lg overflow-hidden">
+    
+    <!-- PANEL IZQUIERDO - LOGIN -->
+    <div class="w-1/2 bg-white flex flex-col justify-center items-center p-8">
+      <h2 class="text-2xl font-bold mb-4">INICIAR SESIÓN</h2>
+
+      <!-- Botón Google -->
+      <button class="flex items-center border px-4 py-2 rounded-lg mb-4 hover:bg-gray-100">
+        <img src="https://cdn-icons-png.flaticon.com/512/281/281764.png" alt="Google" class="w-6 h-6 mr-2">
+        <span class="text-sm">USA TU CUENTA</span>
+      </button>
+
+      <!-- Inputs -->
+      <input id="username" type="text" placeholder="Usuario" 
+        class="w-full border rounded-lg px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="password" type="password" placeholder="Contraseña" 
+        class="w-full border rounded-lg px-3 py-2 mb-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+      <!-- Link contraseña -->
+      <a href="#" class="text-sm text-blue-500 mb-4 hover:underline">¿Olvidaste tu contraseña?</a>
+
+      <!-- Botón login -->
+      <button id="loginBtn" class="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-600">
+        INICIAR SESIÓN
+      </button>
+
+      <div id="msg" class="mt-2 text-red-500 text-center"></div>
+    </div>
+
+    <!-- PANEL DERECHO - REGISTRO -->
+    <div class="w-1/2 bg-blue-500 flex flex-col justify-center items-center text-center p-8 text-white">
+      <h2 class="text-3xl font-bold mb-4">HOLA, REGÍSTRATE!</h2>
+      <p class="text-sm mb-6">
+        Ingresa tus datos personales y comienza tu <br>
+        viaje con nosotros
+      </p>
+      <a href="register.html" class="bg-white text-blue-500 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100">
+        REGÍSTRATE
+      </a>
+    </div>
+
+  </div>
+
+  <script src="../scripts/login.js"></script>
+</body>
+</html>
