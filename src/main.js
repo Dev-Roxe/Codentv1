@@ -45,18 +45,20 @@ ipcMain.handle('register-user', async (event, userData) => {
 // Manejo del login de usuario
 ipcMain.handle('login-user', async (event, userData) => {
   return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT * FROM usuarios WHERE email = ?`,
-      [userData.email],
-      (err, row) => {
-        if (err) return reject(err);
-        if (!row) return reject(new Error('Usuario no encontrado'));
+          // Permitimos buscar por email o por nombre de usuario (campo nombre)
+          const lookup = userData.email; // puede ser email o nombre de usuario según el frontend
+          db.get(
+            `SELECT * FROM usuarios WHERE email = ? OR nombre = ?`,
+            [lookup, lookup],
+            (err, row) => {
+              if (err) return reject(err);
+              if (!row) return reject(new Error('Usuario no encontrado'));
 
-        const match = bcrypt.compareSync(userData.password, row.password);
-        if (match) resolve({ id: row.id, nombre: row.nombre, rol: row.rol });
-        else reject(new Error('Contraseña incorrecta'));
-      }
-    );
+              const match = bcrypt.compareSync(userData.password, row.password);
+              if (match) resolve({ id: row.id, nombre: row.nombre, rol: row.rol });
+              else reject(new Error('Contraseña incorrecta'));
+            }
+          );
   });
 });
 
@@ -71,4 +73,9 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Listener para logs enviados desde renderer (útil en desarrollo)
+ipcMain.on('renderer-log', (event, msg) => {
+  console.log('[renderer]', msg);
 });

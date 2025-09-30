@@ -1,41 +1,48 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Intentamos obtener los módulos; en caso de no estar disponibles en el renderer moderno, avisamos
-    let db;
-    let bcrypt;
-    try {
-        db = require('../../db/database');
-        bcrypt = require('bcrypt');
-    } catch (e) {
-        // Si no se puede require desde el renderer (contextIsolation o preload), asumimos que se provee vía API
-        db = window.api && window.api.db;
-        bcrypt = window.api && window.api.bcrypt;
-    }
+    const username = document.getElementById('username');
+    const password = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const msg = document.getElementById('msg');
 
-    const form = document.getElementById('loginForm');
-    if (!form) return;
+    if (!loginBtn) return; // nothing to do
 
-    form.addEventListener('submit', (e) => {
+    const setMsg = (text, isError = true) => {
+        if (msg) {
+            msg.innerText = text;
+            msg.style.color = isError ? 'red' : 'green';
+        } else {
+            alert(text);
+        }
+    };
+
+    loginBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        const email = form.email.value;
-        const password = form.password.value;
+        if (!window.api || !window.api.loginUser) return setMsg('Función de login no disponible');
 
-        if (!db || !db.get) return alert('Base de datos no disponible');
+        const email = username ? username.value.trim() : '';
+        const pwd = password ? password.value : '';
 
-        db.get("SELECT * FROM usuarios WHERE email = ?", [email], (err, row) => {
-            if (err) return alert('Error en la base de datos');
-            if (!row) return alert('Usuario no encontrado');
+        if (!email || !pwd) return setMsg('Por favor completa los campos');
 
-            try {
-                const match = bcrypt && bcrypt.compareSync ? bcrypt.compareSync(password, row.password) : window.api.comparePassword(password, row.password);
-                if (match) {
-                    alert('Login exitoso');
-                    window.location = 'dashboard.html';
-                } else {
-                    alert('Contraseña incorrecta');
-                }
-            } catch (err) {
-                alert('Error verificando contraseña');
-            }
-        });
+        loginBtn.disabled = true;
+        setMsg('Iniciando sesión...', false);
+
+        // Log para debugging
+        if (window.logToMain && window.logToMain.log) window.logToMain.log(`Intentando login para ${email}`);
+
+        try {
+            const res = await window.api.loginUser({ email, password: pwd });
+                if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
+            // Exitoso: res debería contener id, nombre, rol según main.js
+            setMsg('Login exitoso', false);
+            // Redirigir a la vista de pacientes (ajusta si tienes otra ruta)
+            window.location = 'pacientes.html';
+        } catch (err) {
+                if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser rejected: ' + JSON.stringify(err));
+            const message = (err && err.message) ? err.message : String(err);
+            setMsg('Error al iniciar sesión: ' + message);
+        } finally {
+            loginBtn.disabled = false;
+        }
     });
 });
