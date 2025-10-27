@@ -13,6 +13,8 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Función para crear la ventana
+let mainWindow = null;
+
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
@@ -24,7 +26,11 @@ const createWindow = () => {
     }
   });
 
-  win.loadFile('src/renderer/views/index.html');
+  // Guarda la referencia para usarla desde IPC handlers
+  mainWindow = win;
+
+  // Carga la vista inicial
+  win.loadFile(path.join(__dirname, 'renderer', 'views', 'login.html'));
 };
 
 // Manejo del registro de usuario
@@ -60,6 +66,25 @@ ipcMain.handle('login-user', async (event, userData) => {
             }
           );
   });
+});
+
+// Handler para pedir al proceso principal que cargue otra vista (navegación segura)
+ipcMain.handle('open-view', async (event, viewName) => {
+  if (!mainWindow) throw new Error('Main window no disponible');
+
+  // Lista blanca de vistas permitidas para evitar carga arbitraria
+  const views = {
+    pacientes: path.join(__dirname, 'renderer', 'views', 'pacientes.html'),
+    login: path.join(__dirname, 'renderer', 'views', 'login.html'),
+    register: path.join(__dirname, 'renderer', 'views', 'register.html'),
+    index: path.join(__dirname, 'renderer', 'views', 'index.html')
+  };
+
+  const target = views[viewName];
+  if (!target) throw new Error('Vista no permitida: ' + String(viewName));
+
+  await mainWindow.loadFile(target);
+  return { ok: true, view: viewName };
 });
 
 // Eventos de app

@@ -35,8 +35,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
             // Exitoso: res debería contener id, nombre, rol según main.js
             setMsg('Login exitoso', false);
-            // Redirigir a la vista de pacientes (ajusta si tienes otra ruta)
-            window.location = 'pacientes.html';
+            // Redirigir a la vista de pacientes usando la API segura del preload
+            if (window.api && window.api.openView) {
+                try {
+                    await window.api.openView('pacientes');
+                } catch (navErr) {
+                    // Si falla, mostrar mensaje y escribir log
+                    if (window.logToMain && window.logToMain.log) window.logToMain.log('openView error: ' + String(navErr));
+                    setMsg('No se pudo abrir la vista de pacientes.');
+                }
+            } else {
+                // Fallback: intentar navegación relativa (puede fallar en Electron por seguridad)
+                window.location = '../pacientes.html';
+            }
         } catch (err) {
                 if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser rejected: ' + JSON.stringify(err));
             const message = (err && err.message) ? err.message : String(err);

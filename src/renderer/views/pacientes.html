@@ -1,1 +1,122 @@
-<table id="tablaPacientes" class="table-auto w-full"></table>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sonalia - Pacientes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-200 font-sans">
+
+  <!-- Header -->
+  <header class="bg-[#8BCFDD] text-white flex items-center justify-between px-6 py-3">
+    <div class="flex items-center space-x-3">
+      <!-- Logo: reemplaza texto SONALIA por una imagen SVG local -->
+  <img src="../assets/V2 BLANCO .png" alt="Sonalia" class="w-20 h-auto object-contain" />
+      <input type="text" placeholder="Busca pacientes por nombre o documento ID"
+             class="ml-6 rounded-full px-4 py-1 text-gray-800 w-80 outline-none" />
+    </div>
+    <div class="flex items-center space-x-3">
+      <span class="font-semibold">Nerick</span>
+      <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5.121 17.804A9 9 0 1118.364 4.561a9 9 0 01-13.243 13.243z" />
+        </svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="bg-gray-100 text-gray-700 flex space-x-6 px-8 py-2 border-b border-gray-300">
+    <a href="../views/agenda.html" class="font-semibold hover:text-blue-600">Agenda</a>
+    <a href="../views/pacientes.html" class="font-semibold hover:text-blue-600">Pacientes</a>
+    <a href="../views/cajas.html" class="font-semibold hover:text-blue-600">Cajas</a>
+    <a href="../views/administracion.html" class="font-semibold hover:text-blue-600">Administración</a>
+    <a href="../views/reportes.html" class="font-semibold hover:text-blue-600">Reportes</a>
+    <a href="../views/crm.html" class="font-semibold hover:text-blue-600">CRM</a>
+  </nav>
+
+  <!-- Contenedor principal -->
+  <main class="max-w-7xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">
+
+    <!-- Submenú -->
+    <div class="flex justify-between items-center bg-gray-50 border-b px-6 py-3 text-gray-700">
+      <div class="flex items-center space-x-6">
+        <button class="font-semibold">🧍 Paciente</button>
+        <button class="font-semibold">📋 Mis Pacientes ▾</button>
+      </div>
+      <div class="flex items-center space-x-6">
+        <button class="font-semibold">⚙️ Configuración</button>
+        <button class="font-semibold">📈 Análisis</button>
+      </div>
+    </div>
+
+    <!-- Buscador -->
+    <div class="flex items-center border-b px-6 py-2">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+      </svg>
+      <input type="text" placeholder="Buscar..." class="ml-2 outline-none w-full text-sm" />
+    </div>
+
+    <!-- Tabla -->
+    <table class="w-full text-left border-collapse">
+      <thead class="bg-[#4EABBE] text-white">
+        <tr>
+          <th class="px-4 py-2">#</th>
+          <th class="px-4 py-2">Nombre</th>
+          <th class="px-4 py-2">Apellidos</th>
+          <th class="px-4 py-2">Tratamientos</th>
+          <th class="px-4 py-2">Deudas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">60</td>
+          <td class="px-4 py-2">Ada Sofía</td>
+          <td class="px-4 py-2">Vázquez Vargas</td>
+          <td class="px-4 py-2">1</td>
+          <td class="px-4 py-2">No tiene</td>
+        </tr>
+        <tr><td colspan="5" class="py-16 text-center text-gray-400">...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Panel inferior -->
+    <div class="border-t bg-gray-50 px-6 py-4 flex items-start space-x-6">
+      <!-- Imagen -->
+      <div class="flex-shrink-0">
+        <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-4xl">👤</div>
+      </div>
+
+      <!-- Datos -->
+      <div class="flex-1 grid grid-cols-2 gap-x-8 text-sm text-gray-700">
+        <div>
+          <p><strong>ID:</strong> WAA100611MLZRDA8</p>
+          <p><strong>Email:</strong> adabella.fonseca@gmail.com</p>
+          <p><strong>Teléfono:</strong> +52 271 1007640</p>
+          <p><strong>Convenio:</strong> Sin convenio</p>
+        </div>
+        <div>
+          <p><strong>Activos:</strong> 1</p>
+          <p><strong>Finalizados:</strong> 0</p>
+          <p><strong>Expirados:</strong> 0</p>
+          <p><strong>Realizado:</strong> 1 · <strong>Saldo:</strong> $0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enlaces -->
+    <div class="bg-gray-100 border-t flex justify-around py-3 text-sm text-blue-600 font-medium">
+      <a href="#" class="hover:underline">Ir a datos personales ›</a>
+      <a href="#" class="hover:underline">Ir a tratamientos ›</a>
+      <a href="#" class="hover:underline">Ir a recaudación ›</a>
+    </div>
+
+  </main>
+
+</body>
+</html>
