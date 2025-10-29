@@ -8,34 +8,8 @@
 </head>
 <body class="bg-gray-200 font-sans">
 
-  <!-- Header -->
-  <header class="bg-[#8BCFDD] text-white flex items-center justify-between px-6 py-3">
-    <div class="flex items-center space-x-3">
-      <!-- Logo: reemplaza texto SONALIA por una imagen SVG local -->
-  <img src="../assets/V2 BLANCO .png" alt="Sonalia" class="w-20 h-auto object-contain" />
-      <input type="text" placeholder="Busca pacientes por nombre o documento ID"
-             class="ml-6 rounded-full px-4 py-1 text-gray-800 w-80 outline-none" />
-    </div>
-    <div class="flex items-center space-x-3">
-      <span class="font-semibold">Nerick</span>
-      <div class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M5.121 17.804A9 9 0 1118.364 4.561a9 9 0 01-13.243 13.243z" />
-        </svg>
-      </div>
-    </div>
-  </header>
-
-  <!-- Nav -->
-  <nav class="bg-gray-100 text-gray-700 flex space-x-6 px-8 py-2 border-b border-gray-300">
-    <a href="../views/agenda_semanal.html" class="font-semibold hover:text-blue-600">Agenda</a>
-    <a href="../views/pacientes.html" class="font-semibold hover:text-blue-600">Pacientes</a>
-    <a href="../views/cajas.html" class="font-semibold hover:text-blue-600">Cajas</a>
-    <a href="../views/administracion.html" class="font-semibold hover:text-blue-600">Administración</a>
-    <a href="../views/reportes.html" class="font-semibold hover:text-blue-600">Reportes</a>
-    <a href="../views/crm.html" class="font-semibold hover:text-blue-600">CRM</a>
-  </nav>
+  <!-- Navbar -->
+  <app-navbar current="reportes" user-name="Nerick"></app-navbar>
 
   <!-- Contenedor principal -->
   <main class="max-w-7xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">

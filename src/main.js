@@ -74,6 +74,9 @@ ipcMain.handle('open-view', async (event, viewName) => {
 
   // Lista blanca de vistas permitidas para evitar carga arbitraria
   const views = {
+    agenda: path.join(__dirname, 'renderer', 'views', 'agenda.html'),
+    agenda_diaria: path.join(__dirname, 'renderer', 'views', 'agenda.html'),
+    agenda_semanal: path.join(__dirname, 'renderer', 'views', 'agenda.html'),
     pacientes: path.join(__dirname, 'renderer', 'views', 'pacientes.html'),
     login: path.join(__dirname, 'renderer', 'views', 'login.html'),
     register: path.join(__dirname, 'renderer', 'views', 'register.html'),
