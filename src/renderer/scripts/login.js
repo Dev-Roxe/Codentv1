@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('loginBtn');
     const msg = document.getElementById('msg');
 
-    if (!loginBtn) return; // nothing to do
+    if (!loginBtn) return; 
 
     const setMsg = (text, isError = true) => {
         if (msg) {
@@ -35,6 +35,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
             // Exitoso: res debería contener id, nombre, rol según main.js
             setMsg('Login exitoso', false);
+            
+            // Guardar datos de sesión en localStorage para que perfil.html y otras vistas puedan acceder
+            try {
+              localStorage.setItem('sesionActual', JSON.stringify({
+                id: res.id,
+                nombre: res.nombre,
+                rol: res.rol
+              }));
+              if (window.logToMain && window.logToMain.log) window.logToMain.log('Sesión guardada en localStorage');
+            } catch (storageErr) {
+              if (window.logToMain && window.logToMain.log) window.logToMain.log('Error guardando sesión: ' + storageErr.message);
+            }
+            
             // Redirigir a la vista de pacientes usando la API segura del preload
             if (window.api && window.api.openView) {
                 try {

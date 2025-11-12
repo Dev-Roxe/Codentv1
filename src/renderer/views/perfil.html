@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mi Perfil - Sonalia</title>
+  <title>Mi Perfil - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
 <body class="bg-gray-50">
-  
+
+  <!-- Navbar Component -->
+  <app-navbar current="perfil" user-name="Nerick"></app-navbar>
+
   <!-- Contenedor Principal -->
   <div class="min-h-screen p-8">
     
@@ -26,7 +30,7 @@
     <!-- Grid de Contenido -->
     <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Sidebar - Información Básica -->
+      <!-- Sidebar -->
       <div class="lg:col-span-1">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sticky top-8">
           
@@ -36,12 +40,6 @@
               <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
                 JD
               </div>
-              <button class="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition border-2 border-gray-100">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-              </button>
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mt-4" id="profile-name">Juan Pérez</h2>
             <p class="text-sm text-gray-500 mt-1" id="profile-role">Administrador</p>
@@ -49,32 +47,19 @@
           </div>
 
           <!-- Stats -->
-          <div class="border-t border-gray-100 pt-6 space-y-4">
+          <div class="border-t border-gray-100 pt-6 space-y-4 text-sm">
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Miembro desde</span>
-              <span class="text-sm font-semibold text-gray-900">Enero 2024</span>
+              <span class="text-gray-600">Miembro desde</span>
+              <span class="font-semibold text-gray-900">Enero 2024</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Último acceso</span>
-              <span class="text-sm font-semibold text-gray-900">Hace 2 horas</span>
+              <span class="text-gray-600">Último acceso</span>
+              <span class="font-semibold text-gray-900">Hace 2 horas</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Citas gestionadas</span>
-              <span class="text-sm font-semibold text-gray-900">1,247</span>
+              <span class="text-gray-600">Citas gestionadas</span>
+              <span class="font-semibold text-gray-900">1,247</span>
             </div>
-          </div>
-
-          <!-- Acciones Rápidas -->
-          <div class="mt-6 space-y-2">
-            <button class="w-full py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition font-medium flex items-center justify-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-              </svg>
-              Cambiar Contraseña
-            </button>
-            <button class="w-full py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
-              Descargar Datos
-            </button>
           </div>
         </div>
       </div>
@@ -97,188 +82,46 @@
           <form id="personal-info-form" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              <!-- Nombre -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                <input type="text" value="Juan" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
+                <input id="nombre" type="text" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
               </div>
 
-              <!-- Apellido -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
-                <input type="text" value="Pérez" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
+                <input id="apellido" type="text" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
               </div>
 
-              <!-- Email -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input type="email" value="juan.perez@sonalia.com" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
+                <input id="email" type="email" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
               </div>
 
-              <!-- Teléfono -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                <input type="tel" value="+52 123 456 7890" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
+                <input id="telefono" type="tel" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
               </div>
 
-              <!-- Documento -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Documento de Identidad</label>
-                <input type="text" value="12345678-9" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
-              </div>
-
-              <!-- Fecha de Nacimiento -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
-                <input type="date" value="1990-05-15" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
+                <input id="nacimiento" type="date" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
               </div>
             </div>
 
-            <!-- Dirección Completa -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
-              <textarea rows="3" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition resize-none">Av. Principal 123, Colonia Centro, CP 12345, Ciudad de México</textarea>
+              <textarea id="direccion" rows="3" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition resize-none"></textarea>
             </div>
 
-            <!-- Botones (ocultos por defecto) -->
-            <div id="form-actions" class="hidden flex gap-3 pt-4 border-t border-gray-100">
+            <div id="form-actions" class="flex gap-3 pt-4 border-t border-gray-100" style="display: none;">
               <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
                 Guardar Cambios
               </button>
-              <button type="button" id="cancel-edit-btn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
+              <button type="button" id="cancel-edit-btn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium">
                 Cancelar
               </button>
             </div>
           </form>
-        </div>
-
-        <!-- Información Profesional -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-gray-900">Información Profesional</h3>
-            <button id="edit-professional-btn" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-              Editar
-            </button>
-          </div>
-
-          <form id="professional-info-form" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <!-- Rol -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
-                <select disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
-                  <option>Administrador</option>
-                  <option>Doctor</option>
-                  <option>Recepcionista</option>
-                  <option>Asistente</option>
-                </select>
-              </div>
-
-              <!-- Especialidad -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Especialidad</label>
-                <input type="text" value="Odontología General" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
-              </div>
-
-              <!-- Licencia -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Licencia</label>
-                <input type="text" value="LIC-2024-001" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
-              </div>
-
-              <!-- Horario -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Horario de Trabajo</label>
-                <input type="text" value="Lun-Vie: 8:00-18:00" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 transition">
-              </div>
-            </div>
-
-            <div id="professional-form-actions" class="hidden flex gap-3 pt-4 border-t border-gray-100">
-              <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-                Guardar Cambios
-              </button>
-              <button type="button" id="cancel-professional-btn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <!-- Preferencias -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h3 class="text-xl font-bold text-gray-900 mb-6">Preferencias</h3>
-          
-          <div class="space-y-4">
-            <!-- Notificaciones -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                </svg>
-                <div>
-                  <p class="font-medium text-gray-900">Notificaciones por Email</p>
-                  <p class="text-sm text-gray-500">Recibe actualizaciones en tu correo</p>
-                </div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <!-- Modo Oscuro -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-                </svg>
-                <div>
-                  <p class="font-medium text-gray-900">Modo Oscuro</p>
-                  <p class="text-sm text-gray-500">Tema visual de la aplicación</p>
-                </div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            <!-- Sonidos -->
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
-                </svg>
-                <div>
-                  <p class="font-medium text-gray-900">Sonidos del Sistema</p>
-                  <p class="text-sm text-gray-500">Alertas y notificaciones sonoras</p>
-                </div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" checked class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Zona de Peligro -->
-        <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-8">
-          <h3 class="text-xl font-bold text-red-900 mb-2">Zona de Peligro</h3>
-          <p class="text-sm text-red-700 mb-6">Las siguientes acciones son irreversibles</p>
-          
-          <div class="space-y-3">
-            <button class="w-full md:w-auto px-6 py-3 border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition font-medium">
-              Desactivar Cuenta
-            </button>
-            <button class="w-full md:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium ml-0 md:ml-3">
-              Eliminar Cuenta
-            </button>
-          </div>
         </div>
 
       </div>
@@ -286,63 +129,120 @@
   </div>
 
   <script>
-    // Toggle edición información personal
-    const editPersonalBtn = document.getElementById('edit-personal-btn');
-    const cancelEditBtn = document.getElementById('cancel-edit-btn');
-    const personalForm = document.getElementById('personal-info-form');
-    const formActions = document.getElementById('form-actions');
+    // ====== Referencias ======
+    const editBtn = document.getElementById('edit-personal-btn');
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    const form = document.getElementById('personal-info-form');
+    const actions = document.getElementById('form-actions');
+    const inputs = form.querySelectorAll('input, textarea');
 
-    editPersonalBtn.addEventListener('click', () => {
-      const inputs = personalForm.querySelectorAll('input, textarea');
-      inputs.forEach(input => input.disabled = false);
-      formActions.classList.remove('hidden');
-      editPersonalBtn.style.display = 'none';
+    const profileName = document.getElementById('profile-name');
+    const profileRole = document.getElementById('profile-role');
+
+    const nombre = document.getElementById('nombre');
+    const apellido = document.getElementById('apellido');
+    const email = document.getElementById('email');
+    const telefono = document.getElementById('telefono');
+    const nacimiento = document.getElementById('nacimiento');
+    const direccion = document.getElementById('direccion');
+
+    let usuarioId = null;
+
+    // ====== Cargar datos del usuario logueado ======
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        // Primero intentamos obtener datos de localStorage (sesión actual)
+        const sesionData = JSON.parse(localStorage.getItem('sesionActual')) || {};
+        usuarioId = sesionData.id;
+
+        // Si tenemos ID de usuario, obtenemos datos completos desde la API
+        if (usuarioId && window.api?.getUserProfile) {
+          const userData = await window.api.getUserProfile({ id: usuarioId });
+          
+          nombre.value = userData.nombre || '';
+          apellido.value = userData.apellido || '';
+          email.value = userData.email || '';
+          telefono.value = userData.telefono || '';
+          nacimiento.value = userData.nacimiento || '';
+          direccion.value = userData.direccion || '';
+
+          profileName.textContent = `${userData.nombre || ''} ${userData.apellido || ''}`.trim();
+          profileRole.textContent = userData.rol || 'Usuario';
+
+          // Actualizar navbar con nombre del usuario
+          const navbar = document.querySelector('app-navbar');
+          if (navbar) {
+            navbar.updateUser(userData.nombre, userData.rol);
+          }
+        } else if (sesionData.nombre) {
+          // Fallback: usar datos de localStorage si no hay API
+          nombre.value = sesionData.nombre || '';
+          apellido.value = sesionData.apellido || '';
+          email.value = sesionData.email || '';
+          telefono.value = sesionData.telefono || '';
+          nacimiento.value = sesionData.nacimiento || '';
+          direccion.value = sesionData.direccion || '';
+
+          profileName.textContent = `${sesionData.nombre || ''} ${sesionData.apellido || ''}`.trim();
+          profileRole.textContent = sesionData.rol || 'Usuario';
+        }
+      } catch (err) {
+        console.error('Error al cargar datos del usuario:', err);
+        alert('Error al cargar datos del perfil');
+      }
     });
 
-    cancelEditBtn.addEventListener('click', () => {
-      const inputs = personalForm.querySelectorAll('input, textarea');
-      inputs.forEach(input => input.disabled = true);
-      formActions.classList.add('hidden');
-      editPersonalBtn.style.display = 'flex';
+    // ====== Editar datos ======
+    editBtn.addEventListener('click', () => {
+      inputs.forEach(i => i.disabled = false);
+      actions.style.display = 'flex';
+      editBtn.style.display = 'none';
     });
 
-    personalForm.addEventListener('submit', (e) => {
+    // ====== Cancelar edición ======
+    cancelBtn.addEventListener('click', () => {
+      inputs.forEach(i => i.disabled = true);
+      actions.style.display = 'none';
+      editBtn.style.display = 'flex';
+    });
+
+    // ====== Guardar cambios en la base de datos ======
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      // Aquí iría la lógica para guardar los datos
-      alert('Cambios guardados exitosamente');
-      const inputs = personalForm.querySelectorAll('input, textarea');
-      inputs.forEach(input => input.disabled = true);
-      formActions.classList.add('hidden');
-      editPersonalBtn.style.display = 'flex';
-    });
 
-    // Toggle edición información profesional
-    const editProfessionalBtn = document.getElementById('edit-professional-btn');
-    const cancelProfessionalBtn = document.getElementById('cancel-professional-btn');
-    const professionalForm = document.getElementById('professional-info-form');
-    const professionalFormActions = document.getElementById('professional-form-actions');
+      const updatedData = {
+        id: usuarioId,
+        nombre: nombre.value,
+        apellido: apellido.value,
+        email: email.value,
+        telefono: telefono.value,
+        nacimiento: nacimiento.value,
+        direccion: direccion.value
+      };
 
-    editProfessionalBtn.addEventListener('click', () => {
-      const inputs = professionalForm.querySelectorAll('input, select');
-      inputs.forEach(input => input.disabled = false);
-      professionalFormActions.classList.remove('hidden');
-      editProfessionalBtn.style.display = 'none';
-    });
+      try {
+        // Si tenemos API disponible, guardar en DB
+        if (window.api?.updateUserProfile) {
+          await window.api.updateUserProfile(updatedData);
+        }
 
-    cancelProfessionalBtn.addEventListener('click', () => {
-      const inputs = professionalForm.querySelectorAll('input, select');
-      inputs.forEach(input => input.disabled = true);
-      professionalFormActions.classList.add('hidden');
-      editProfessionalBtn.style.display = 'flex';
-    });
+        // Guardar también en localStorage para cache local
+        const sesionData = JSON.parse(localStorage.getItem('sesionActual')) || {};
+        const merged = { ...sesionData, ...updatedData };
+        localStorage.setItem('sesionActual', JSON.stringify(merged));
 
-    professionalForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      alert('Información profesional actualizada');
-      const inputs = professionalForm.querySelectorAll('input, select');
-      inputs.forEach(input => input.disabled = true);
-      professionalFormActions.classList.add('hidden');
-      editProfessionalBtn.style.display = 'flex';
+        profileName.textContent = `${updatedData.nombre} ${updatedData.apellido}`.trim();
+
+        alert('Cambios guardados correctamente');
+
+        inputs.forEach(i => i.disabled = true);
+        actions.style.display = 'none';
+        editBtn.style.display = 'flex';
+
+      } catch (err) {
+        console.error('Error al guardar cambios:', err);
+        alert('Error al guardar los cambios: ' + (err.message || err));
+      }
     });
   </script>
 </body>

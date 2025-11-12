@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const userData = {
                 nombre: form.nombre && form.nombre.value ? form.nombre.value : '',
+                firtstLastName: form.firstLastName && form.firstLastName.value ? form.firstLastName.value : '',
+                secondLastName: form.secondLastName && form.secondLastName.value ? form.secondLastName.value : '',
                 email: form.email && form.email.value ? form.email.value : '',
                 password: form.password && form.password.value ? form.password.value : '',
                 rol: 'recepcionista'

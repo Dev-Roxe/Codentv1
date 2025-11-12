@@ -3,96 +3,193 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonalia - Pacientes</title>
+  <title>Pacientes - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="../components/navbar-component.js" type="module"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
-<body class="bg-gray-200 font-sans">
+<body class="bg-gray-50 font-sans text-gray-800">
 
   <!-- Navbar Component -->
   <app-navbar current="pacientes" user-name="Nerick"></app-navbar>
 
   <!-- Contenedor principal -->
-  <main class="max-w-7xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">
+  <main id="app" class="max-w-6xl mx-auto mt-10 px-4 pb-20"></main>
 
-    <!-- Submenú -->
-    <div class="flex justify-between items-center bg-gray-50 border-b px-6 py-3 text-gray-700">
-      <div class="flex items-center space-x-6">
-        <button class="font-semibold">🧍 Paciente</button>
-        <button class="font-semibold">📋 Mis Pacientes ▾</button>
-      </div>
-      <div class="flex items-center space-x-6">
-        <button class="font-semibold">⚙️ Configuración</button>
-        <button class="font-semibold">📈 Análisis</button>
-      </div>
-    </div>
+  <script>
+    // ==== Datos simulados ====
+    const patients = [
+      { id: 60, name: 'Ada Sofía', lastname: 'Vázquez Vargas', treatments: 1, debt: 'No tiene', email: 'adabella.fonseca@gmail.com', phone: '+522711007640', docId: 'VAVA100611MPLZRDA8', insurance: 'Sin convenio' },
+      { id: 61, name: 'Carlos', lastname: 'Ramírez López', treatments: 3, debt: '$500', email: 'carlos.r@gmail.com', phone: '+521234567890', docId: 'RALC920515HDFRPR01', insurance: 'IMSS' },
+      { id: 62, name: 'María', lastname: 'González Torres', treatments: 2, debt: 'No tiene', email: 'maria.gt@gmail.com', phone: '+529876543210', docId: 'GOTM850320MDFNRR08', insurance: 'Sin convenio' }
+    ];
 
-    <!-- Buscador -->
-    <div class="flex items-center border-b px-6 py-2">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24"
-           stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
-      </svg>
-      <input type="text" placeholder="Buscar..." class="ml-2 outline-none w-full text-sm" />
-    </div>
+    const configFields = [
+      'Nombre legal', 'Apellidos', 'CURP/RFC', 'Email', 'Convenio',
+      'Sexo', 'Fecha de nacimiento', 'Teléfono', 'Dirección', 'Ciudad'
+    ];
 
-    <!-- Tabla -->
-    <table class="w-full text-left border-collapse">
-      <thead class="bg-[#4EABBE] text-white">
+    // ==== Helper para crear elementos ====
+    const createEl = (tag, classes = '', html = '') => {
+      const el = document.createElement(tag);
+      if (classes) el.className = classes;
+      if (html) el.innerHTML = html;
+      return el;
+    };
+
+    // ==== Render principal ====
+    function renderApp() {
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+
+      // Header
+      const header = createEl('div', 'flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4');
+      header.innerHTML = `
+        <div>
+          <h1 class="text-4xl font-bold text-gray-900">Pacientes</h1>
+          <p class="text-gray-600 mt-1 text-sm">Gestiona la información de tus pacientes registrados.</p>
+        </div>
+        <div class="flex gap-3">
+          <button id="configBtn" class="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 
+                3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 
+                2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 
+                1.543-.826 3.31-2.37 2.37a1.724 1.724 0 
+                00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 
+                0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 
+                1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 
+                0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 
+                2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            </svg>
+            Configuración
+          </button>
+          <button id="newPatientBtn" class="flex items-center gap-2 px-6 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition font-medium shadow-md">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nuevo Paciente
+          </button>
+        </div>
+      `;
+
+      // Tabla de pacientes
+      const tableContainer = createEl('div', 'bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden');
+      const table = createEl('table', 'w-full text-sm');
+      const thead = createEl('thead', 'bg-cyan-600 text-white');
+      thead.innerHTML = `
         <tr>
-          <th class="px-4 py-2">#</th>
-          <th class="px-4 py-2">Nombre</th>
-          <th class="px-4 py-2">Apellidos</th>
-          <th class="px-4 py-2">Tratamientos</th>
-          <th class="px-4 py-2">Deudas</th>
+          <th class="py-3 px-6 text-left font-semibold">#</th>
+          <th class="py-3 px-6 text-left font-semibold">Nombre</th>
+          <th class="py-3 px-6 text-left font-semibold">Apellidos</th>
+          <th class="py-3 px-6 text-left font-semibold">Tratamientos</th>
+          <th class="py-3 px-6 text-left font-semibold">Deudas</th>
         </tr>
-      </thead>
-      <tbody>
-        <tr class="border-b hover:bg-gray-50">
-          <td class="px-4 py-2">60</td>
-          <td class="px-4 py-2">Ada Sofía</td>
-          <td class="px-4 py-2">Vázquez Vargas</td>
-          <td class="px-4 py-2">1</td>
-          <td class="px-4 py-2">No tiene</td>
-        </tr>
-        <tr><td colspan="5" class="py-16 text-center text-gray-400">...</td></tr>
-      </tbody>
-    </table>
+      `;
+      const tbody = createEl('tbody');
+      patients.forEach(p => {
+        const row = createEl('tr', 'border-b border-gray-100 hover:bg-cyan-50 cursor-pointer transition');
+        row.innerHTML = `
+          <td class="py-3 px-6">${p.id}</td>
+          <td class="py-3 px-6 font-medium">${p.name}</td>
+          <td class="py-3 px-6">${p.lastname}</td>
+          <td class="py-3 px-6">${p.treatments}</td>
+          <td class="py-3 px-6 font-semibold ${p.debt === 'No tiene' ? 'text-green-600' : 'text-red-600'}">${p.debt}</td>
+        `;
+        row.addEventListener('click', () => showProfile(p));
+        tbody.appendChild(row);
+      });
+      table.append(thead, tbody);
+      tableContainer.appendChild(table);
 
-    <!-- Panel inferior -->
-    <div class="border-t bg-gray-50 px-6 py-4 flex items-start space-x-6">
-      <!-- Imagen -->
-      <div class="flex-shrink-0">
-        <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-4xl">👤</div>
-      </div>
+      // Perfil contenedor
+      const profileContainer = createEl('div', 'hidden mt-6', '');
+      profileContainer.id = 'patient-profile';
 
-      <!-- Datos -->
-      <div class="flex-1 grid grid-cols-2 gap-x-8 text-sm text-gray-700">
-        <div>
-          <p><strong>ID:</strong> WAA100611MLZRDA8</p>
-          <p><strong>Email:</strong> adabella.fonseca@gmail.com</p>
-          <p><strong>Teléfono:</strong> +52 271 1007640</p>
-          <p><strong>Convenio:</strong> Sin convenio</p>
+      app.append(header, tableContainer, profileContainer);
+
+      document.getElementById('configBtn').addEventListener('click', toggleConfigModal);
+    }
+
+    // ==== Mostrar perfil ====
+    function showProfile(p) {
+      const profile = document.getElementById('patient-profile');
+      profile.innerHTML = `
+        <div class="bg-white border border-cyan-300 rounded-xl shadow-lg p-6 transition transform scale-100">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-semibold text-cyan-700">${p.name} ${p.lastname}</h2>
+              <p class="text-gray-600 mt-1"><span class="font-semibold">Correo:</span> ${p.email}</p>
+              <p class="text-gray-600"><span class="font-semibold">Teléfono:</span> ${p.phone}</p>
+              <p class="text-gray-600"><span class="font-semibold">Documento:</span> ${p.docId}</p>
+              <p class="text-gray-600"><span class="font-semibold">Convenio:</span> ${p.insurance}</p>
+            </div>
+            <button onclick="closeProfile()" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div>
-          <p><strong>Activos:</strong> 1</p>
-          <p><strong>Finalizados:</strong> 0</p>
-          <p><strong>Expirados:</strong> 0</p>
-          <p><strong>Realizado:</strong> 1 · <strong>Saldo:</strong> $0</p>
+      `;
+      profile.classList.remove('hidden');
+      profile.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    const closeProfile = () => document.getElementById('patient-profile').classList.add('hidden');
+
+    // ==== Modal configuración ====
+    function toggleConfigModal() {
+      let modal = document.getElementById('config-modal');
+      if (!modal) {
+        modal = createConfigModal();
+        document.body.appendChild(modal);
+      }
+      modal.classList.toggle('hidden');
+    }
+
+    function createConfigModal() {
+      const modal = createEl('div', 'hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center px-4');
+      modal.id = 'config-modal';
+      const inner = createEl('div', 'bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden');
+      inner.innerHTML = `
+        <div class="bg-cyan-600 text-white p-5 flex justify-between items-center">
+          <h2 class="text-xl font-semibold">Configuración de Campos Requeridos</h2>
+          <button onclick="toggleConfigModal()" class="hover:bg-white/20 rounded-lg p-1 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
         </div>
-      </div>
-    </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+          <p class="text-gray-600 mb-4 text-sm">Selecciona los campos que deben ser obligatorios:</p>
+          <div id="config-checklist" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+        </div>
+        <div class="p-4 bg-gray-50 border-t flex justify-end gap-3">
+          <button onclick="toggleConfigModal()" class="px-5 py-2 text-gray-700 bg-white border rounded-lg hover:bg-gray-100 transition">Cancelar</button>
+          <button onclick="saveConfig()" class="px-5 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition shadow">Guardar</button>
+        </div>
+      `;
+      modal.appendChild(inner);
+      renderChecklist();
+      return modal;
+    }
 
-    <!-- Enlaces -->
-    <div class="bg-gray-100 border-t flex justify-around py-3 text-sm text-blue-600 font-medium">
-      <a href="#" class="hover:underline">Ir a datos personales ›</a>
-      <a href="#" class="hover:underline">Ir a tratamientos ›</a>
-      <a href="#" class="hover:underline">Ir a recaudación ›</a>
-    </div>
+    function renderChecklist() {
+      document.getElementById('config-checklist').innerHTML = configFields.map(field => `
+        <label class="flex items-center gap-2 border border-gray-200 rounded-lg p-3 hover:bg-gray-50 transition">
+          <input type="checkbox" class="w-5 h-5 text-cyan-600 rounded focus:ring-cyan-500">
+          <span>${field}</span>
+        </label>
+      `).join('');
+    }
 
-  </main>
+    function saveConfig() {
+      alert('Configuración guardada correctamente');
+      toggleConfigModal();
+    }
 
+    renderApp();
+  </script>
 </body>
 </html>

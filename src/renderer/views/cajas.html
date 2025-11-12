@@ -8,53 +8,62 @@
   <script src="../components/navbar-component.js" type="module"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
-<body class="bg-gray-200 font-sans">
+<body class="bg-gray-100 font-sans">
 
-  <!-- Navbar Component -->
-  <app-navbar current="cajas" user-name="Nerick"></app-navbar>
-  </nav>
+    <!-- Navbar Component -->
+  <app-navbar current="crm" user-name="Nerick"></app-navbar>
 
   <!-- Contenedor principal -->
-  <main class="max-w-4xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">
+  <div class="bg-white shadow-md m-6 p-6 rounded-md">
 
-    <!-- Submenú -->
-    <div class="flex justify-between items-center bg-gray-50 border-b px-6 py-3 text-gray-700">
-      <div class="flex items-center space-x-6">
-        <button class="font-semibold">(AQUI VA LA FECHA DEL DIA)</button>
-      </div>
-      <div class="flex items-center space-x-6">
-        <button class="font-semibold">+ Abrir Caja</button>
+    <!-- Tabs -->
+    <div class="flex items-center space-x-6 border-b border-gray-300 pb-2 mb-4 text-gray-600 font-semibold">
+      <button class="border-b-4 border-sky-500 text-sky-600 pb-1">Cajas abiertas</button>
+      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1">Cajas cerradas</button>
+      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1">Mi caja</button>
+      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1 flex items-center">
+        Buscar caja
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <div class="ml-auto">
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-full text-sm flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Abrir caja
+        </button>
       </div>
     </div>
 
     <!-- Tabla -->
-    <table class="w-full text-left border-collapse ">
-      <thead class="bg-[#F8F7F7] text-black text text-[12px]">
-        <tr>
-          <th class="px-4 py-2">USUARIO</th>
-          <th class="px-4 py-2">APERTURA</th>
-          <th class="px-4 py-2">DETALLE</th>
-          <th class="px-4 py-2">SALDO ANTERIOR</th>
-          <th class="px-4 py-2">SALDO INTERIOR</th>
-          <th class="px-4 py-2">ACUMULADO</th>
-          <th class="px-4 py-2">   </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="border-b hover:bg-gray-50">
-          <td class="px-4 py-2">DOC EVA MARITZA</td>
-          <td class="px-4 py-2">30 DE MAYO</td>
-          <td class="px-4 py-2">VER DETALLE</td>
-          <td class="px-4 py-2">$0</td>
-          <td class="px-4 py-2">$0</td>
-        </tr>
-        <tr><td colspan="5" class="py-2 text-center text-gray-400">...</td></tr>
-      </tbody>
-    </table>
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-200 text-sm text-gray-700">
+        <thead class="bg-sky-600 text-white">
+          <tr>
+            <th class="px-4 py-2 text-left font-semibold">Usuario</th>
+            <th class="px-4 py-2 text-left font-semibold">Apertura</th>
+            <th class="px-4 py-2 text-left font-semibold">Detalle</th>
+            <th class="px-4 py-2 text-left font-semibold">Saldo Anterior</th>
+            <th class="px-4 py-2 text-left font-semibold">Saldo Interior</th>
+            <th class="px-4 py-2 text-left font-semibold">Acumulado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-t">
+            <td class="px-4 py-2">EVA MARITZA SOSA TAPIA</td>
+            <td class="px-4 py-2">30 de Mayo</td>
+            <td class="px-4 py-2 text-sky-600 hover:underline cursor-pointer">Ver detalle</td>
+            <td class="px-4 py-2">$0</td>
+            <td class="px-4 py-2">$0</td>
+            <td class="px-4 py-2 font-semibold">$111,200</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-
-
-  </main>
-
+  </div>
 </body>
 </html>

@@ -68,6 +68,39 @@ ipcMain.handle('login-user', async (event, userData) => {
   });
 });
 
+// Handler para obtener perfil del usuario
+ipcMain.handle('get-user-profile', async (event, params) => {
+  return new Promise((resolve, reject) => {
+    if (!params.id) return reject(new Error('ID de usuario requerido'));
+    
+    db.get(
+      `SELECT id, nombre, apellido, email, telefono, fecha_nacimiento as nacimiento, direccion, rol FROM usuarios WHERE id = ?`,
+      [params.id],
+      (err, row) => {
+        if (err) return reject(err);
+        if (!row) return reject(new Error('Usuario no encontrado'));
+        resolve(row);
+      }
+    );
+  });
+});
+
+// Handler para actualizar perfil del usuario
+ipcMain.handle('update-user-profile', async (event, userData) => {
+  return new Promise((resolve, reject) => {
+    if (!userData.id) return reject(new Error('ID de usuario requerido'));
+    
+    db.run(
+      `UPDATE usuarios SET nombre = ?, apellido = ?, email = ?, telefono = ?, fecha_nacimiento = ?, direccion = ? WHERE id = ?`,
+      [userData.nombre, userData.apellido, userData.email, userData.telefono, userData.nacimiento, userData.direccion, userData.id],
+      function(err) {
+        if (err) return reject(err);
+        resolve({ ok: true, message: 'Perfil actualizado correctamente' });
+      }
+    );
+  });
+});
+
 // Handler para pedir al proceso principal que cargue otra vista (navegación segura)
 ipcMain.handle('open-view', async (event, viewName) => {
   if (!mainWindow) throw new Error('Main window no disponible');

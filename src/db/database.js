@@ -12,11 +12,38 @@ db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS usuarios (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL,
+        apellido TEXT,
         email TEXT UNIQUE NOT NULL,
+        telefono TEXT,
+        fecha_nacimiento DATE,
+        direccion TEXT,
         password TEXT NOT NULL,
         rol TEXT NOT NULL,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // Asegurar columnas adicionales que pueden ser necesarias para el perfil
+    // Si la columna no existe, la añadimos. SQLite no soporta DROP/ADD IF NOT EXISTS
+    // directamente, por lo que comprobamos con PRAGMA table_info.
+    db.all("PRAGMA table_info(usuarios)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla usuarios', err);
+        const cols = (rows || []).map(r => r.name);
+        const toAdd = [];
+        if (!cols.includes('apellido')) toAdd.push("apellido TEXT");
+        if (!cols.includes('telefono')) toAdd.push("telefono TEXT");
+        if (!cols.includes('fecha_nacimiento')) toAdd.push("fecha_nacimiento DATE");
+        if (!cols.includes('direccion')) toAdd.push("direccion TEXT");
+
+        toAdd.forEach(colDef => {
+            try {
+                db.run(`ALTER TABLE usuarios ADD COLUMN ${colDef}`);
+                console.log('Added column to usuarios:', colDef);
+            } catch (e) {
+                // No fatal: continuar
+                console.warn('Could not add column', colDef, e.message);
+            }
+        });
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS pacientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

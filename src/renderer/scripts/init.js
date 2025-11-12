@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Manejo global de eventos del navbar
     document.addEventListener('navigate', (e) => {
         const page = e.detail.page;
+        const openMenu = !!e.detail.openMenu;
         // Manejar navegación según la página
         switch(page) {
             case 'agenda_diaria':
@@ -19,6 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '../views/cajas.html';
                 break;
             case 'administracion':
+                // Si se solicita abrir el menú desde el navbar, guardamos una señal
+                // en sessionStorage y luego navegamos; la página objetivo leerá
+                // la señal y abrirá el dropdown.
+                if (openMenu) {
+                    try { sessionStorage.setItem('openAdminMenu', '1'); } catch (e) {}
+                }
                 window.location.href = '../views/administracion.html';
                 break;
             case 'reportes':
@@ -27,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'crm':
                 window.location.href = '../views/crm.html';
                 break;
-                case 'perfil':
-                    window.location.href = '../views/perfil.html';
-                    break;
+            case 'perfil':
+                window.location.href = '../views/perfil.html';
+                break;
         }
     });
 
