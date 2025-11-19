@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (userData) {
       nombre.value = userData.nombre || '';
-      apellido.value = userData.apellido || '';
+      apellido.value = userData.apellidos || '';
       email.value = userData.email || '';
       telefono.value = userData.telefono || '';
       nacimiento.value = userData.nacimiento || userData.fecha_nacimiento || '';

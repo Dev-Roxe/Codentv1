@@ -120,6 +120,36 @@ ipcMain.handle('open-view', async (event, viewName) => {
   return { ok: true, view: viewName };
 });
 
+// Handlers genéricos para operaciones sobre la BD desde el renderer vía IPC
+// Nota: esto expone la capacidad de ejecutar SQL desde renderer; en producción
+// sería mejor crear handlers específicos para cada operación y validar/whitelist SQL.
+ipcMain.handle('db-all', async (event, sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params || [], (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows);
+    });
+  });
+});
+
+ipcMain.handle('db-get', async (event, sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params || [], (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
+});
+
+ipcMain.handle('db-run', async (event, sql, params) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params || [], function(err) {
+      if (err) return reject(err);
+      resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+});
+
 // Eventos de app
 app.whenReady().then(() => {
   createWindow();

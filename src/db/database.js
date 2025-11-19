@@ -56,6 +56,20 @@ db.serialize(() => {
         fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Asegurar columna `meta` para almacenar campos adicionales en formato JSON
+    db.all("PRAGMA table_info(pacientes)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla pacientes', err);
+        const cols = (rows || []).map(r => r.name);
+        if (!cols.includes('meta')) {
+            try {
+                db.run(`ALTER TABLE pacientes ADD COLUMN meta TEXT`);
+                console.log('Added column to pacientes: meta');
+            } catch (e) {
+                console.warn('Could not add column meta to pacientes', e && e.message);
+            }
+        }
+    });
+
     db.run(`CREATE TABLE IF NOT EXISTS citas (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         paciente_id INTEGER NOT NULL,
@@ -79,6 +93,30 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         clave TEXT UNIQUE,
         valor TEXT
+    )`);
+
+    // Tabla de Antecedentes Clínicos
+    db.run(`CREATE TABLE IF NOT EXISTS antecedentes_clinicos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        paciente_id INTEGER UNIQUE NOT NULL,
+        alergias TEXT,
+        enfermedades TEXT,
+        medicamentos TEXT,
+        tipo_sangre TEXT,
+        observaciones TEXT,
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
+    )`);
+
+    // Tabla de Tratamientos / Historial
+    db.run(`CREATE TABLE IF NOT EXISTS tratamientos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        paciente_id INTEGER NOT NULL,
+        diente TEXT,
+        procedimiento TEXT NOT NULL,
+        costo REAL,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        notas TEXT,
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
     )`);
 });
 

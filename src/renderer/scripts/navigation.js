@@ -8,6 +8,7 @@ const ROUTES = {
   agenda_diaria: 'agenda_diaria.html',
   agenda_semanal: 'agenda_semanal.html',
   pacientes: 'pacientes.html',
+  ficha_clinica: 'ficha_clinica.html',
   cajas: 'cajas.html',
   administracion: 'administracion.html',
   reportes: 'reportes.html',

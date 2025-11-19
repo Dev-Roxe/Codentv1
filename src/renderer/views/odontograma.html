@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odontograma Dental</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div class="p-6 max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">📋 Odontograma Dental</h1>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                    type="text"
+                    id="nombrePaciente"
+                    placeholder="Nombre del paciente"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                    type="date"
+                    id="fechaConsulta"
+                    class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <!-- Panel de control -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h2 class="text-lg font-semibold mb-4 text-gray-800">Condiciones</h2>
+                    
+                    <div id="dienteSeleccionado" class="mb-4 p-3 bg-blue-50 rounded-lg hidden">
+                        <p class="text-sm font-medium text-blue-800">
+                            Diente seleccionado: <span id="numeroDiente" class="text-xl font-bold"></span>
+                        </p>
+                    </div>
+
+                    <div id="botonesCondiciones" class="space-y-2">
+                        <!-- Botones generados por JS -->
+                    </div>
+
+                    <div class="mt-6 space-y-2">
+                        <button
+                            onclick="guardarOdontograma()"
+                            class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                            💾 Guardar
+                        </button>
+                        <button
+                            onclick="limpiarOdontograma()"
+                            class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                            🗑️ Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Leyenda -->
+                <div class="bg-white rounded-lg shadow-lg p-4 mt-4">
+                    <h3 class="text-sm font-semibold mb-3 text-gray-800">Leyenda</h3>
+                    <div id="leyenda" class="space-y-2">
+                        <!-- Leyenda generada por JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Odontograma -->
+            <div class="lg:col-span-3">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h2 class="text-xl font-semibold mb-6 text-gray-800">Dentadura</h2>
+                    
+                    <!-- Arcada Superior -->
+                    <div class="mb-8">
+                        <h3 class="text-sm font-medium text-gray-600 mb-3 text-center">Arcada Superior</h3>
+                        <div id="arcadaSuperior" class="flex justify-center gap-2 mb-2 flex-wrap">
+                            <!-- Dientes generados por JS -->
+                        </div>
+                    </div>
+
+                    <div class="border-t-2 border-gray-300 my-6"></div>
+
+                    <!-- Arcada Inferior -->
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-600 mb-3 text-center">Arcada Inferior</h3>
+                        <div id="arcadaInferior" class="flex justify-center gap-2 flex-wrap">
+                            <!-- Dientes generados por JS -->
+                        </div>
+                    </div>
+
+                    <!-- Instrucciones -->
+                    <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                        <p class="text-sm text-gray-700">
+                            <strong>Instrucciones:</strong> Haz clic en un diente para seleccionarlo, 
+                            luego elige una condición del panel lateral para aplicarla.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Estado de la aplicación
+        let dientes = {};
+        let dienteSeleccionado = null;
+
+        // Numeración de dientes adultos (FDI)
+        const dientesSuperiores = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
+        const dientesInferiores = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+
+        // Condiciones dentales
+        const condiciones = [
+            { id: 'sano', label: 'Sano', color: 'bg-white' },
+            { id: 'caries', label: 'Caries', color: 'bg-red-500' },
+            { id: 'obturado', label: 'Obturado', color: 'bg-blue-500' },
+            { id: 'ausente', label: 'Ausente', color: 'bg-gray-800' },
+            { id: 'corona', label: 'Corona', color: 'bg-yellow-500' },
+            { id: 'endodoncia', label: 'Endodoncia', color: 'bg-purple-500' },
+            { id: 'fractura', label: 'Fractura', color: 'bg-orange-500' },
+            { id: 'implante', label: 'Implante', color: 'bg-green-500' }
+        ];
+
+        // Inicializar fecha actual
+        document.getElementById('fechaConsulta').valueAsDate = new Date();
+
+        // Crear dientes en el DOM
+        function crearDiente(numero, contenedor) {
+            const dienteDiv = document.createElement('div');
+            dienteDiv.className = 'flex flex-col items-center gap-1';
+            
+            dienteDiv.innerHTML = `
+                <span class="text-xs font-medium text-gray-600">${numero}</span>
+                <button
+                    id="diente-${numero}"
+                    onclick="seleccionarDiente(${numero})"
+                    class="w-10 h-12 border-2 border-gray-400 rounded transition-all bg-white hover:scale-105 relative"
+                >
+                </button>
+            `;
+            
+            contenedor.appendChild(dienteDiv);
+        }
+
+        // Inicializar odontograma
+        function inicializarOdontograma() {
+            const arcadaSuperior = document.getElementById('arcadaSuperior');
+            const arcadaInferior = document.getElementById('arcadaInferior');
+            
+            dientesSuperiores.forEach(num => crearDiente(num, arcadaSuperior));
+            dientesInferiores.forEach(num => crearDiente(num, arcadaInferior));
+            
+            crearBotonesCondiciones();
+            crearLeyenda();
+        }
+
+        // Crear botones de condiciones
+        function crearBotonesCondiciones() {
+            const contenedor = document.getElementById('botonesCondiciones');
+            
+            condiciones.forEach(cond => {
+                const button = document.createElement('button');
+                button.className = `w-full px-4 py-2 rounded-lg text-white font-medium transition-all ${cond.color}`;
+                button.textContent = cond.label;
+                button.onclick = () => aplicarCondicion(cond.id);
+                button.disabled = true;
+                button.id = `btn-${cond.id}`;
+                contenedor.appendChild(button);
+            });
+        }
+
+        // Crear leyenda
+        function crearLeyenda() {
+            const leyenda = document.getElementById('leyenda');
+            
+            condiciones.forEach(cond => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center gap-2';
+                item.innerHTML = `
+                    <div class="w-6 h-6 rounded ${cond.color} border border-gray-300"></div>
+                    <span class="text-xs text-gray-700">${cond.label}</span>
+                `;
+                leyenda.appendChild(item);
+            });
+        }
+
+        // Seleccionar diente
+        function seleccionarDiente(numero) {
+            dienteSeleccionado = numero;
+            
+            // Actualizar UI
+            document.getElementById('dienteSeleccionado').classList.remove('hidden');
+            document.getElementById('numeroDiente').textContent = numero;
+            
+            // Remover selección anterior
+            document.querySelectorAll('[id^="diente-"]').forEach(d => {
+                d.classList.remove('border-blue-600', 'ring-2', 'ring-blue-300');
+                d.classList.add('border-gray-400');
+            });
+            
+            // Marcar diente seleccionado
+            const dienteBtn = document.getElementById(`diente-${numero}`);
+            dienteBtn.classList.remove('border-gray-400');
+            dienteBtn.classList.add('border-blue-600', 'ring-2', 'ring-blue-300');
+            
+            // Habilitar botones de condiciones
+            condiciones.forEach(cond => {
+                document.getElementById(`btn-${cond.id}`).disabled = false;
+                document.getElementById(`btn-${cond.id}`).classList.add('hover:opacity-80', 'cursor-pointer');
+                document.getElementById(`btn-${cond.id}`).classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        // Aplicar condición al diente seleccionado
+        function aplicarCondicion(condicionId) {
+            if (!dienteSeleccionado) return;
+            
+            dientes[dienteSeleccionado] = condicionId;
+            actualizarDiente(dienteSeleccionado);
+        }
+
+        // Actualizar apariencia del diente
+        function actualizarDiente(numero) {
+            const dienteBtn = document.getElementById(`diente-${numero}`);
+            const condicion = dientes[numero];
+            
+            // Resetear clases
+            dienteBtn.className = 'w-10 h-12 border-2 rounded transition-all hover:scale-105 relative';
+            
+            if (condicion) {
+                const cond = condiciones.find(c => c.id === condicion);
+                if (cond) {
+                    dienteBtn.classList.add(cond.color);
+                    
+                    // Marcar si es ausente
+                    if (condicion === 'ausente') {
+                        dienteBtn.innerHTML = '<div class="absolute inset-0 flex items-center justify-center"><div class="w-full h-0.5 bg-white rotate-45"></div></div>';
+                    } else {
+                        dienteBtn.innerHTML = '';
+                    }
+                }
+            } else {
+                dienteBtn.classList.add('bg-white');
+            }
+            
+            // Mantener selección si es el diente actual
+            if (dienteSeleccionado === numero) {
+                dienteBtn.classList.add('border-blue-600', 'ring-2', 'ring-blue-300');
+            } else {
+                dienteBtn.classList.add('border-gray-400');
+            }
+        }
+
+        // Guardar odontograma
+        function guardarOdontograma() {
+            const datos = {
+                paciente: {
+                    nombre: document.getElementById('nombrePaciente').value,
+                    fecha: document.getElementById('fechaConsulta').value
+                },
+                dientes: dientes,
+                fechaGuardado: new Date().toISOString()
+            };
+            
+            console.log('Odontograma guardado:', datos);
+            
+            // Guardar en localStorage
+            localStorage.setItem('odontograma', JSON.stringify(datos));
+            
+            alert('✅ Odontograma guardado correctamente');
+        }
+
+        // Limpiar odontograma
+        function limpiarOdontograma() {
+            if (confirm('¿Estás seguro de limpiar todo el odontograma?')) {
+                dientes = {};
+                dienteSeleccionado = null;
+                
+                // Resetear todos los dientes
+                [...dientesSuperiores, ...dientesInferiores].forEach(num => {
+                    const dienteBtn = document.getElementById(`diente-${num}`);
+                    dienteBtn.className = 'w-10 h-12 border-2 border-gray-400 rounded transition-all bg-white hover:scale-105 relative';
+                    dienteBtn.innerHTML = '';
+                });
+                
+                // Ocultar selección
+                document.getElementById('dienteSeleccionado').classList.add('hidden');
+                
+                // Deshabilitar botones
+                condiciones.forEach(cond => {
+                    const btn = document.getElementById(`btn-${cond.id}`);
+                    btn.disabled = true;
+                    btn.classList.remove('hover:opacity-80', 'cursor-pointer');
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+                
+                alert('🗑️ Odontograma limpiado');
+            }
+        }
+
+        // Cargar odontograma guardado al iniciar
+        function cargarOdontogramaGuardado() {
+            const guardado = localStorage.getItem('odontograma');
+            if (guardado) {
+                const datos = JSON.parse(guardado);
+                
+                // Cargar información del paciente
+                if (datos.paciente) {
+                    document.getElementById('nombrePaciente').value = datos.paciente.nombre || '';
+                    document.getElementById('fechaConsulta').value = datos.paciente.fecha || '';
+                }
+                
+                // Cargar estado de dientes
+                if (datos.dientes) {
+                    dientes = datos.dientes;
+                    Object.keys(dientes).forEach(num => {
+                        actualizarDiente(parseInt(num));
+                    });
+                }
+            }
+        }
+
+        // Inicializar al cargar la página
+        window.onload = () => {
+            inicializarOdontograma();
+            cargarOdontogramaGuardado();
+        };
+    </script>
+</body>
+</html>
