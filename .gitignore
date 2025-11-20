@@ -1,6 +1,10 @@
 # Node modules
 node_modules/
 
+# Database files (SQLite)
+src/db/*.db
+src/db/consultorio.db
+
 # Tailwind output CSS
 src/renderer/styles/output.css
 

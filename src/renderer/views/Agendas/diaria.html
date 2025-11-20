@@ -1,7 +1,74 @@
-<!-- Fragmento: contenido de la vista diaria (solo lo que se inyectará en #agendaContainer) -->
-<div class="py-4">
-  <p class="text-gray-500 text-center py-8">
-    Vista DIARIA - Aquí se mostrará la lista de citas del día
-  </p>
-  <!-- Puedes añadir aquí la estructura de la lista de citas que luego será llenada por JS -->
+<!-- Plantilla completa para la vista diaria. El script `agenda_diaria.js` rellenará
+     las partes dinámicas (filtros y filas de citas) dentro de los contenedores con
+     los IDs indicados. -->
+<div class="flex gap-4 h-full py-4">
+  <!-- ========== PANEL LATERAL IZQUIERDO ========== -->
+  <div id="leftPanel" class="w-80 bg-white border-r p-6 flex flex-col gap-6">
+    <div class="text-center">
+      <div class="flex items-center justify-center gap-4 mb-2">
+        <button id="prevDay" class="p-2 hover:bg-gray-100 rounded" aria-label="día anterior">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div>
+          <div class="text-7xl font-bold text-gray-800" id="dayNumber">30</div>
+          <div class="text-xl text-gray-600" id="monthYear">Junio 2015</div>
+        </div>
+        <button id="nextDay" class="p-2 hover:bg-gray-100 rounded" aria-label="día siguiente">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+      <div class="text-sm text-gray-500 uppercase" id="dayName">Martes</div>
+    </div>
+
+    <!-- Dropdown de dentistas -->
+    <div id="dentistDropdown">
+      <select id="dentistSelect" class="w-full p-2 border rounded bg-white text-gray-700">
+        <option>Todos los dentistas</option>
+        <option>Dr(a). Gonzalez</option>
+        <option>Dr(a). García Muñoz</option>
+        <option>Dr(a). Urrutia</option>
+      </select>
+    </div>
+
+    <!-- Botón "Marcar todos" -->
+    <button id="markAllBtn" class="flex items-center gap-2 text-blue-500 hover:text-blue-600 font-medium">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>
+      Marcar todos
+    </button>
+
+    <!-- Contenedor de filtros (rellenado por JS) -->
+    <div id="filtersDiv" class="space-y-2"></div>
+
+    <!-- Checkbox recarga automática -->
+    <div id="autoReload" class="pt-4 border-t">
+      <label class="flex items-start gap-2 cursor-pointer">
+        <input id="autoReloadCheckbox" type="checkbox" class="w-4 h-4 mt-0.5 text-blue-500 rounded">
+        <div>
+          <div class="font-medium text-sm">Recarga automática</div>
+          <div class="text-xs text-gray-500">Esta agenda se recarga automáticamente cada minuto</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- ========== PANEL DERECHO - LISTA DE CITAS ========== -->
+  <div id="rightPanel" class="flex-1 overflow-auto">
+    <div id="appointmentsTable" class="bg-white">
+      <div class="grid grid-cols-[80px_1fr_200px_250px_200px] gap-4 p-4 bg-gray-50 border-b font-semibold text-gray-700 text-sm sticky top-0">
+        <div>Hora</div>
+        <div>Paciente</div>
+        <div>Doctor</div>
+        <div>Estado de la cita</div>
+        <div>Situación</div>
+      </div>
+      <!-- Aquí se inyectarán las filas de citas -->
+      <div id="appointmentsRows"></div>
+    </div>
+  </div>
 </div>

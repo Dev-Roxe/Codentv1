@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!contenedor) return console.error('No se encontró #agendaContainer');
 
-  async function cargarVista(vista) {
+  async function cargarVista(vista, dateStr) {
     try {
       const res = await fetch(`./Agendas/${vista}.html`);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -22,10 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Llamar al inicializador específico si existe
       if (vista === 'diaria' && typeof initDiaria === 'function') {
-        initDiaria(contenedor);
+        await initDiaria(contenedor, dateStr);
       }
       if (vista === 'semanal' && typeof initSemanal === 'function') {
-        initSemanal(contenedor);
+        await initSemanal(contenedor, dateStr);
       }
 
       // Actualiza estilos activos (clases tailwind usadas en los botones)
@@ -43,6 +43,38 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listeners
   btnDiaria.addEventListener('click', () => cargarVista('diaria'));
   btnSemanal.addEventListener('click', () => cargarVista('semanal'));
+
+  // Botones de acciones: Dar cita, Fecha, Imprimir
+  const btnDarCita = document.getElementById('btnDarCita');
+  const btnFecha = document.getElementById('btnFecha');
+  const btnImprimir = document.getElementById('btnImprimir');
+
+  if (btnDarCita) {
+    btnDarCita.addEventListener('click', async () => {
+      await cargarVista('diaria');
+      // esperar a que initDiaria haya creado el botón
+      setTimeout(() => {
+        const createBtn = document.getElementById('createAptBtn');
+        if (createBtn) createBtn.click();
+      }, 150);
+    });
+  }
+
+  if (btnFecha) {
+    btnFecha.addEventListener('click', async () => {
+      const input = prompt('Selecciona fecha (YYYY-MM-DD)', new Date().toISOString().slice(0,10));
+      if (input) {
+        // cargar vista diaria para esa fecha
+        await cargarVista('diaria', input);
+      }
+    });
+  }
+
+  if (btnImprimir) {
+    btnImprimir.addEventListener('click', () => {
+      window.print();
+    });
+  }
 
   // Inicializar navbar
   const navbar = document.querySelector('app-navbar');

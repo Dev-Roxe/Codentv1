@@ -1,7 +1,42 @@
-<!-- Fragmento: contenido de la vista semanal (solo lo que se inyectará en #agendaContainer) -->
-<div class="py-4">
-  <p class="text-gray-500 text-center py-8">
-    Vista SEMANAL - Aquí se mostrará el calendario semanal tipo grid
-  </p>
-  <!-- Estructura del calendario semanal; scripts específicos en agenda_semanal.js -->
+<!-- Plantilla para la vista semanal -->
+<div class="flex flex-col h-full bg-gray-50">
+  <!-- TOOLBAR SUPERIOR -->
+  <div id="toolbar" class="bg-white border-b px-6 py-3 flex items-center gap-4">
+    <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition font-medium">Sillón 1</button>
+    <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition">Sobre Agendamiento</button>
+    <div class="flex-1"></div>
+    <select id="dentistSelectWeekly" class="border rounded px-3 py-2 text-sm">
+      <option>Dr(a). Gonzalez, Fernand</option>
+      <option>Dr(a). García Muñoz</option>
+      <option>Dr(a). Urrutia</option>
+    </select>
+  </div>
+
+  <!-- HEADER CON NAVEGACIÓN DE DÍAS -->
+  <div id="headerDiv" class="bg-white border-b shadow-sm sticky top-0 z-20">
+    <div class="flex items-center px-4 py-2">
+      <button id="prevWeek" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Semana anterior">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <div id="daysContainer" class="flex-1 grid grid-cols-7 gap-1 mx-2">
+        <!-- Botones de días generados por JS -->
+      </div>
+
+      <button id="nextWeek" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Semana siguiente">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- CONTENEDOR DE LA GRILLA -->
+  <div id="calendarDiv" class="flex-1 overflow-auto bg-white">
+    <div id="gridContainer" class="min-w-max">
+      <!-- La grilla se genera en agenda_semanal.js -->
+    </div>
+  </div>
 </div>

@@ -20,36 +20,36 @@
       <h1 class="text-2xl font-bold text-gray-800">Agenda</h1>
       
       <!-- Botones de vista: Diaria / Semanal -->
-      <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
+        <div class="flex items-center gap-2 bg-gray-100 p-1 rounded-lg">
         <!-- Botón Diaria - ACTIVO porque estamos en agenda_diaria.html -->
         <button 
           id="btnDiaria" 
           class="px-5 py-2 bg-white text-cyan-600 rounded-lg font-medium shadow-sm">
-          📋 Diaria
+          Diaria
         </button>
         <!-- Botón Semanal - Cambia a agenda_semanal.html -->
         <button 
           id="btnSemanal" 
           class="px-5 py-2 text-gray-700 rounded-lg hover:bg-white font-medium transition-all">
-          📅 Semanal
+          Semanal
         </button>
       </div>
       
       <!-- Acciones -->
       <div class="flex gap-2">
-        <button class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
+        <button id="btnDarCita" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
           </svg>
           Dar cita
         </button>
-        <button class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
+        <button id="btnFecha" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
           </svg>
           Fecha
         </button>
-        <button class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
+        <button id="btnImprimir" class="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-all flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
           </svg>

@@ -143,8 +143,14 @@ ipcMain.handle('db-get', async (event, sql, params) => {
 
 ipcMain.handle('db-run', async (event, sql, params) => {
   return new Promise((resolve, reject) => {
+    // Log para depuración: ver cuándo se ejecuta un run desde renderer
+    console.log('[IPC db-run] SQL:', sql, 'params:', params);
     db.run(sql, params || [], function(err) {
-      if (err) return reject(err);
+      if (err) {
+        console.error('[IPC db-run] Error:', err && err.message);
+        return reject(err);
+      }
+      console.log('[IPC db-run] OK lastID:', this.lastID, 'changes:', this.changes);
       resolve({ lastID: this.lastID, changes: this.changes });
     });
   });
