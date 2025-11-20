@@ -81,21 +81,10 @@ export async function initSemanal(container, referenceDate) {
 			}
 		}
 
-		// Construir grilla
+		// Construir grilla (solo horarios; los días ya se muestran arriba)
 		const grid = document.createElement('div');
 		grid.className = 'grid gap-0';
 		grid.style.gridTemplateColumns = '70px repeat(7, minmax(140px, 1fr))';
-
-		const emptyCorner = document.createElement('div');
-		emptyCorner.className = 'bg-gray-50 border-r border-b sticky left-0 top-0 z-30';
-		grid.appendChild(emptyCorner);
-
-		days.forEach((day, idx) => {
-			const dayHeader = document.createElement('div');
-			dayHeader.className = `border-r border-b font-semibold text-center py-3 text-sm sticky top-0 z-20 ${idx === 1 ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'}`;
-			dayHeader.textContent = `${day.name} ${day.day}`;
-			grid.appendChild(dayHeader);
-		});
 
 		timeSlots.forEach(time => {
 			const timeCell = document.createElement('div');

@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const db = require('./db/database'); // Asegúrate de tener database.js
 const bcrypt = require('bcryptjs');
+const { sendBulkEmail, verifyConnection } = require('./main/email-service');
 
 
 // Solo en desarrollo
@@ -152,6 +153,61 @@ ipcMain.handle('db-run', async (event, sql, params) => {
       }
       console.log('[IPC db-run] OK lastID:', this.lastID, 'changes:', this.changes);
       resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+});
+
+// Handler para envío masivo de emails
+ipcMain.handle('send-bulk-email', async (event, { recipients, subject, body }) => {
+  try {
+    // Verificar conexión SMTP
+    const connected = await verifyConnection();
+    if (!connected) {
+      return { success: false, error: 'No se pudo conectar al servidor SMTP. Verifica las credenciales en .env' };
+    }
+
+    // Enviar emails
+    const result = await sendBulkEmail({
+      recipients,
+      subject,
+      body,
+      onProgress: (current, total) => {
+        // Enviar actualización de progreso al renderer
+        if (mainWindow) {
+          mainWindow.webContents.send('email-progress', { current, total });
+        }
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error en send-bulk-email:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Handler para obtener lista de pacientes (para selectores)
+ipcMain.handle('get-patients', async (event, params = {}) => {
+  return new Promise((resolve, reject) => {
+    let query = `SELECT id, nombre, email FROM pacientes WHERE email IS NOT NULL AND email != ''`;
+
+    // Filtros opcionales
+    if (params.group === 'active') {
+      // Todos los pacientes por ahora (puede refinarse después con citas)
+      query += ` AND id > 0`;
+    } else if (params.group === 'inactive') {
+      query += ` AND id > 0`;
+    }
+
+    query += ` LIMIT 500`;
+
+    db.all(query, [], (err, rows) => {
+      if (err) {
+        console.error('Error en get-patients:', err);
+        return reject(err);
+      }
+      console.log('[get-patients] Retornando:', rows ? rows.length : 0, 'pacientes');
+      resolve(rows || []);
     });
   });
 });

@@ -272,37 +272,65 @@
           <!-- Editor Rápido -->
           <div class="col-span-1">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h2 class="text-lg font-bold text-gray-900 mb-4">Editor Rápido</h2>
+              <h2 class="text-lg font-bold text-gray-900 mb-4">Envío Masivo</h2>
               
               <div class="space-y-4">
                 <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Destinatarios</label>
+                  <select id="emailRecipients" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
+                    <option value="">Seleccionar grupo...</option>
+                    <option value="all">Todos los pacientes</option>
+                    <option value="active">Pacientes activos</option>
+                    <option value="inactive">Pacientes inactivos (6+ meses)</option>
+                    <option value="custom">Lista personalizada</option>
+                  </select>
+                  <p id="recipientCount" class="text-xs text-gray-500 mt-1">📊 Selecciona un grupo</p>
+                </div>
+
+                <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Asunto</label>
-                  <input type="text" placeholder="Ej: Recordatorio de tu cita" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <input id="emailSubject" type="text" placeholder="Ej: Recordatorio de tu cita" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                 </div>
 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
-                  <textarea rows="8" placeholder="Escribe tu mensaje aquí..." class="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"></textarea>
+                  <textarea id="emailMessage" rows="6" placeholder="Escribe tu mensaje aquí..." class="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"></textarea>
                 </div>
 
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Variables</label>
                   <div class="flex flex-wrap gap-2">
-                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                    <button id="insertNameVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       {nombre}
                     </button>
-                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                    <button id="insertDateVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       {fecha_cita}
                     </button>
-                    <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                    <button id="insertDoctorVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
                       {doctor}
                     </button>
                   </div>
                 </div>
 
-                <button class="w-full py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium">
-                  Vista Previa
-                </button>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p class="text-xs text-blue-700 font-medium">💡 Las variables se personalizarán por paciente</p>
+                </div>
+
+                <div class="flex gap-2">
+                  <button id="previewEmailBtn" class="flex-1 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium text-sm">
+                    Vista Previa
+                  </button>
+                  <button id="sendBulkEmailBtn" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium text-sm" disabled>
+                    Enviar Masivo
+                  </button>
+                </div>
+
+                <div id="emailStatus" class="text-xs text-gray-600 hidden">
+                  <p id="emailStatusText"></p>
+                  <div id="emailProgressBar" class="mt-2 w-full bg-gray-200 rounded h-2 overflow-hidden">
+                    <div id="emailProgress" class="bg-[#4EABBE] h-full transition-all duration-300" style="width: 0%"></div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -780,52 +808,7 @@
     </div>
   </div>
 
-  <script>
-    // Sistema de tabs
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const targetTab = btn.dataset.tab;
-        
-        // Remover clases activas
-        tabBtns.forEach(b => {
-          b.classList.remove('active', 'border-[#4EABBE]', 'text-[#4EABBE]', 'font-semibold', 'border-b-2');
-          b.classList.add('text-gray-500', 'hover:text-gray-700', 'font-medium');
-        });
-        
-        // Agregar clases activas al botón clickeado
-        btn.classList.add('active', 'border-[#4EABBE]', 'text-[#4EABBE]', 'font-semibold', 'border-b-2');
-        btn.classList.remove('text-gray-500', 'hover:text-gray-700', 'font-medium');
-        
-        // Ocultar todos los tabs
-        tabContents.forEach(content => {
-          content.classList.add('hidden');
-        });
-        
-        // Mostrar el tab seleccionado
-        document.getElementById(`${targetTab}-tab`).classList.remove('hidden');
-      });
-    });
-
-    // Contador de caracteres SMS
-    const smsText = document.getElementById('smsText');
-    const charCount = document.getElementById('char-count');
-    const smsPreview = document.getElementById('smsPreview');
-
-    if (smsText) {
-      smsText.addEventListener('input', (e) => {
-        const count = e.target.value.length;
-        charCount.textContent = count;
-        
-        // Actualizar preview
-        if (smsPreview) {
-          smsPreview.textContent = e.target.value || 'Escribe tu mensaje para ver la vista previa...';
-        }
-      });
-    }
-  </script>
+  <script type="module" src="../scripts/crm.js"></script>
 
 </body>
 </html>
