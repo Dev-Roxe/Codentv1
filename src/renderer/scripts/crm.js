@@ -63,12 +63,12 @@ async function loadPatients(group) {
     try {
         const patients = await window.electronAPI.invoke('get-patients', { group });
         currentPatients = patients;
-
+        
         if (patients.length > 0) {
-            recipientCount.textContent = ` ${patients.length} ${group === 'all' ? 'pacientes' : 'pacientes seleccionados'}`;
+            recipientCount.textContent = `📊 ${patients.length} ${group === 'all' ? 'pacientes' : 'pacientes seleccionados'}`;
             sendBulkEmailBtn.disabled = false;
         } else {
-            recipientCount.textContent = ' No hay pacientes en este grupo';
+            recipientCount.textContent = '📊 No hay pacientes en este grupo';
             sendBulkEmailBtn.disabled = true;
         }
     } catch (error) {
@@ -92,7 +92,7 @@ if (emailRecipients) {
     });
 }
 
-// Insertar variables en el mensajefeat: Implementar sistema completo de envío masivo de emails
+// Insertar variables en el mensaje
 if (insertNameVar) {
     insertNameVar.addEventListener('click', (e) => {
         e.preventDefault();
@@ -172,7 +172,7 @@ if (sendBulkEmailBtn) {
                 emailStatusText.textContent = `✅ Enviado: ${result.sent}/${currentPatients.length} emails`;
                 emailProgress.style.width = '100%';
                 alert(`✅ Envío completado!\n\n✓ Enviados: ${result.sent}\n✗ Errores: ${result.failed}`);
-
+                
                 // Limpiar formulario
                 emailSubject.value = '';
                 emailMessage.value = '';
@@ -203,4 +203,4 @@ if (window.electronAPI) {
 }
 
 // Export nada (módulo para future extend)
-export { };
+export {};
