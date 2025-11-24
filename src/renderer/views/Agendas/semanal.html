@@ -1,42 +1,121 @@
-<!-- Plantilla para la vista semanal -->
-<div class="flex flex-col h-full bg-gray-50">
-  <!-- TOOLBAR SUPERIOR -->
-  <div id="toolbar" class="bg-white border-b px-6 py-3 flex items-center gap-4">
-    <button class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition font-medium">Sillón 1</button>
-    <button class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded transition">Sobre Agendamiento</button>
-    <div class="flex-1"></div>
-    <select id="dentistSelectWeekly" class="border rounded px-3 py-2 text-sm">
-      <option>Dr(a). Gonzalez, Fernand</option>
-      <option>Dr(a). García Muñoz</option>
-      <option>Dr(a). Urrutia</option>
-    </select>
-  </div>
-
-  <!-- HEADER CON NAVEGACIÓN DE DÍAS -->
-  <div id="headerDiv" class="bg-white border-b shadow-sm sticky top-0 z-20">
-    <div class="flex items-center px-4 py-2">
-      <button id="prevWeek" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Semana anterior">
-        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-      </button>
-
-      <div id="daysContainer" class="flex-1 grid grid-cols-7 gap-1 mx-2">
-        <!-- Botones de días generados por JS -->
+<!-- Vista Diaria de Agenda - Mejorada -->
+<div class="flex gap-0 h-full">
+  <!-- ========== PANEL LATERAL IZQUIERDO ========== -->
+  <div id="leftPanel" class="w-80 bg-white border-r border-[#E6E6E6] flex flex-col">
+    
+    <!-- Fecha Grande -->
+    <div class="p-6 border-b border-[#E6E6E6] bg-gradient-to-br from-[#1D5D69] to-[#4EABBE] text-white">
+      <div class="flex items-center justify-between mb-4">
+        <button id="prevDay" class="p-2 hover:bg-white/20 rounded-lg transition" aria-label="Día anterior">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div class="text-center">
+          <div id="dayNumber" class="text-6xl font-bold leading-none">01</div>
+          <div id="monthYear" class="text-lg text-white/80 mt-1">Enero 2025</div>
+        </div>
+        <button id="nextDay" class="p-2 hover:bg-white/20 rounded-lg transition" aria-label="Día siguiente">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
       </div>
-
-      <button id="nextWeek" class="p-2 hover:bg-gray-100 rounded-lg transition" aria-label="Semana siguiente">
-        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      <div id="dayName" class="text-center text-white/90 font-medium uppercase tracking-wide">Lunes</div>
+      
+      <!-- Botón Crear Cita -->
+      <button id="createAptBtn" class="w-full mt-4 py-3 bg-white text-[#1D5D69] rounded-xl font-semibold hover:bg-white/90 transition flex items-center justify-center gap-2 shadow-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
+        Nueva Cita
       </button>
+    </div>
+
+    <!-- Resumen del día -->
+    <div class="p-4 border-b border-[#E6E6E6] bg-[#F8F7F7]">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="text-center">
+          <p id="statTotalCitas" class="text-2xl font-bold text-[#1D5D69]">0</p>
+          <p class="text-xs text-[#0F2532]/60">Citas</p>
+        </div>
+        <div class="text-center border-x border-[#E6E6E6]">
+          <p id="statConfirmadas" class="text-2xl font-bold text-green-600">0</p>
+          <p class="text-xs text-[#0F2532]/60">Confirmadas</p>
+        </div>
+        <div class="text-center">
+          <p id="statPendientes" class="text-2xl font-bold text-orange-500">0</p>
+          <p class="text-xs text-[#0F2532]/60">Pendientes</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selector de Dentista -->
+    <div class="p-4 border-b border-[#E6E6E6]">
+      <label class="block text-sm font-medium text-[#0F2532] mb-2">Dentista</label>
+      <select id="dentistSelect" class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-xl bg-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+        <option value="">Todos los dentistas</option>
+      </select>
+    </div>
+
+    <!-- Filtros de Estado -->
+    <div class="flex-1 overflow-y-auto p-4">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-sm font-semibold text-[#0F2532]">Filtrar por estado</span>
+        <button id="markAllBtn" class="text-xs text-[#4EABBE] hover:underline font-medium">Marcar todos</button>
+      </div>
+      <div id="filtersDiv" class="space-y-2">
+        <!-- Filtros generados por JS -->
+      </div>
+    </div>
+
+    <!-- Recarga automática -->
+    <div class="p-4 border-t border-[#E6E6E6] bg-[#F8F7F7]">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input id="autoReloadCheckbox" type="checkbox" class="w-5 h-5 rounded border-[#D9D9D9] text-[#4EABBE] focus:ring-[#4EABBE]">
+        <div>
+          <p class="text-sm font-medium text-[#0F2532]">Recarga automática</p>
+          <p class="text-xs text-[#0F2532]/50">Actualiza cada 60 segundos</p>
+        </div>
+      </label>
     </div>
   </div>
 
-  <!-- CONTENEDOR DE LA GRILLA -->
-  <div id="calendarDiv" class="flex-1 overflow-auto bg-white">
-    <div id="gridContainer" class="min-w-max">
-      <!-- La grilla se genera en agenda_semanal.js -->
+  <!-- ========== PANEL DERECHO - LISTA DE CITAS ========== -->
+  <div id="rightPanel" class="flex-1 flex flex-col bg-[#F8F7F7]">
+    
+    <!-- Header de tabla -->
+    <div class="bg-white border-b border-[#E6E6E6] shadow-sm sticky top-0 z-10">
+      <div class="grid grid-cols-[100px_1fr_180px_200px_150px] gap-4 px-6 py-4">
+        <div class="text-xs font-semibold text-[#0F2532]/60 uppercase tracking-wide">Hora</div>
+        <div class="text-xs font-semibold text-[#0F2532]/60 uppercase tracking-wide">Paciente</div>
+        <div class="text-xs font-semibold text-[#0F2532]/60 uppercase tracking-wide">Dentista</div>
+        <div class="text-xs font-semibold text-[#0F2532]/60 uppercase tracking-wide">Estado</div>
+        <div class="text-xs font-semibold text-[#0F2532]/60 uppercase tracking-wide text-center">Acciones</div>
+      </div>
+    </div>
+
+    <!-- Contenedor de citas -->
+    <div id="appointmentsRows" class="flex-1 overflow-y-auto">
+      <!-- Citas generadas por JS -->
+      <div class="flex items-center justify-center h-full">
+        <div class="text-center py-12">
+          <div class="w-12 h-12 border-4 border-[#4EABBE] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p class="text-[#0F2532]/60">Cargando citas...</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+  .appointment-row { transition: all 0.2s ease; }
+  .appointment-row:hover { transform: translateX(4px); background-color: #F8F7F7; }
+  .status-badge { font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 9999px; font-weight: 600; }
+  .status-pendiente { background: #FEF3C7; color: #92400E; }
+  .status-confirmado { background: #D1FAE5; color: #065F46; }
+  .status-en-sala { background: #DBEAFE; color: #1E40AF; }
+  .status-atendido { background: #E9D5FF; color: #6B21A8; }
+  .status-no-asiste { background: #FEE2E2; color: #991B1B; }
+  .status-cancelado { background: #F3F4F6; color: #4B5563; }
+</style>

@@ -1,209 +1,143 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CRM - Sonalia</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
-<body class="bg-gray-50">
+<body class="bg-[#F8F7F7] text-[#0F2532]">
+  <app-navbar current="crm" user-name="Nerick"></app-navbar>
 
-  <!-- Navbar Component -->
-  <app-navbar current="pacientes" user-name="Nerick"></app-navbar>
-  
-  <div class="min-h-screen p-6">
-    
+  <div class="min-h-screen p-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-8 flex items-center justify-between">
       <div>
-        <h1 class="text-3xl font-bold text-gray-900">CRM - Gestión de Relaciones</h1>
-        <p class="text-gray-600 mt-1">Fideliza pacientes y automatiza tu comunicación</p>
+        <h1 class="text-3xl font-bold text-[#1D5D69]">CRM - Gestión de Relaciones</h1>
+        <p class="text-[#0F2532]/60 mt-1">Fideliza pacientes y automatiza tu comunicación</p>
       </div>
-      <button class="px-6 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] transition font-medium flex items-center gap-2">
+      <button class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-sm flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
         </svg>
-        Nueva Campaña
+        Nueva campaña
       </button>
     </div>
 
     <!-- Tabs -->
-    <div class="mb-6 border-b border-gray-200">
-      <div class="flex gap-6">
-        <button class="tab-btn active pb-4 px-2 border-b-2 border-[#4EABBE] text-[#4EABBE] font-semibold" data-tab="campanas">
-          Campañas
-        </button>
-        <button class="tab-btn pb-4 px-2 text-gray-500 hover:text-gray-700 font-medium" data-tab="email">
-          Email Marketing
-        </button>
-        <button class="tab-btn pb-4 px-2 text-gray-500 hover:text-gray-700 font-medium" data-tab="sms">
-          SMS Masivos
-        </button>
-        <button class="tab-btn pb-4 px-2 text-gray-500 hover:text-gray-700 font-medium" data-tab="encuestas">
-          Encuestas
-        </button>
-        <button class="tab-btn pb-4 px-2 text-gray-500 hover:text-gray-700 font-medium" data-tab="recordatorios">
-          Recordatorios
-        </button>
-        <button class="tab-btn pb-4 px-2 text-gray-500 hover:text-gray-700 font-medium" data-tab="tareas">
-          Tareas Automáticas
-        </button>
+    <div class="border-b border-[#D9D9D9] mb-6">
+      <div class="flex gap-6 overflow-x-auto">
+        <button class="tab-btn active pb-4 px-2 border-b-4 border-[#4EABBE] text-[#1D5D69] font-semibold" data-tab="campanas">Campañas</button>
+        <button class="tab-btn pb-4 px-2 text-[#0F2532]/60 font-medium" data-tab="email">Email Marketing</button>
+        <button class="tab-btn pb-4 px-2 text-[#0F2532]/60 font-medium" data-tab="sms">SMS Masivos</button>
+        <button class="tab-btn pb-4 px-2 text-[#0F2532]/60 font-medium" data-tab="encuestas">Encuestas</button>
+        <button class="tab-btn pb-4 px-2 text-[#0F2532]/60 font-medium" data-tab="recordatorios">Recordatorios</button>
+        <button class="tab-btn pb-4 px-2 text-[#0F2532]/60 font-medium" data-tab="tareas">Tareas Automáticas</button>
       </div>
     </div>
 
-    <!-- Contenido de Tabs -->
     <div id="tab-content">
-      
-      <!-- Tab: Campañas -->
+      <!-- TAB: CAMPAÑAS -->
       <div id="campanas-tab" class="tab-content">
-        <!-- Grid de estadísticas -->
+        <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="bg-white shadow-sm rounded-xl border border-[#D9D9D9] p-6 hover:shadow-md transition">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Campañas Activas</h3>
-              <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 class="text-sm font-medium text-[#0F2532]/80">Campañas activas</h3>
+              <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
               </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">8</p>
-            <p class="text-xs text-green-600 mt-1">+2 esta semana</p>
+            <p class="text-3xl font-bold text-[#0F2532]">8</p>
+            <p class="text-xs text-green-700 mt-1 font-medium">+2 esta semana</p>
           </div>
-
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="bg-white shadow-sm rounded-xl border border-[#D9D9D9] p-6 hover:shadow-md transition">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Tasa de Apertura</h3>
-              <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 class="text-sm font-medium text-[#0F2532]/80">Tasa de apertura</h3>
+              <svg class="w-5 h-5 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
               </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">72%</p>
-            <p class="text-xs text-blue-600 mt-1">+5% vs mes anterior</p>
+            <p class="text-3xl font-bold text-[#0F2532]">72%</p>
+            <p class="text-xs text-[#4EABBE] mt-1 font-medium">+5% mensual</p>
           </div>
-
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="bg-white shadow-sm rounded-xl border border-[#D9D9D9] p-6 hover:shadow-md transition">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Pacientes Contactados</h3>
-              <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 class="text-sm font-medium text-[#0F2532]/80">Pacientes contactados</h3>
+              <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
               </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">1,247</p>
-            <p class="text-xs text-purple-600 mt-1">Este mes</p>
+            <p class="text-3xl font-bold text-[#0F2532]">1,247</p>
+            <p class="text-xs text-purple-700 mt-1 font-medium">Este mes</p>
           </div>
-
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="bg-white shadow-sm rounded-xl border border-[#D9D9D9] p-6 hover:shadow-md transition">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-medium text-gray-600">Citas Generadas</h3>
-              <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <h3 class="text-sm font-medium text-[#0F2532]/80">Citas generadas</h3>
+              <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
             </div>
-            <p class="text-3xl font-bold text-gray-900">89</p>
-            <p class="text-xs text-orange-600 mt-1">+12% conversión</p>
+            <p class="text-3xl font-bold text-[#0F2532]">89</p>
+            <p class="text-xs text-orange-700 mt-1 font-medium">+12% conversión</p>
           </div>
         </div>
 
-        <!-- Lista de Campañas -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h2 class="text-lg font-bold text-gray-900">Mis Campañas</h2>
+        <!-- Campaigns Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] overflow-hidden">
+          <div class="p-6 border-b border-[#D9D9D9] flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-[#1D5D69]">Mis campañas</h2>
             <div class="flex gap-3">
-              <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+              <select class="px-4 py-2 border border-[#D9D9D9] rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE]">
                 <option>Todas las campañas</option>
                 <option>Activas</option>
                 <option>Completadas</option>
                 <option>Programadas</option>
               </select>
-              <input type="text" placeholder="Buscar campaña..." class="px-4 py-2 border border-gray-300 rounded-lg text-sm">
+              <input type="text" placeholder="Buscar campaña..." class="px-4 py-2 border border-[#D9D9D9] rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE]"/>
             </div>
           </div>
-
           <div class="overflow-x-auto">
             <table class="w-full">
-              <thead class="bg-gray-50">
+              <thead class="bg-[#F8F7F7]">
                 <tr>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaña</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enviados</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aperturas</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Clicks</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Campaña</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Tipo</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Estado</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Enviados</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Aperturas</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Clicks</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 uppercase">Fecha</th>
+                  <th class="px-6 py-3"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-200">
-                <tr class="hover:bg-gray-50">
+              <tbody class="divide-y divide-[#E6E6E6]">
+                <tr class="hover:bg-[#F8F7F7]/60 transition">
                   <td class="px-6 py-4">
-                    <div class="font-medium text-gray-900">Recordatorio Limpieza Dental</div>
-                    <div class="text-sm text-gray-500">Pacientes sin cita hace 6 meses</div>
+                    <div class="font-semibold text-[#0F2532]">Recordatorio Limpieza Dental</div>
+                    <div class="text-sm text-[#0F2532]/60">Pacientes sin cita hace 6 meses</div>
                   </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Email</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activa</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900">324</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">237 (73%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">89 (27%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-500">05/11/2025</td>
-                  <td class="px-6 py-4">
-                    <button class="text-gray-400 hover:text-gray-600">
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                      </svg>
-                    </button>
-                  </td>
+                  <td class="px-6 py-4"><span class="px-3 py-1 bg-[#8BCFDD]/30 text-[#1D5D69] rounded-full text-xs font-medium">Email</span></td>
+                  <td class="px-6 py-4"><span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activa</span></td>
+                  <td class="px-6 py-4 text-sm font-medium">324</td>
+                  <td class="px-6 py-4 text-sm font-medium">237 (73%)</td>
+                  <td class="px-6 py-4 text-sm font-medium">89 (27%)</td>
+                  <td class="px-6 py-4 text-sm text-[#0F2532]/60">05/11/2025</td>
+                  <td class="px-6 py-4"><button class="text-[#0F2532]/40 hover:text-[#1D5D69]">⋮</button></td>
                 </tr>
-
-                <tr class="hover:bg-gray-50">
+                <tr class="hover:bg-[#F8F7F7]/60 transition">
                   <td class="px-6 py-4">
-                    <div class="font-medium text-gray-900">Promoción Blanqueamiento</div>
-                    <div class="text-sm text-gray-500">Oferta especial temporada</div>
+                    <div class="font-semibold text-[#0F2532]">Promoción Blanqueamiento</div>
+                    <div class="text-sm text-[#0F2532]/60">Oferta especial temporada</div>
                   </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">SMS</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activa</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900">198</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">198 (100%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">45 (23%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-500">03/11/2025</td>
-                  <td class="px-6 py-4">
-                    <button class="text-gray-400 hover:text-gray-600">
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-
-                <tr class="hover:bg-gray-50">
-                  <td class="px-6 py-4">
-                    <div class="font-medium text-gray-900">Encuesta Satisfacción</div>
-                    <div class="text-sm text-gray-500">Post-tratamiento feedback</div>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Email + SMS</span>
-                  </td>
-                  <td class="px-6 py-4">
-                    <span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">Completada</span>
-                  </td>
-                  <td class="px-6 py-4 text-sm text-gray-900">156</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">142 (91%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-900">98 (63%)</td>
-                  <td class="px-6 py-4 text-sm text-gray-500">28/10/2025</td>
-                  <td class="px-6 py-4">
-                    <button class="text-gray-400 hover:text-gray-600">
-                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                      </svg>
-                    </button>
-                  </td>
+                  <td class="px-6 py-4"><span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">SMS</span></td>
+                  <td class="px-6 py-4"><span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activa</span></td>
+                  <td class="px-6 py-4 text-sm font-medium">198</td>
+                  <td class="px-6 py-4 text-sm font-medium">198 (100%)</td>
+                  <td class="px-6 py-4 text-sm font-medium">45 (23%)</td>
+                  <td class="px-6 py-4 text-sm text-[#0F2532]/60">03/11/2025</td>
+                  <td class="px-6 py-4"><button class="text-[#0F2532]/40 hover:text-[#1D5D69]">⋮</button></td>
                 </tr>
               </tbody>
             </table>
@@ -211,124 +145,123 @@
         </div>
       </div>
 
-      <!-- Tab: Email Marketing -->
+      <!-- TAB: EMAIL MARKETING - MEJORADO -->
       <div id="email-tab" class="tab-content hidden">
         <div class="grid grid-cols-3 gap-6">
-          <!-- Plantillas -->
+          <!-- Templates Section -->
           <div class="col-span-2">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 class="text-lg font-bold text-gray-900 mb-4">Plantillas de Email</h2>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-[#4EABBE] cursor-pointer transition group">
-                  <div class="bg-gray-100 h-40 rounded mb-3 flex items-center justify-center">
-                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                  </div>
-                  <h3 class="font-semibold text-gray-900 group-hover:text-[#4EABBE]">Recordatorio de Cita</h3>
-                  <p class="text-sm text-gray-500 mt-1">Confirma tu próxima cita</p>
-                  <button class="mt-3 w-full py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium">
-                    Usar Plantilla
-                  </button>
+            <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-xl font-bold text-[#1D5D69]">Plantillas de Email</h2>
+                  <p class="text-sm text-[#0F2532]/60 mt-1">Selecciona o crea plantillas personalizadas</p>
                 </div>
-
-                <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-[#4EABBE] cursor-pointer transition group">
-                  <div class="bg-gray-100 h-40 rounded mb-3 flex items-center justify-center">
-                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
-                    </svg>
-                  </div>
-                  <h3 class="font-semibold text-gray-900 group-hover:text-[#4EABBE]">Cumpleaños Feliz</h3>
-                  <p class="text-sm text-gray-500 mt-1">Felicitación personalizada</p>
-                  <button class="mt-3 w-full py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium">
-                    Usar Plantilla
-                  </button>
-                </div>
-
-                <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-[#4EABBE] cursor-pointer transition group">
-                  <div class="bg-gray-100 h-40 rounded mb-3 flex items-center justify-center">
-                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                    </svg>
-                  </div>
-                  <h3 class="font-semibold text-gray-900 group-hover:text-[#4EABBE]">Promoción Especial</h3>
-                  <p class="text-sm text-gray-500 mt-1">Ofertas y descuentos</p>
-                  <button class="mt-3 w-full py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm font-medium">
-                    Usar Plantilla
-                  </button>
-                </div>
-
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center justify-center h-64 hover:border-[#4EABBE] cursor-pointer transition">
-                  <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                  </svg>
-                  <p class="text-sm font-medium text-gray-600">Crear Nueva Plantilla</p>
-                </div>
+              </div>
+              <div id="templateGrid" class="grid grid-cols-2 gap-4">
+                <!-- Templates rendered by JS -->
               </div>
             </div>
           </div>
 
-          <!-- Editor Rápido -->
+          <!-- Email Composer - MEJORADO -->
           <div class="col-span-1">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
-              <h2 class="text-lg font-bold text-gray-900 mb-4">Envío Masivo</h2>
-              
+            <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-6 sticky top-6">
+              <h2 class="text-xl font-bold text-[#1D5D69] mb-1">Envío masivo (Gmail)</h2>
+              <p class="text-xs text-[#0F2532]/50 mb-4">Personaliza y envía emails a tus pacientes</p>
+
               <div class="space-y-4">
+                <!-- Recipients Section - MEJORADO -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Destinatarios</label>
-                  <select id="emailRecipients" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm">
-                    <option value="">Seleccionar grupo...</option>
-                    <option value="all">Todos los pacientes</option>
-                    <option value="active">Pacientes activos</option>
-                    <option value="inactive">Pacientes inactivos (6+ meses)</option>
-                    <option value="custom">Lista personalizada</option>
+                  <label class="flex items-center justify-between text-sm font-semibold text-[#0F2532] mb-2">
+                    <span>👥 Destinatarios</span>
+                    <button id="selectRecipientsBtn" class="text-xs text-[#4EABBE] hover:underline font-medium">Selección avanzada →</button>
+                  </label>
+                  <select id="emailRecipients" class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white">
+                    <option value="">-- Selecciona un grupo --</option>
+                    <option value="all">📋 Todos los pacientes</option>
+                    <option value="active">✅ Pacientes activos</option>
+                    <option value="inactive">⏸️ Pacientes inactivos (6+ meses)</option>
                   </select>
-                  <p id="recipientCount" class="text-xs text-gray-500 mt-1">📊 Selecciona un grupo</p>
+                  <div id="recipientCount" class="text-xs text-[#0F2532]/50 mt-2">Selecciona destinatarios</div>
+                  <div id="selectedPatientsContainer"></div>
                 </div>
 
+                <!-- Subject Section - MEJORADO -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Asunto</label>
-                  <input id="emailSubject" type="text" placeholder="Ej: Recordatorio de tu cita" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                  <label class="flex items-center justify-between text-sm font-semibold text-[#0F2532] mb-2">
+                    <span>📧 Asunto</span>
+                    <span class="text-xs text-[#0F2532]/40 font-normal">Variables disponibles</span>
+                  </label>
+                  <input id="emailSubject" type="text" placeholder="Ej: Hola {nombre}, te recordamos tu cita" 
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg focus:ring-2 focus:ring-[#4EABBE] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled/>
+                  <div class="flex gap-1.5 mt-2">
+                    <button class="subject-var-btn px-2 py-1 bg-[#8BCFDD]/20 text-[#1D5D69] rounded text-xs hover:bg-[#8BCFDD]/40 transition" data-var="{nombre}">{nombre}</button>
+                    <button class="subject-var-btn px-2 py-1 bg-[#8BCFDD]/20 text-[#1D5D69] rounded text-xs hover:bg-[#8BCFDD]/40 transition" data-var="{fecha_cita}">{fecha}</button>
+                  </div>
                 </div>
 
+                <!-- Message Section - MEJORADO -->
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje</label>
-                  <textarea id="emailMessage" rows="6" placeholder="Escribe tu mensaje aquí..." class="w-full px-4 py-2 border border-gray-300 rounded-lg resize-none"></textarea>
-                </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Variables</label>
-                  <div class="flex flex-wrap gap-2">
-                    <button id="insertNameVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                      {nombre}
+                  <label class="flex items-center justify-between text-sm font-semibold text-[#0F2532] mb-2">
+                    <span>💬 Mensaje</span>
+                    <span id="charCount" class="text-xs text-[#0F2532]/40 font-normal">0 caracteres</span>
+                  </label>
+                  <textarea id="emailMessage" rows="6" placeholder="Escribe tu mensaje aquí... Usa variables como {nombre} para personalizar."
+                    class="w-full px-4 py-3 border border-[#D9D9D9] rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled></textarea>
+                  
+                  <div class="flex flex-wrap gap-1.5 mt-2">
+                    <button class="variable-btn px-2.5 py-1 bg-[#F8F7F7] text-[#0F2532] rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6]" data-var="{nombre}">
+                      <span class="opacity-60">+</span> nombre
                     </button>
-                    <button id="insertDateVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                      {fecha_cita}
+                    <button class="variable-btn px-2.5 py-1 bg-[#F8F7F7] text-[#0F2532] rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6]" data-var="{fecha_cita}">
+                      <span class="opacity-60">+</span> fecha_cita
                     </button>
-                    <button id="insertDoctorVar" class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                      {doctor}
+                    <button class="variable-btn px-2.5 py-1 bg-[#F8F7F7] text-[#0F2532] rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6]" data-var="{doctor}">
+                      <span class="opacity-60">+</span> doctor
+                    </button>
+                    <button class="variable-btn px-2.5 py-1 bg-[#F8F7F7] text-[#0F2532] rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6]" data-var="{telefono}">
+                      <span class="opacity-60">+</span> teléfono
                     </button>
                   </div>
                 </div>
 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p class="text-xs text-blue-700 font-medium">💡 Las variables se personalizarán por paciente</p>
+                <!-- Live Preview -->
+                <div class="bg-gradient-to-br from-[#F8F7F7] to-[#E8ECEE]/50 rounded-xl p-4 border border-[#E6E6E6]">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-semibold text-[#1D5D69]">👁️ Vista previa</span>
+                    <span class="text-xs text-[#0F2532]/40">Ejemplo con primer paciente</span>
+                  </div>
+                  <div class="bg-white rounded-lg p-3 shadow-sm border border-[#D9D9D9]">
+                    <p id="previewSubject" class="text-sm font-medium text-[#0F2532] mb-2 pb-2 border-b border-[#E6E6E6]">Sin asunto</p>
+                    <div id="previewBody" class="text-sm text-[#0F2532]/70 max-h-24 overflow-y-auto">
+                      <span class="text-[#0F2532]/40">El contenido aparecerá aquí...</span>
+                    </div>
+                  </div>
                 </div>
 
+                <!-- Gmail Status -->
+                <div class="bg-[#8BCFDD]/10 border border-[#8BCFDD]/30 rounded-lg p-3">
+                  <div class="flex items-center justify-between">
+                    <p id="gmailStatus" class="text-sm text-[#0F2532]/60">Gmail no conectado</p>
+                    <button id="connectGmailBtn" class="px-3 py-1.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-medium transition">Conectar Gmail</button>
+                  </div>
+                </div>
+
+                <!-- Action Buttons -->
                 <div class="flex gap-2">
-                  <button id="previewEmailBtn" class="flex-1 py-3 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200 font-medium text-sm">
-                    Vista Previa
+                  <button id="previewEmailBtn" class="flex-1 py-3 bg-[#F8F7F7] text-[#0F2532] rounded-lg hover:bg-[#E8ECEE] font-semibold text-sm border border-[#D9D9D9] transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Vista completa
                   </button>
-                  <button id="sendBulkEmailBtn" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium text-sm" disabled>
-                    Enviar Masivo
+                  <button id="sendBulkEmailBtn" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold text-sm transition opacity-60 cursor-not-allowed" disabled>
+                    Enviar masivo
                   </button>
                 </div>
 
-                <div id="emailStatus" class="text-xs text-gray-600 hidden">
-                  <p id="emailStatusText"></p>
-                  <div id="emailProgressBar" class="mt-2 w-full bg-gray-200 rounded h-2 overflow-hidden">
-                    <div id="emailProgress" class="bg-[#4EABBE] h-full transition-all duration-300" style="width: 0%"></div>
+                <!-- Progress -->
+                <div id="emailStatus" class="hidden">
+                  <p id="emailStatusText" class="text-xs text-[#0F2532] mb-2"></p>
+                  <div class="w-full bg-[#E6E6E6] rounded-full h-2 overflow-hidden">
+                    <div id="emailProgress" class="bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] h-full transition-all duration-300" style="width: 0%"></div>
                   </div>
                 </div>
               </div>
@@ -337,478 +270,190 @@
         </div>
       </div>
 
-      <!-- Tab: SMS Masivos -->
+      <!-- Rest of tabs... (SMS, Encuestas, Recordatorios, Tareas) remain similar -->
       <div id="sms-tab" class="tab-content hidden">
-        <div class="max-w-4xl mx-auto">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <div class="flex items-start gap-6">
-              <div class="flex-1">
-                <h2 class="text-2xl font-bold text-gray-900 mb-2">Envío de SMS Masivos</h2>
-                <p class="text-gray-600 mb-6">Comunícate instantáneamente con tus pacientes</p>
-
-                <div class="space-y-6">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Destinatarios</label>
-                    <select class="w-full px-4 py-3 border border-gray-300 rounded-lg">
-                      <option>Todos los pacientes activos</option>
-                      <option>Pacientes sin cita hace 3 meses</option>
-                      <option>Pacientes con tratamiento pendiente</option>
-                      <option>Cumpleaños del mes</option>
-                      <option>Lista personalizada...</option>
-                    </select>
-                    <p class="text-sm text-gray-500 mt-1">📊 324 destinatarios seleccionados</p>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje SMS</label>
-                    <div class="relative">
-                      <textarea id="smsText" rows="4" maxlength="160" placeholder="Escribe tu mensaje (máx. 160 caracteres)..." class="w-full px-4 py-3 border border-gray-300 rounded-lg resize-none pr-16"></textarea>
-                      <div class="absolute bottom-3 right-3 text-sm text-gray-400">
-                        <span id="char-count">0</span>/160
-                      </div>
-                    </div>
-                    <div class="flex gap-2 mt-2">
-                      <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                        {nombre}
-                      </button>
-                      <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                        {clinica}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-start gap-3">
-                      <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      <div class="flex-1">
-                        <p class="text-sm font-medium text-blue-900">Costo Estimado</p>
-                        <p class="text-xs text-blue-700 mt-1">324 SMS × $0.50 = $162.00 MXN</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex gap-3">
-                    <button class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
-                      Programar Envío
-                    </button>
-                    <button class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium">
-                      Enviar Ahora
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Preview SMS -->
-              <div class="w-80">
-                <div class="sticky top-6">
-                  <p class="text-sm font-medium text-gray-700 mb-3">Vista Previa</p>
-                  <div class="bg-gray-900 rounded-3xl p-4 shadow-2xl">
-                    <div class="bg-white rounded-2xl p-4 h-96 overflow-hidden">
-                      <div class="flex items-center gap-2 mb-4">
-                        <div class="w-8 h-8 bg-[#4EABBE] rounded-full"></div>
-                        <div>
-                          <p class="text-xs font-semibold">Clínica Sonalia</p>
-                          <p class="text-xs text-gray-500">Ahora</p>
-                        </div>
-                      </div>
-                      <div id="smsPreview" class="bg-[#4EABBE] text-white rounded-2xl rounded-tl-sm p-3 text-sm">
-                        Hola Juan, te recordamos tu cita el próximo Lunes 15 a las 10:00. ¡Te esperamos!
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div class="max-w-5xl mx-auto relative">
+          <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-8 pointer-events-none opacity-60">
+            <h2 class="text-2xl font-bold text-[#1D5D69] mb-2">Envío de SMS Masivos</h2>
+            <p class="text-[#0F2532]/60">Comunícate instantáneamente con tus pacientes</p>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="backdrop-blur-md bg-white/80 rounded-xl border border-dashed border-[#4EABBE] px-6 py-4 text-center shadow-md">
+              <p class="text-sm font-semibold text-[#1D5D69]">📱 SMS masivos disponible próximamente</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Tab: Encuestas -->
       <div id="encuestas-tab" class="tab-content hidden">
         <div class="grid grid-cols-2 gap-6">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Crear Encuesta de Satisfacción</h2>
-            
+          <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-6">
+            <h2 class="text-xl font-bold text-[#1D5D69] mb-4">Crear encuesta</h2>
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Título de la Encuesta</label>
-                <input type="text" placeholder="Ej: Encuesta de Satisfacción Post-Tratamiento" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                <label class="block text-sm font-semibold text-[#0F2532] mb-1">Título</label>
+                <input id="surveyTitleInput" type="text" placeholder="Ej: Encuesta de satisfacción" class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg"/>
               </div>
-
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Preguntas</label>
-                <div class="space-y-3">
-                  <div class="flex gap-2">
-                    <input type="text" placeholder="Pregunta 1" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg">
-                      <option>Escala 1-5</option>
-                      <option>Sí/No</option>
-                      <option>Texto libre</option>
-                    </select>
-                  </div>
-                  <div class="flex gap-2">
-                    <input type="text" placeholder="Pregunta 2" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg">
-                    <select class="px-4 py-2 border border-gray-300 rounded-lg">
-                      <option>Escala 1-5</option>
-                      <option>Sí/No</option>
-                      <option>Texto libre</option>
-                    </select>
-                  </div>
-                  <button class="text-[#4EABBE] text-sm font-medium hover:text-[#3d8a99]">
-                    + Agregar Pregunta
-                  </button>
-                </div>
+                <label class="block text-sm font-semibold text-[#0F2532] mb-1">Link de la encuesta</label>
+                <input id="surveyLinkInput" type="text" placeholder="https://..." class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg"/>
               </div>
-
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Enviar a</label>
-                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg">
-                  <option>Pacientes que completaron tratamiento</option>
-                  <option>Todos los pacientes</option>
-                  <option>Lista personalizada</option>
+                <label class="block text-sm font-semibold text-[#0F2532] mb-1">Enviar a</label>
+                <select id="surveyRecipients" class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg">
+                  <option value="">Selecciona...</option>
+                  <option value="all">Todos los pacientes</option>
+                  <option value="active">Pacientes activos</option>
                 </select>
               </div>
-
-              <div class="flex gap-3">
-                <button class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
-                  Guardar Borrador
-                </button>
-                <button class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium">
-                  Enviar Encuesta
-                </button>
-              </div>
+              <button id="sendSurveyEmailsBtn" class="w-full py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold">Enviar encuesta</button>
             </div>
           </div>
-
-          <!-- Resultados de Encuestas -->
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-bold text-gray-900 mb-4">Resultados Recientes</h2>
-            
-            <div class="space-y-4">
-              <div class="border border-gray-200 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="font-semibold text-gray-900">Satisfacción General</h3>
-                  <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">142 respuestas</span>
-                </div>
-                <div class="space-y-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600 w-24">Excelente</span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-green-500 h-2 rounded-full" style="width: 78%"></div>
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">78%</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600 w-24">Bueno</span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-blue-500 h-2 rounded-full" style="width: 18%"></div>
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">18%</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <span class="text-sm text-gray-600 w-24">Regular</span>
-                    <div class="flex-1 bg-gray-200 rounded-full h-2">
-                      <div class="bg-yellow-500 h-2 rounded-full" style="width: 4%"></div>
-                    </div>
-                    <span class="text-sm font-medium text-gray-900">4%</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h3 class="font-semibold text-gray-900 mb-3">Comentarios Destacados</h3>
-                <div class="space-y-3">
-                  <div class="bg-gray-50 rounded p-3">
-                    <p class="text-sm text-gray-700">"Excelente atención, muy profesional"</p>
-                    <p class="text-xs text-gray-500 mt-1">⭐⭐⭐⭐⭐ - Hace 2 días</p>
-                  </div>
-                  <div class="bg-gray-50 rounded p-3">
-                    <p class="text-sm text-gray-700">"El tratamiento fue indoloro y efectivo"</p>
-                    <p class="text-xs text-gray-500 mt-1">⭐⭐⭐⭐⭐ - Hace 5 días</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-6">
+            <h2 class="text-xl font-bold text-[#1D5D69] mb-4">Resultados recientes</h2>
+            <div class="text-center py-8 text-[#0F2532]/50">Sin encuestas enviadas aún</div>
           </div>
         </div>
       </div>
 
-      <!-- Tab: Recordatorios -->
       <div id="recordatorios-tab" class="tab-content hidden">
-        <div class="max-w-5xl mx-auto">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">Sistema de Recordatorios Automáticos</h2>
-            <p class="text-gray-600 mb-6">Configura recordatorios para que tus pacientes nunca olviden sus citas</p>
-
-            <div class="grid grid-cols-2 gap-6">
-              <!-- Configuración -->
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Configuración de Recordatorios</h3>
-                
-                <div class="space-y-4">
-                  <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                      <label class="flex items-center gap-2">
-                        <input type="checkbox" checked class="w-5 h-5 text-[#4EABBE] rounded">
-                        <span class="font-medium text-gray-900">Recordatorio 24 horas antes</span>
-                      </label>
-                      <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">Email + SMS</span>
-                    </div>
-                    <p class="text-sm text-gray-600 ml-7">Se envía automáticamente un día antes de la cita</p>
-                  </div>
-
-                  <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                      <label class="flex items-center gap-2">
-                        <input type="checkbox" checked class="w-5 h-5 text-[#4EABBE] rounded">
-                        <span class="font-medium text-gray-900">Recordatorio 2 horas antes</span>
-                      </label>
-                      <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">SMS</span>
-                    </div>
-                    <p class="text-sm text-gray-600 ml-7">Recordatorio urgente el mismo día</p>
-                  </div>
-
-                  <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                      <label class="flex items-center gap-2">
-                        <input type="checkbox" class="w-5 h-5 text-[#4EABBE] rounded">
-                        <span class="font-medium text-gray-900">Confirmación de asistencia</span>
-                      </label>
-                      <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">SMS</span>
-                    </div>
-                    <p class="text-sm text-gray-600 ml-7">Permite al paciente confirmar o reagendar</p>
-                  </div>
-
-                  <div class="border border-gray-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-3">
-                      <label class="flex items-center gap-2">
-                        <input type="checkbox" checked class="w-5 h-5 text-[#4EABBE] rounded">
-                        <span class="font-medium text-gray-900">Seguimiento post-cita</span>
-                      </label>
-                      <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">Email</span>
-                    </div>
-                    <p class="text-sm text-gray-600 ml-7">Se envía 24 horas después de la cita</p>
-                  </div>
-                </div>
-
-                <button class="w-full mt-6 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium">
-                  Guardar Configuración
-                </button>
-              </div>
-
-              <!-- Estadísticas -->
-              <div>
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Estadísticas de Recordatorios</h3>
-                
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                  <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-                    <p class="text-sm text-blue-700 font-medium mb-1">Enviados este mes</p>
-                    <p class="text-3xl font-bold text-blue-900">1,247</p>
-                  </div>
-                  <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
-                    <p class="text-sm text-green-700 font-medium mb-1">Tasa de entrega</p>
-                    <p class="text-3xl font-bold text-green-900">98%</p>
-                  </div>
-                  <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
-                    <p class="text-sm text-purple-700 font-medium mb-1">Confirmaciones</p>
-                    <p class="text-3xl font-bold text-purple-900">856</p>
-                  </div>
-                  <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
-                    <p class="text-sm text-orange-700 font-medium mb-1">Inasistencias</p>
-                    <p class="text-3xl font-bold text-orange-900">23</p>
-                  </div>
-                </div>
-
-                <div class="bg-white border border-gray-200 rounded-lg p-4">
-                  <h4 class="font-semibold text-gray-900 mb-3">Próximos Recordatorios</h4>
-                  <div class="space-y-3">
-                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">María González</p>
-                        <p class="text-xs text-gray-500">Limpieza dental - 10/11 10:00</p>
-                      </div>
-                      <span class="text-xs text-gray-500">En 2 horas</span>
-                    </div>
-                    <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">Carlos Ruiz</p>
-                        <p class="text-xs text-gray-500">Ortodoncia - 10/11 15:00</p>
-                      </div>
-                      <span class="text-xs text-gray-500">En 7 horas</span>
-                    </div>
-                    <div class="flex items-center justify-between py-2">
-                      <div>
-                        <p class="text-sm font-medium text-gray-900">Ana Martínez</p>
-                        <p class="text-xs text-gray-500">Endodoncia - 11/11 09:00</p>
-                      </div>
-                      <span class="text-xs text-gray-500">Mañana</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-6">
+          <h2 class="text-2xl font-bold text-[#1D5D69] mb-4">Sistema de recordatorios</h2>
+          <button id="sendReminderEmailsBtn" class="px-6 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold">Enviar recordatorios ahora</button>
         </div>
       </div>
 
-      <!-- Tab: Tareas Automáticas -->
       <div id="tareas-tab" class="tab-content hidden">
-        <div class="max-w-6xl mx-auto">
-          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center justify-between mb-6">
-              <div>
-                <h2 class="text-2xl font-bold text-gray-900">Automatizaciones</h2>
-                <p class="text-gray-600 mt-1">Configura flujos de trabajo automáticos para tu clínica</p>
-              </div>
-              <button class="px-6 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#3d8a99] font-medium">
-                + Nueva Automatización
-              </button>
-            </div>
-
-            <!-- Lista de Automatizaciones Activas -->
-            <div class="grid grid-cols-1 gap-4">
-              
-              <div class="border border-gray-200 rounded-lg p-5 hover:border-[#4EABBE] transition">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                      <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Bienvenida a Nuevos Pacientes</h3>
-                        <p class="text-sm text-gray-500">Se activa cuando se registra un nuevo paciente</p>
-                      </div>
-                    </div>
-                    <div class="ml-13 mt-3">
-                      <div class="flex items-center gap-2 text-sm text-gray-600">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">Email de bienvenida</span>
-                        <span>→</span>
-                        <span class="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs">SMS con datos de contacto</span>
-                      </div>
-                      <p class="text-sm text-gray-500 mt-2">📊 Ejecutada 48 veces este mes</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4EABBE]"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border border-gray-200 rounded-lg p-5 hover:border-[#4EABBE] transition">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                      <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Reactivación de Pacientes Inactivos</h3>
-                        <p class="text-sm text-gray-500">Se activa cuando un paciente no tiene cita hace 6 meses</p>
-                      </div>
-                    </div>
-                    <div class="ml-13 mt-3">
-                      <div class="flex items-center gap-2 text-sm text-gray-600">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">Email recordatorio</span>
-                        <span>→</span>
-                        <span class="px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-xs">Esperar 3 días</span>
-                        <span>→</span>
-                        <span class="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs">SMS con promoción</span>
-                      </div>
-                      <p class="text-sm text-gray-500 mt-2">📊 Ejecutada 124 veces este mes • 28% tasa de conversión</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4EABBE]"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border border-gray-200 rounded-lg p-5 hover:border-[#4EABBE] transition">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                      <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Felicitación de Cumpleaños</h3>
-                        <p class="text-sm text-gray-500">Se activa en el cumpleaños del paciente</p>
-                      </div>
-                    </div>
-                    <div class="ml-13 mt-3">
-                      <div class="flex items-center gap-2 text-sm text-gray-600">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">Email personalizado</span>
-                        <span>→</span>
-                        <span class="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs">Cupón descuento 20%</span>
-                      </div>
-                      <p class="text-sm text-gray-500 mt-2">📊 Ejecutada 12 veces este mes</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4EABBE]"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div class="border border-gray-200 rounded-lg p-5 hover:border-[#4EABBE] transition">
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <div class="flex items-center gap-3 mb-2">
-                      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 class="text-lg font-semibold text-gray-900">Solicitud de Reseña Post-Tratamiento</h3>
-                        <p class="text-sm text-gray-500">Se activa 3 días después de completar un tratamiento</p>
-                      </div>
-                    </div>
-                    <div class="ml-13 mt-3">
-                      <div class="flex items-center gap-2 text-sm text-gray-600">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">Email con encuesta</span>
-                        <span>→</span>
-                        <span class="px-3 py-1 bg-orange-50 text-orange-700 rounded-full text-xs">Link a Google Reviews</span>
-                      </div>
-                      <p class="text-sm text-gray-500 mt-2">📊 Ejecutada 89 veces este mes • 45% tasa de respuesta</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" class="sr-only peer">
-                      <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#4EABBE]"></div>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
+        <div class="max-w-5xl mx-auto relative">
+          <div class="bg-white rounded-xl shadow-sm border border-[#D9D9D9] p-8 pointer-events-none opacity-60">
+            <h2 class="text-2xl font-bold text-[#1D5D69]">Automatizaciones</h2>
+          </div>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="backdrop-blur-md bg-white/80 rounded-xl border border-dashed border-[#4EABBE] px-6 py-4 text-center shadow-md">
+              <p class="text-sm font-semibold text-[#1D5D69]">⚙️ Automatizaciones disponible próximamente</p>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
+  <!-- MODALS -->
+  <!-- Gmail Auth Modal -->
+  <div id="gmailAuthModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+      <h2 class="text-xl font-bold text-[#1D5D69] mb-3">Conectar Gmail</h2>
+      <p class="text-sm text-[#0F2532]/70 mb-4">Pega el código de autorización de Google:</p>
+      <input id="gmailAuthCodeInput" type="text" class="w-full px-4 py-3 border border-[#D9D9D9] rounded-lg mb-4 focus:ring-2 focus:ring-[#4EABBE]" placeholder="Pega tu código aquí..."/>
+      <div class="flex gap-3">
+        <button id="cancelGmailAuthBtn" class="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium">Cancelar</button>
+        <button id="saveGmailAuthBtn" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar Token</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipients Modal - MEJORADO -->
+  <div id="recipientsModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+      <div class="p-6 border-b border-[#E6E6E6]">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-xl font-bold text-[#1D5D69]">Seleccionar pacientes</h3>
+            <p id="modalRecipientCount" class="text-sm text-[#0F2532]/60 mt-1">0 seleccionados</p>
+          </div>
+          <button id="selectAllRecipients" class="px-4 py-2 bg-[#F8F7F7] text-[#0F2532] rounded-lg hover:bg-[#E8ECEE] text-sm font-medium border border-[#D9D9D9]">
+            Seleccionar todo
+          </button>
+        </div>
+        <div class="relative">
+          <svg class="w-5 h-5 text-[#0F2532]/40 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input id="recipientSearch" type="text" placeholder="Buscar por nombre o email..." 
+            class="w-full pl-10 pr-4 py-2.5 border border-[#D9D9D9] rounded-lg focus:ring-2 focus:ring-[#4EABBE]"/>
+        </div>
+      </div>
+      
+      <div id="recipientsList" class="flex-1 overflow-y-auto p-4 space-y-1 min-h-[300px] max-h-[400px]">
+        <!-- Rendered by JS -->
+      </div>
+      
+      <div class="p-4 border-t border-[#E6E6E6] flex justify-end gap-3 bg-[#F8F7F7] rounded-b-2xl">
+        <button id="cancelRecipientsBtn" class="px-5 py-2.5 bg-white text-[#0F2532] rounded-lg hover:bg-gray-100 font-medium border border-[#D9D9D9]">Cancelar</button>
+        <button id="applyRecipientsBtn" class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Aplicar selección</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Template Editor Modal - MEJORADO -->
+  <div id="templateEditorModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+      <div class="p-6 border-b border-[#E6E6E6]">
+        <h3 class="text-xl font-bold text-[#1D5D69]">Nueva plantilla</h3>
+        <p class="text-sm text-[#0F2532]/60 mt-1">Crea una plantilla personalizada para tus emails</p>
+      </div>
+      
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] mb-2">Nombre de la plantilla</label>
+          <input id="templateNameInput" type="text" placeholder="Ej: Promoción de verano" 
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-lg focus:ring-2 focus:ring-[#4EABBE]"/>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] mb-2">Imagen (opcional)</label>
+          <div class="border-2 border-dashed border-[#D9D9D9] rounded-lg p-4 text-center hover:border-[#4EABBE] transition cursor-pointer">
+            <input id="templateImageInput" type="file" accept="image/*" class="hidden"/>
+            <label for="templateImageInput" class="cursor-pointer">
+              <svg class="w-8 h-8 text-[#0F2532]/30 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <p class="text-sm text-[#0F2532]/60">Click para subir imagen</p>
+              <p class="text-xs text-[#0F2532]/40 mt-1">PNG, JPG hasta 2MB</p>
+            </label>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] mb-2">Contenido del email</label>
+          <textarea id="templateTextInput" rows="6" placeholder="Escribe el contenido de tu plantilla...&#10;&#10;Usa variables: {nombre}, {fecha_cita}, {doctor}"
+            class="w-full px-4 py-3 border border-[#D9D9D9] rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE]"></textarea>
+          <div class="flex gap-1.5 mt-2">
+            <span class="px-2 py-1 bg-[#F8F7F7] text-[#0F2532]/60 rounded text-xs">{nombre}</span>
+            <span class="px-2 py-1 bg-[#F8F7F7] text-[#0F2532]/60 rounded text-xs">{fecha_cita}</span>
+            <span class="px-2 py-1 bg-[#F8F7F7] text-[#0F2532]/60 rounded text-xs">{doctor}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-4 border-t border-[#E6E6E6] flex justify-end gap-3 bg-[#F8F7F7] rounded-b-2xl">
+        <button id="cancelTemplateBtn" class="px-5 py-2.5 bg-white text-[#0F2532] rounded-lg hover:bg-gray-100 font-medium border border-[#D9D9D9]">Cancelar</button>
+        <button id="saveTemplateBtn" class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar plantilla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Full Preview Modal -->
+  <div id="emailPreviewModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4">
+      <div class="p-6 border-b border-[#E6E6E6] flex items-center justify-between">
+        <h3 class="text-xl font-bold text-[#1D5D69]">Vista previa del email</h3>
+        <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')" class="p-2 hover:bg-gray-100 rounded-lg">
+          <svg class="w-5 h-5 text-[#0F2532]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div id="fullPreviewContent" class="p-6 max-h-[60vh] overflow-y-auto">
+        <!-- Content rendered by JS -->
+      </div>
+      <div class="p-4 border-t border-[#E6E6E6] bg-[#F8F7F7] rounded-b-2xl">
+        <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')" 
+          class="w-full py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Cerrar vista previa</button>
+      </div>
     </div>
   </div>
 
   <script type="module" src="../scripts/crm.js"></script>
-
 </body>
 </html>

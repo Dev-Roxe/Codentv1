@@ -1,249 +1,260 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mi Perfil - Sonalía</title>
+
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Inicialización global (navbar, navegación, etc.) -->
   <script src="../scripts/init.js" type="module"></script>
+
+  <!-- Lógica específica del perfil -->
+  <script src="../scripts/perfil.js" type="module"></script>
 </head>
-<body class="bg-gray-50">
+
+<body class="bg-[#F8F7F7] text-[#0F2532]">
 
   <!-- Navbar Component -->
-  <app-navbar current="perfil" user-name="Nerick"></app-navbar>
+  <app-navbar current="perfil"></app-navbar>
 
   <!-- Contenedor Principal -->
-  <div class="min-h-screen p-8">
-    
-    <!-- Header -->
-    <div class="max-w-6xl mx-auto mb-8">
-      <button onclick="history.back()" class="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 transition">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-        </svg>
-        Volver
-      </button>
-      <h1 class="text-4xl font-bold text-gray-900">Mi Perfil</h1>
-      <p class="text-gray-600 mt-2">Administra tu información personal y preferencias</p>
-    </div>
+  <div class="min-h-screen p-6 md:p-8">
+    <div class="max-w-6xl mx-auto space-y-6">
 
-    <!-- Grid de Contenido -->
-    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
-      
-      <!-- Sidebar -->
-      <div class="lg:col-span-1">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sticky top-8">
-          
-          <!-- Avatar -->
-          <div class="flex flex-col items-center mb-6">
+      <!-- Header -->
+      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+            Cuenta
+          </p>
+          <h1 class="text-2xl md:text-3xl font-bold text-[#1D5D69]">
+            Mi perfil
+          </h1>
+          <p class="mt-1 text-sm text-gray-500">
+            Administra tus datos personales, foto de perfil y preferencias de la cuenta.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <button type="button" id="refresh-profile-btn"
+            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-[#8BCFDD] text-[#1D5D69] rounded-xl hover:bg-[#E4F5F8] transition">
+            <span>Recargar datos</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="grid gap-6 lg:grid-cols-[minmax(0,2.1fr)_minmax(0,1.4fr)]">
+
+        <!-- Columna izquierda: Formularios -->
+        <section class="space-y-6">
+
+          <!-- Card: Información personal -->
+          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1]">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5EEF1]">
+              <div>
+                <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+                  Configuración
+                </p>
+                <h2 class="text-xl font-semibold text-[#1D5D69]">
+                  Información personal
+                </h2>
+                <p class="text-xs text-gray-500">
+                  Datos básicos de tu cuenta de usuario.
+                </p>
+              </div>
+
+              <button type="button" id="edit-personal-btn"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-transparent bg-[#4EABBE] text-white hover:bg-[#1D5D69] transition">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 20h4l9-9-4-4L4 16v4z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+                <span>Editar</span>
+              </button>
+            </div>
+
+            <div class="p-6">
+              <form id="personal-info-form" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Nombre</label>
+                    <input id="nombre" type="text" disabled
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Apellido</label>
+                    <input id="apellido" type="text" disabled
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <input id="email" type="email" disabled
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Teléfono</label>
+                    <input id="telefono" type="tel" disabled
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Fecha de nacimiento</label>
+                    <input id="nacimiento" type="date" disabled
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Dirección</label>
+                  <textarea id="direccion" rows="3" disabled
+                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 resize-none transition"></textarea>
+                </div>
+
+                <div id="form-actions" class="hidden flex-wrap gap-3 pt-4 border-t border-[#E5EEF1]">
+                  <button id="updateBtn" type="submit" class="inline-flex items-center justify-center gap-2 px-5 py-2.5
+                    rounded-xl text-sm font-medium bg-[#4EABBE] text-white hover:bg-[#1D5D69] transition">
+                    Guardar cambios
+                  </button>
+                  <button type="button" id="cancel-edit-btn"
+                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-medium border border-gray-200 text-gray-700 hover:bg-gray-50 transition">
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Card: Seguridad (placeholder, pero ya lista para más funciones) -->
+          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1]">
+            <div class="px-6 py-4 border-b border-[#E5EEF1]">
+              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+                Seguridad
+              </p>
+              <h2 class="text-xl font-semibold text-[#1D5D69]">Acceso a la cuenta</h2>
+              <p class="text-xs text-gray-500">
+                Aquí podrás configurar cambio de contraseña y opciones avanzadas.
+              </p>
+            </div>
+            <div class="p-6 space-y-4 text-sm text-gray-600">
+              <p>
+                Esta sección está preparada para que después conectes el flujo de
+                <span class="font-semibold text-[#1D5D69]">cambio de contraseña</span>
+                y otros ajustes de seguridad (2FA, bloqueo automático, etc.).
+              </p>
+              <button type="button"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-[#8BCFDD] text-[#1D5D69] hover:bg-[#E4F5F8] transition cursor-not-allowed opacity-60"
+                disabled>
+                Próximamente
+              </button>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- Columna derecha: Avatar + Stats + Preferencias -->
+        <aside class="space-y-6">
+
+          <!-- Card: Resumen + foto de perfil -->
+          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1] p-6 flex flex-col items-center">
             <div class="relative group">
-              <div class="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
-                JD
+              <!-- Imagen real -->
+              <img id="profile-avatar" alt="Foto de perfil"
+                class="w-32 h-32 rounded-full object-cover border-4 border-[#4EABBE] shadow-md hidden" />
+
+              <!-- Fallback con iniciales -->
+              <div id="profile-avatar-fallback"
+                class="w-32 h-32 rounded-full bg-gradient-to-br from-[#4EABBE] to-[#8BCFDD] flex items-center justify-center text-white text-3xl font-semibold shadow-md">
+                <span id="profile-avatar-initials">ND</span>
               </div>
+
+              <!-- Botón para subir foto -->
+              <label for="photoInput"
+                class="absolute bottom-1 right-1 inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#4EABBE] text-white text-xs cursor-pointer shadow-md border-2 border-white hover:bg-[#1D5D69] transition"
+                title="Cambiar foto de perfil">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"
+                    stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                  <circle cx="12" cy="13" r="3.2" stroke="currentColor" stroke-width="1.7" />
+                </svg>
+              </label>
+
+              <input id="photoInput" type="file" accept="image/*" class="hidden" />
             </div>
-            <h2 class="text-2xl font-bold text-gray-900 mt-4" id="profile-name">Juan Pérez</h2>
-            <p class="text-sm text-gray-500 mt-1" id="profile-role">Administrador</p>
-            <span class="mt-3 px-4 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activo</span>
+
+            <h2 id="profile-name" class="mt-4 text-xl font-semibold text-[#1D5D69]">
+              Usuario
+            </h2>
+            <p id="profile-role" class="text-sm text-gray-500">
+              Rol
+            </p>
+
+            <span id="user-status"
+              class="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 text-[11px] font-medium px-3 py-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              Activo
+            </span>
+
+            <dl class="mt-6 w-full border-t border-[#E5EEF1] pt-4 space-y-3 text-sm">
+              <div class="flex items-center justify-between">
+                <dt class="text-gray-500">Miembro desde</dt>
+                <dd id="member-since" class="font-medium text-[#0F2532]">—</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt class="text-gray-500">Último acceso</dt>
+                <dd id="last-login-text" class="font-medium text-[#0F2532]">—</dd>
+              </div>
+            </dl>
           </div>
 
-          <!-- Stats -->
-          <div class="border-t border-gray-100 pt-6 space-y-4 text-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-gray-600">Miembro desde</span>
-              <span class="font-semibold text-gray-900">Enero 2024</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-600">Último acceso</span>
-              <span class="font-semibold text-gray-900">Hace 2 horas</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-600">Citas gestionadas</span>
-              <span class="font-semibold text-gray-900">1,247</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contenido Principal -->
-      <div class="lg:col-span-2 space-y-8">
-        
-        <!-- Información Personal -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-xl font-bold text-gray-900">Información Personal</h3>
-            <button id="edit-personal-btn" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-              Editar
-            </button>
-          </div>
-
-          <form id="personal-info-form" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
-                <input id="nombre" type="text" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Apellido</label>
-                <input id="apellido" type="text" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input id="email" type="email" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
-                <input id="telefono" type="tel" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
-              </div>
-
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
-                <input id="nacimiento" type="date" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition">
-              </div>
-            </div>
-
+          <!-- Card: Preferencias -->
+          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1] p-6 space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
-              <textarea id="direccion" rows="3" disabled class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 transition resize-none"></textarea>
+              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+                Preferencias
+              </p>
+              <h2 class="text-lg font-semibold text-[#1D5D69]">Experiencia de uso</h2>
+              <p class="mt-1 text-xs text-gray-500">
+                Estas opciones se guardan localmente en este equipo.
+              </p>
             </div>
 
-            <div id="form-actions" class="flex gap-3 pt-4 border-t border-gray-100" style="display: none;">
-              <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
-                Guardar Cambios
-              </button>
-              <button type="button" id="cancel-edit-btn" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition font-medium">
-                Cancelar
-              </button>
-            </div>
-          </form>
-        </div>
+            <div class="space-y-3 text-sm">
+              <label class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="font-medium text-[#0F2532]">Notificaciones por correo</p>
+                  <p class="text-xs text-gray-500">
+                    Recibir resúmenes de agenda y recordatorios importantes.
+                  </p>
+                </div>
+                <input id="pref-email-notifications" type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#4EABBE] focus:ring-[#4EABBE]" />
+              </label>
 
-      </div>
+              <label class="flex items-center justify-between gap-3 pt-2 border-t border-[#E5EEF1]">
+                <div>
+                  <p class="font-medium text-[#0F2532]">Modo compacto</p>
+                  <p class="text-xs text-gray-500">
+                    Reduce el espaciado en tablas y listados.
+                  </p>
+                </div>
+                <input id="pref-compact-mode" type="checkbox"
+                  class="h-4 w-4 rounded border-gray-300 text-[#4EABBE] focus:ring-[#4EABBE]" />
+              </label>
+            </div>
+          </div>
+
+        </aside>
+
+      </main>
     </div>
   </div>
-
-  <script>
-    // ====== Referencias ======
-    const editBtn = document.getElementById('edit-personal-btn');
-    const cancelBtn = document.getElementById('cancel-edit-btn');
-    const form = document.getElementById('personal-info-form');
-    const actions = document.getElementById('form-actions');
-    const inputs = form.querySelectorAll('input, textarea');
-
-    const profileName = document.getElementById('profile-name');
-    const profileRole = document.getElementById('profile-role');
-
-    const nombre = document.getElementById('nombre');
-    const apellido = document.getElementById('apellido');
-    const email = document.getElementById('email');
-    const telefono = document.getElementById('telefono');
-    const nacimiento = document.getElementById('nacimiento');
-    const direccion = document.getElementById('direccion');
-
-    let usuarioId = null;
-
-    // ====== Cargar datos del usuario logueado ======
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        // Primero intentamos obtener datos de localStorage (sesión actual)
-        const sesionData = JSON.parse(localStorage.getItem('sesionActual')) || {};
-        usuarioId = sesionData.id;
-
-        // Si tenemos ID de usuario, obtenemos datos completos desde la API
-        if (usuarioId && window.api?.getUserProfile) {
-          const userData = await window.api.getUserProfile({ id: usuarioId });
-          
-          nombre.value = userData.nombre || '';
-          apellido.value = userData.apellido || '';
-          email.value = userData.email || '';
-          telefono.value = userData.telefono || '';
-          nacimiento.value = userData.nacimiento || '';
-          direccion.value = userData.direccion || '';
-
-          profileName.textContent = `${userData.nombre || ''} ${userData.apellido || ''}`.trim();
-          profileRole.textContent = userData.rol || 'Usuario';
-
-          // Actualizar navbar con nombre del usuario
-          const navbar = document.querySelector('app-navbar');
-          if (navbar) {
-            navbar.updateUser(userData.nombre, userData.rol);
-          }
-        } else if (sesionData.nombre) {
-          // Fallback: usar datos de localStorage si no hay API
-          nombre.value = sesionData.nombre || '';
-          apellido.value = sesionData.apellido || '';
-          email.value = sesionData.email || '';
-          telefono.value = sesionData.telefono || '';
-          nacimiento.value = sesionData.nacimiento || '';
-          direccion.value = sesionData.direccion || '';
-
-          profileName.textContent = `${sesionData.nombre || ''} ${sesionData.apellido || ''}`.trim();
-          profileRole.textContent = sesionData.rol || 'Usuario';
-        }
-      } catch (err) {
-        console.error('Error al cargar datos del usuario:', err);
-        alert('Error al cargar datos del perfil');
-      }
-    });
-
-    // ====== Editar datos ======
-    editBtn.addEventListener('click', () => {
-      inputs.forEach(i => i.disabled = false);
-      actions.style.display = 'flex';
-      editBtn.style.display = 'none';
-    });
-
-    // ====== Cancelar edición ======
-    cancelBtn.addEventListener('click', () => {
-      inputs.forEach(i => i.disabled = true);
-      actions.style.display = 'none';
-      editBtn.style.display = 'flex';
-    });
-
-    // ====== Guardar cambios en la base de datos ======
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const updatedData = {
-        id: usuarioId,
-        nombre: nombre.value,
-        apellido: apellido.value,
-        email: email.value,
-        telefono: telefono.value,
-        nacimiento: nacimiento.value,
-        direccion: direccion.value
-      };
-
-      try {
-        // Si tenemos API disponible, guardar en DB
-        if (window.api?.updateUserProfile) {
-          await window.api.updateUserProfile(updatedData);
-        }
-
-        // Guardar también en localStorage para cache local
-        const sesionData = JSON.parse(localStorage.getItem('sesionActual')) || {};
-        const merged = { ...sesionData, ...updatedData };
-        localStorage.setItem('sesionActual', JSON.stringify(merged));
-
-        profileName.textContent = `${updatedData.nombre} ${updatedData.apellido}`.trim();
-
-        alert('Cambios guardados correctamente');
-
-        inputs.forEach(i => i.disabled = true);
-        actions.style.display = 'none';
-        editBtn.style.display = 'flex';
-
-      } catch (err) {
-        console.error('Error al guardar cambios:', err);
-        alert('Error al guardar los cambios: ' + (err.message || err));
-      }
-    });
-  </script>
 </body>
+
 </html>
