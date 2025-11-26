@@ -1,69 +1,270 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonalia - Pacientes</title>
+  <title>Gestión de Cajas - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
   <script src="../components/navbar-component.js" type="module"></script>
   <script src="../scripts/init.js" type="module"></script>
-</head>
-<body class="bg-gray-100 font-sans">
+  <style>
+    /* Paleta de colores Sonalía */
+    :root {
+      --primary: #1D5D69;
+      --secondary: #4EABBE;
+      --accent: #8BCFDD;
+      --bg: #F8F7F7;
+      --text: #0F2532;
+      --muted: #D9D9D9;
+      --border: #E6E6E6;
+    }
 
-    <!-- Navbar Component -->
-  <app-navbar current="crm" user-name="Nerick"></app-navbar>
+    /* Dark Mode Variables */
+    .dark {
+      --bg: #111827;
+      --text: #F3F4F6;
+      --muted: #4B5563;
+      --border: #374151;
+    }
+
+    /* Animaciones */
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .animate-slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    /* Estilos personalizados */
+    .tab-button {
+      position: relative;
+      padding: 12px 20px;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      background: transparent;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .tab-button:hover {
+      color: var(--secondary);
+      background: rgba(78, 171, 190, 0.05);
+    }
+
+    .dark .tab-button:hover {
+      background: rgba(78, 171, 190, 0.15);
+    }
+
+    .tab-button.active {
+      color: var(--secondary);
+      border-bottom-color: var(--secondary);
+      background: white;
+    }
+
+    .dark .tab-button.active {
+      background: #1F2937;
+      /* gray-800 */
+    }
+
+    .caja-card {
+      transition: all 0.2s ease;
+      border-left: 4px solid transparent;
+    }
+
+    .caja-card:hover {
+      border-left-color: var(--secondary);
+      box-shadow: 0 4px 16px rgba(78, 171, 190, 0.15);
+      transform: translateX(4px);
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(29, 93, 105, 0.2);
+    }
+
+    .action-button {
+      background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(78, 171, 190, 0.3);
+    }
+
+    .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(78, 171, 190, 0.4);
+    }
+
+    .status-badge {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-open {
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: white;
+    }
+
+    .status-closed {
+      background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+      color: white;
+    }
+  </style>
+</head>
+
+<body class="bg-[#F8F7F7] dark:bg-gray-900 font-sans min-h-screen text-[#0F2532] dark:text-gray-100">
+
+  <!-- Navbar Component -->
+  <app-navbar current="cajas" user-name="Nerick"></app-navbar>
 
   <!-- Contenedor principal -->
-  <div class="bg-white shadow-md m-6 p-6 rounded-md">
+  <div class="mx-6 my-6">
 
-    <!-- Tabs -->
-    <div class="flex items-center space-x-6 border-b border-gray-300 pb-2 mb-4 text-gray-600 font-semibold">
-      <button class="border-b-4 border-sky-500 text-sky-600 pb-1">Cajas abiertas</button>
-      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1">Cajas cerradas</button>
-      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1">Mi caja</button>
-      <button class="border-b-4 border-transparent hover:border-sky-400 hover:text-sky-500 pb-1 flex items-center">
-        Buscar caja
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    <!-- Header con estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <!-- Título y botón -->
+      <div
+        class="col-span-1 md:col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-[#0F2532] dark:text-white">Gestión de Cajas</h1>
+          <p class="text-[#0F2532]/60 dark:text-gray-400 mt-1">Control y seguimiento de cajas registradoras</p>
+        </div>
+      </div>
 
-      <div class="ml-auto">
-        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded-full text-sm flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      <!-- Stat Card 1 -->
+      <div class="stat-card animate-slide-in">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-white/80 text-sm font-medium">Cajas Abiertas</p>
+            <p class="text-4xl font-bold mt-2" id="statCajasAbiertas">0</p>
+          </div>
+          <svg class="w-12 h-12 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
           </svg>
-          Abrir caja
-        </button>
+        </div>
+      </div>
+
+      <!-- Stat Card 2 -->
+      <div class="stat-card animate-slide-in" style="animation-delay: 0.1s;">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-white/80 text-sm font-medium">Total del Día</p>
+            <p class="text-4xl font-bold mt-2" id="statTotalDia">$0</p>
+          </div>
+          <svg class="w-12 h-12 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
       </div>
     </div>
 
-    <!-- Tabla -->
-    <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-200 text-sm text-gray-700">
-        <thead class="bg-sky-600 text-white">
-          <tr>
-            <th class="px-4 py-2 text-left font-semibold">Usuario</th>
-            <th class="px-4 py-2 text-left font-semibold">Apertura</th>
-            <th class="px-4 py-2 text-left font-semibold">Detalle</th>
-            <th class="px-4 py-2 text-left font-semibold">Saldo Anterior</th>
-            <th class="px-4 py-2 text-left font-semibold">Saldo Interior</th>
-            <th class="px-4 py-2 text-left font-semibold">Acumulado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="border-t">
-            <td class="px-4 py-2">EVA MARITZA SOSA TAPIA</td>
-            <td class="px-4 py-2">30 de Mayo</td>
-            <td class="px-4 py-2 text-sky-600 hover:underline cursor-pointer">Ver detalle</td>
-            <td class="px-4 py-2">$0</td>
-            <td class="px-4 py-2">$0</td>
-            <td class="px-4 py-2 font-semibold">$111,200</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <!-- Tabs y contenido -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-2xl overflow-hidden">
 
+      <!-- Tabs -->
+      <div
+        class="flex items-center justify-between border-b border-[#E6E6E6] dark:border-gray-700 bg-[#F8F7F7] dark:bg-gray-900 px-6">
+        <div class="flex items-center space-x-2">
+          <button class="tab-button active" data-tab="abiertas">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+            </svg>
+            Cajas Abiertas
+          </button>
+          <button class="tab-button" data-tab="cerradas">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Cajas Cerradas
+          </button>
+          <button class="tab-button" data-tab="mi-caja">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            Mi Caja
+          </button>
+        </div>
+
+        <div class="flex items-center gap-3 py-3">
+          <!-- Buscador -->
+          <div class="relative">
+            <input type="text" id="searchCaja" placeholder="Buscar caja..."
+              class="pl-10 pr-4 py-2 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+            <svg class="w-5 h-5 text-[#0F2532]/40 dark:text-gray-400 absolute left-3 top-2.5" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <!-- Botón Abrir Caja -->
+          <button id="btnAbrirCaja" class="action-button flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Abrir Caja
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenido de tabs -->
+      <div class="p-6 dark:bg-gray-800 bg-white rounded-2xl shadow-sm ">
+        <div id="tabContent">
+          <!-- El contenido se genera dinámicamente -->
+        </div>
+      </div>
+
+    </div>
   </div>
+
+  <!-- Script principal -->
+  <script src="../scripts/cajas.js" type="module"></script>
+
 </body>
+
 </html>

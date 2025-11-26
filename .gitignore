@@ -22,6 +22,7 @@ Thumbs.db
 /dist/
 *.asar
 *.asar.pack
+electron-bin/
 
 # Configuración local de IDE
 .vscode/

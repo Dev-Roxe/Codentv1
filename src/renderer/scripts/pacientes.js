@@ -49,19 +49,18 @@ const isRequired = (key) => !!(State.fieldConfig[key]?.required);
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
-    
+
     const toast = document.createElement('div');
-    toast.className = `animate-slide-up px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 ${
-        type === 'success' ? 'bg-green-600 text-white' :
+    toast.className = `animate-slide-up px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 ${type === 'success' ? 'bg-green-600 text-white' :
         type === 'error' ? 'bg-red-600 text-white' :
-        type === 'warning' ? 'bg-yellow-500 text-white' :
-        'bg-[#1D5D69] text-white'
-    }`;
-    
+            type === 'warning' ? 'bg-yellow-500 text-white' :
+                'bg-[#1D5D69] text-white'
+        }`;
+
     const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
     toast.innerHTML = `<span class="text-lg">${icons[type]}</span><span>${message}</span>`;
     container.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(10px)';
@@ -83,7 +82,7 @@ function getPatientStatus(patient) {
     const created = new Date(patient.created_at || patient.fecha_registro || Date.now());
     const now = new Date();
     const daysSinceCreated = Math.floor((now - created) / (1000 * 60 * 60 * 24));
-    
+
     if (daysSinceCreated <= 7) return { label: 'Nuevo', class: 'bg-purple-100 text-purple-700' };
     // TODO: Check last appointment date for active/inactive status
     return { label: 'Activo', class: 'bg-green-100 text-green-700' };
@@ -111,10 +110,10 @@ function loadConfig(cb) {
                 if (!err && row?.valor) {
                     try {
                         const parsed = JSON.parse(row.valor);
-                        State.fieldConfig = Array.isArray(parsed) 
+                        State.fieldConfig = Array.isArray(parsed)
                             ? parsed.reduce((acc, k) => ({ ...acc, [k]: { show: true, required: true } }), {})
                             : parsed;
-                    } catch {}
+                    } catch { }
                 }
                 applyDefaults(); cb?.();
             });
@@ -126,7 +125,7 @@ function loadConfig(cb) {
                         State.fieldConfig = Array.isArray(parsed)
                             ? parsed.reduce((acc, k) => ({ ...acc, [k]: { show: true, required: true } }), {})
                             : parsed;
-                    } catch {}
+                    } catch { }
                 }
                 applyDefaults(); cb?.();
             }).catch(() => { applyDefaults(); cb?.(); });
@@ -190,7 +189,7 @@ function applyFilters() {
     // Search
     if (State.searchQuery) {
         const q = State.searchQuery.toLowerCase();
-        result = result.filter(p => 
+        result = result.filter(p =>
             p.nombre?.toLowerCase().includes(q) ||
             p.apellido?.toLowerCase().includes(q) ||
             p.email?.toLowerCase().includes(q) ||
@@ -204,7 +203,7 @@ function applyFilters() {
         result = result.filter(p => {
             const created = new Date(p.created_at || Date.now());
             const days = Math.floor((now - created) / (1000 * 60 * 60 * 24));
-            
+
             if (State.filterStatus === 'new') return days <= 7;
             if (State.filterStatus === 'inactive') return days > 180;
             if (State.filterStatus === 'active') return days <= 180;
@@ -224,7 +223,7 @@ function applyFilters() {
 
     State.filtered = result;
     State.currentPage = 1;
-    
+
     updateStats();
     renderPatients();
     updatePagination();
@@ -236,12 +235,12 @@ function applyFilters() {
 function updateStats() {
     const total = State.patients.length;
     const now = new Date();
-    
+
     let active = 0, newPatients = 0, pending = 0;
     State.patients.forEach(p => {
         const created = new Date(p.created_at || Date.now());
         const days = Math.floor((now - created) / (1000 * 60 * 60 * 24));
-        
+
         if (days <= 7) newPatients++;
         if (days <= 30) active++;
         if (days > 180) pending++;
@@ -267,7 +266,7 @@ function renderPatients() {
 
     // Update results info
     if (State.filtered.length === 0) {
-        resultsInfo.textContent = State.searchQuery || State.filterStatus 
+        resultsInfo.textContent = State.searchQuery || State.filterStatus
             ? 'No se encontraron resultados'
             : 'No hay pacientes registrados';
     } else {
@@ -309,30 +308,30 @@ function renderTableView(tbody, patients) {
     tbody.innerHTML = patients.map((p, i) => {
         const status = getPatientStatus(p);
         const initials = getInitials(p.nombre, p.apellido);
-        
+
         return `
-            <tr class="patient-row hover:bg-[#F8F7F7] cursor-pointer transition-all duration-200" data-id="${p.id}" style="animation-delay: ${i * 50}ms">
+            <tr class="patient-row hover:bg-[#F8F7F7] dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 border-b border-[#E6E6E6] dark:border-gray-700 last:border-0" data-id="${p.id}" style="animation-delay: ${i * 50}ms">
                 <td class="py-4 px-6">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                        <div class="w-10 h-10 bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-sm">
                             ${initials}
                         </div>
                         <div>
-                            <p class="font-semibold text-[#0F2532]">${p.nombre} ${p.apellido}</p>
-                            <p class="text-xs text-[#0F2532]/50">ID: ${p.id}</p>
+                            <p class="font-semibold text-[#0F2532] dark:text-gray-100">${p.nombre} ${p.apellido}</p>
+                            <p class="text-xs text-[#0F2532]/50 dark:text-gray-500">ID: ${p.id}</p>
                         </div>
                     </div>
                 </td>
                 <td class="py-4 px-6">
                     <div class="space-y-1">
-                        <p class="text-sm text-[#0F2532] flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#0F2532]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <p class="text-sm text-[#0F2532] dark:text-gray-300 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
                             ${p.email || '-'}
                         </p>
-                        <p class="text-sm text-[#0F2532]/70 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-[#0F2532]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <p class="text-sm text-[#0F2532]/70 dark:text-gray-400 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                             </svg>
                             ${p.telefono || '-'}
@@ -340,26 +339,26 @@ function renderTableView(tbody, patients) {
                     </div>
                 </td>
                 <td class="py-4 px-6">
-                    <p class="text-sm text-[#0F2532]">${formatDate(p.created_at)}</p>
+                    <p class="text-sm text-[#0F2532] dark:text-gray-300">${formatDate(p.created_at)}</p>
                 </td>
                 <td class="py-4 px-6">
-                    <span class="px-3 py-1 ${status.class} rounded-full text-xs font-semibold">${status.label}</span>
+                    <span class="px-3 py-1 ${status.class} rounded-full text-xs font-semibold border border-transparent dark:border-white/10 shadow-sm">${status.label}</span>
                 </td>
                 <td class="py-4 px-6">
                     <div class="flex items-center justify-center gap-2">
-                        <button class="action-view p-2 hover:bg-[#8BCFDD]/20 rounded-lg transition" title="Ver ficha">
-                            <svg class="w-5 h-5 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="action-view p-2 hover:bg-[#8BCFDD]/20 dark:hover:bg-[#8BCFDD]/10 rounded-lg transition" title="Ver ficha">
+                            <svg class="w-5 h-5 text-[#4EABBE] dark:text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                             </svg>
                         </button>
-                        <button class="action-edit p-2 hover:bg-yellow-100 rounded-lg transition" title="Editar">
-                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="action-edit p-2 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 rounded-lg transition" title="Editar">
+                            <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                             </svg>
                         </button>
-                        <button class="action-delete p-2 hover:bg-red-100 rounded-lg transition" title="Eliminar">
-                            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="action-delete p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition" title="Eliminar">
+                            <svg class="w-5 h-5 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
                         </button>
@@ -384,7 +383,13 @@ function renderTableView(tbody, patients) {
             deletePatient(id);
         });
         row.addEventListener('click', () => {
-            window.location.href = `ficha_clinica.html?id=${id}`;
+            console.log('Navigating to patient:', id);
+            if (id) {
+                window.location.assign(`ficha_clinica.html?id=${id}`);
+            } else {
+                console.error('Patient ID is missing');
+                showToast('Error: ID de paciente no válido', 'error');
+            }
         });
     });
 }
@@ -393,40 +398,47 @@ function renderGridView(container, patients) {
     container.innerHTML = patients.map(p => {
         const status = getPatientStatus(p);
         const initials = getInitials(p.nombre, p.apellido);
-        
+
         return `
-            <div class="patient-card bg-white rounded-xl border border-[#D9D9D9] p-5 hover:shadow-lg hover:border-[#4EABBE] transition-all duration-300 cursor-pointer" data-id="${p.id}">
+            <div class="patient-card bg-white dark:bg-gray-800 rounded-xl border border-[#D9D9D9] dark:border-gray-700 p-5 hover:shadow-lg hover:border-[#4EABBE] dark:hover:border-[#4EABBE] transition-all duration-300 cursor-pointer" data-id="${p.id}">
                 <div class="flex items-start justify-between mb-4">
-                    <div class="w-14 h-14 bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    <div class="w-14 h-14 bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md">
                         ${initials}
                     </div>
-                    <span class="px-2.5 py-1 ${status.class} rounded-full text-xs font-semibold">${status.label}</span>
+                    <span class="px-2.5 py-1 ${status.class} rounded-full text-xs font-semibold border border-transparent dark:border-white/10">${status.label}</span>
                 </div>
-                <h3 class="font-semibold text-[#0F2532] text-lg truncate">${p.nombre} ${p.apellido}</h3>
+                <h3 class="font-semibold text-[#0F2532] dark:text-white text-lg truncate">${p.nombre} ${p.apellido}</h3>
                 <div class="mt-3 space-y-2">
-                    <p class="text-sm text-[#0F2532]/60 flex items-center gap-2 truncate">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 flex items-center gap-2 truncate">
+                        <svg class="w-4 h-4 flex-shrink-0 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8"/>
                         </svg>
                         ${p.email || 'Sin email'}
                     </p>
-                    <p class="text-sm text-[#0F2532]/60 flex items-center gap-2">
-                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                         </svg>
                         ${p.telefono || 'Sin teléfono'}
                     </p>
                 </div>
-                <div class="mt-4 pt-4 border-t border-[#E6E6E6] flex items-center justify-between">
-                    <span class="text-xs text-[#0F2532]/40">${formatDate(p.created_at)}</span>
-                    <button class="text-[#4EABBE] text-sm font-medium hover:underline">Ver ficha →</button>
+                <div class="mt-4 pt-4 border-t border-[#E6E6E6] dark:border-gray-700 flex items-center justify-between">
+                    <span class="text-xs text-[#0F2532]/40 dark:text-gray-500">${formatDate(p.created_at)}</span>
+                    <button class="text-[#4EABBE] dark:text-[#4EABBE] text-sm font-medium hover:underline">Ver ficha →</button>
                 </div>
             </div>`;
     }).join('');
 
     container.querySelectorAll('.patient-card').forEach(card => {
         card.addEventListener('click', () => {
-            window.location.href = `ficha_clinica.html?id=${card.dataset.id}`;
+            const id = card.dataset.id;
+            console.log('Navigating to patient (grid):', id);
+            if (id) {
+                window.location.assign(`ficha_clinica.html?id=${id}`);
+            } else {
+                console.error('Patient ID is missing');
+                showToast('Error: ID de paciente no válido', 'error');
+            }
         });
     });
 }
@@ -506,13 +518,13 @@ function updateClearFiltersVisibility() {
 
 function setViewMode(mode) {
     State.viewMode = mode;
-    
+
     document.getElementById('viewList').className = `p-2 rounded-lg transition ${mode === 'list' ? 'bg-[#8BCFDD]/20' : 'hover:bg-[#F8F7F7]'}`;
     document.getElementById('viewGrid').className = `p-2 rounded-lg transition ${mode === 'grid' ? 'bg-[#8BCFDD]/20' : 'hover:bg-[#F8F7F7]'}`;
-    
+
     document.getElementById('viewList').querySelector('svg').className = `w-5 h-5 ${mode === 'list' ? 'text-[#4EABBE]' : 'text-[#0F2532]/40'}`;
     document.getElementById('viewGrid').querySelector('svg').className = `w-5 h-5 ${mode === 'grid' ? 'text-[#4EABBE]' : 'text-[#0F2532]/40'}`;
-    
+
     renderPatients();
 }
 
@@ -529,7 +541,7 @@ function debounce(fn, delay) {
 ============================================================================ */
 function showNewPatientModal() {
     loadConfig(() => {
-        const visibleFields = masterFields.filter(f => 
+        const visibleFields = masterFields.filter(f =>
             f.key === 'nombre' || f.key === 'apellido' || isShown(f.key)
         );
 
@@ -537,7 +549,7 @@ function showNewPatientModal() {
             const req = isRequired(f.key);
             const reqAttr = req ? 'required' : '';
             const reqMark = req ? '<span class="text-red-500">*</span>' : '';
-            
+
             if (f.type === 'textarea') {
                 return `
                     <div class="md:col-span-2">
@@ -547,7 +559,7 @@ function showNewPatientModal() {
                             placeholder="Escribe aquí..."></textarea>
                     </div>`;
             }
-            
+
             if (f.type === 'select') {
                 const opts = (f.options || []).map(o => `<option value="${o}">${o || 'Seleccionar...'}</option>`).join('');
                 return `
@@ -558,7 +570,7 @@ function showNewPatientModal() {
                         </select>
                     </div>`;
             }
-            
+
             return `
                 <div>
                     <label class="block text-sm font-medium text-[#0F2532] mb-2">${f.label} ${reqMark}</label>
@@ -624,11 +636,11 @@ function showConfigModal() {
         const modal = document.createElement('div');
         modal.id = 'config-modal';
         modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in';
-        
+
         const fieldsHtml = masterFields.map(f => {
             const cfg = State.fieldConfig[f.key] || { show: false, required: false };
             const isCore = f.key === 'nombre' || f.key === 'apellido';
-            
+
             return `
                 <div class="field-config-row flex items-center justify-between p-3 rounded-lg border border-[#E6E6E6] hover:border-[#4EABBE] transition" data-key="${f.key}">
                     <span class="font-medium text-[#0F2532]">${f.label}</span>
@@ -694,7 +706,7 @@ function showConfigModal() {
                 const required = modal.querySelector(`input[name="req-${f.key}"]`)?.checked || false;
                 newConfig[f.key] = { show, required };
             });
-            
+
             saveFieldConfig(newConfig, (err) => {
                 if (err) {
                     showToast('Error al guardar configuración', 'error');
@@ -722,7 +734,7 @@ function savePatient(form) {
     masterFields.forEach(f => {
         const el = form[f.key];
         const val = el?.value?.trim() || '';
-        
+
         if (f.mapTo && f.mapTo !== 'meta') {
             core[f.mapTo] = val || null;
         } else if (f.mapTo === 'meta' && val) {
@@ -735,7 +747,7 @@ function savePatient(form) {
         return;
     }
 
-    const sql = `INSERT INTO pacientes (nombre, apellido, telefono, email, direccion, fecha_nacimiento, meta, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
+    const sql = `INSERT INTO pacientes(nombre, apellido, telefono, email, direccion, fecha_nacimiento, meta, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
     const params = [core.nombre, core.apellido, core.telefono, core.email, core.direccion, core.fecha_nacimiento, JSON.stringify(meta)];
 
     try {
@@ -780,8 +792,8 @@ function deletePatient(id) {
         return;
     }
 
-    const sql = `DELETE FROM pacientes WHERE id = ?`;
-    
+    const sql = `DELETE FROM pacientes WHERE id = ? `;
+
     try {
         const onSuccess = () => {
             showToast('Paciente eliminado', 'success');
@@ -820,12 +832,12 @@ function exportPatients() {
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
+
     const a = document.createElement('a');
     a.href = url;
     a.download = `pacientes_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    
+
     URL.revokeObjectURL(url);
     showToast('Archivo CSV descargado', 'success');
 }

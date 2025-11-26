@@ -41,7 +41,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- Estado ----------
   const sesion = safeParseJSON(localStorage.getItem('sesionActual')) || {};
-  const userId = sesion.id || null;
+  let userId = sesion.id || null;
+
+  console.log('[perfil] Sesión cargada:', sesion);
+  console.log('[perfil] userId:', userId);
 
   const state = {
     userId,
@@ -167,8 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- Lógica principal ----------
   const loadProfile = async () => {
+    userId = sesion.id || null;
     if (!userId) {
       console.warn('[perfil] No hay sesión activa (sesionActual.id).');
+      console.warn('[perfil] sesion:', sesion);
+      alert('No hay sesión activa. Por favor inicia sesión nuevamente.');
       return;
     }
 
@@ -180,8 +186,16 @@ document.addEventListener('DOMContentLoaded', () => {
       let perfil = null;
 
       if (window.api?.getUserProfile) {
+        console.log('[perfil] Llamando a window.api.getUserProfile...');
         perfil = await window.api.getUserProfile({ id: userId });
+        console.log('[perfil] Respuesta recibida:', perfil);
+        if (!perfil?.success && !perfil?.id) {
+          console.error('[perfil] Error: respuesta vacía o error:', perfil);
+          alert('No se pudo cargar el perfil. Intenta nuevamente.');
+          return;
+        }
       } else {
+        console.warn('[perfil] window.api.getUserProfile no disponible, usando fallback');
         // Fallback solo con lo que tenemos en localStorage
         perfil = {
           id: userId,

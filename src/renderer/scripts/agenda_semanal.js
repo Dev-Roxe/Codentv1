@@ -18,43 +18,9 @@ export async function initSemanal(container, referenceDate) {
         document.head.appendChild(style);
     }
 
-    // Cargar plantilla siempre si no tiene el gridContainer
-    let needsLoad = !container.querySelector('#gridContainer');
-    
-    if (needsLoad) {
-        console.log('Cargando plantilla semanal desde:', new URL('../views/Agendas/semanal.html', import.meta.url).href);
-        try {
-            const resp = await fetch(new URL('../views/Agendas/semanal.html', import.meta.url));
-            
-            if (!resp.ok) {
-                throw new Error(`HTTP error! status: ${resp.status}`);
-            }
-            
-            const html = await resp.text();
-            console.log('Plantilla cargada, longitud:', html.length);
-            
-            // Limpiar container completamente
-            container.innerHTML = '';
-            
-            // Insertar nuevo HTML
-            container.innerHTML = html;
-            
-            // Esperar a que el DOM se actualice
-            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-            
-            console.log('DOM actualizado, verificando elementos...');
-        } catch (err) {
-            console.error('Error cargando plantilla semanal:', err);
-            container.innerHTML = `
-                <div class="p-8 text-center">
-                    <div class="text-red-500 mb-4">Error cargando la vista semanal</div>
-                    <div class="text-sm text-gray-600">${err.message}</div>
-                    <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">Recargar página</button>
-                </div>
-            `;
-            return;
-        }
-    }
+    // La plantilla HTML ya fue cargada por agenda.js
+    // Solo esperamos a que el DOM esté listo
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     // Estado
     let refDate = referenceDate ? new Date(referenceDate) : new Date();
@@ -87,7 +53,7 @@ export async function initSemanal(container, referenceDate) {
     // Helpers
     const toSQLDate = (d) => d.toISOString().slice(0, 10);
     const formatTime = (d) => d.toTimeString().slice(0, 5);
-    
+
     function startOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay();
@@ -104,7 +70,7 @@ export async function initSemanal(container, referenceDate) {
     // Cargar dentistas
     async function loadDentists() {
         if (!dentistSelect) return;
-        
+
         try {
             dentists = await window.api.db.all('SELECT id, nombre, apellido FROM usuarios WHERE rol = "dentista" ORDER BY nombre');
             dentistSelect.innerHTML = '<option value="">Todos los dentistas</option>' +
@@ -130,7 +96,7 @@ export async function initSemanal(container, referenceDate) {
     async function renderWeek() {
         const weekStart = startOfWeek(refDate);
         const days = [];
-        
+
         for (let i = 0; i < 7; i++) {
             const d = new Date(weekStart);
             d.setDate(weekStart.getDate() + i);
@@ -153,7 +119,7 @@ export async function initSemanal(container, referenceDate) {
         // Cargar citas de la semana
         const startSQL = days[0].date;
         const endSQL = days[6].date;
-        
+
         try {
             let sql = `
                 SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado,
@@ -164,7 +130,7 @@ export async function initSemanal(container, referenceDate) {
                 ORDER BY c.fecha_hora
             `;
             const params = [startSQL, endSQL];
-            
+
             appointments = await window.api.db.all(sql, params);
         } catch (err) {
             console.error('Error cargando citas:', err);
@@ -180,29 +146,20 @@ export async function initSemanal(container, referenceDate) {
 
         // Renderizar botones de días
         daysContainer.innerHTML = days.map((d, idx) => `
-            <button class="day-btn ${d.isToday ? 'today' : ''} ${idx === 0 ? 'active' : ''} ${d.isWeekend ? 'opacity-70' : ''}" 
+            <button class="day-btn ${d.isToday ? 'today' : ''} ${idx === 0 ? 'active' : ''} ${d.isWeekend ? 'opacity-70' : ''} dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-colors" 
                     data-date="${d.date}" data-index="${idx}">
-                <span class="day-name">${d.name}</span>
+                <span class="day-name dark:text-gray-400">${d.name}</span>
                 <span class="day-number">${d.day}</span>
-                ${appointmentsByDay[d.date] ? `<span class="appointments-count">${appointmentsByDay[d.date]} citas</span>` : ''}
+                ${appointmentsByDay[d.date] ? `<span class="appointments-count dark:bg-teal-900 dark:text-teal-100">${appointmentsByDay[d.date]} citas</span>` : ''}
             </button>
         `).join('');
 
         // Event listeners para días
         daysContainer.querySelectorAll('.day-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                // Cargar vista diaria para ese día
-                const { initDiaria } = await import('./agenda_diaria.js');
-                const agendaContainer = container.closest('#agendaContainer') || document.getElementById('agendaContainer');
-                if (agendaContainer) {
-                    try {
-                        const resp = await fetch(new URL('../views/Agendas/diaria.html', import.meta.url));
-                        agendaContainer.innerHTML = await resp.text();
-                        await initDiaria(agendaContainer, btn.dataset.date);
-                    } catch (err) {
-                        console.error('Error cargando vista diaria:', err);
-                    }
-                }
+            btn.addEventListener('click', () => {
+                daysContainer.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                console.log('Día seleccionado:', btn.dataset.date);
             });
         });
 
@@ -213,7 +170,7 @@ export async function initSemanal(container, referenceDate) {
     // Renderizar grilla de horarios
     function renderGrid(days) {
         const timeSlots = generateTimeSlots();
-        
+
         // Mapear citas por fecha y hora
         const appointmentsMap = {};
         appointments.forEach(apt => {
@@ -230,15 +187,15 @@ export async function initSemanal(container, referenceDate) {
 
         // Header de días (vacío + 7 días)
         const headerEmpty = document.createElement('div');
-        headerEmpty.className = 'bg-[#F8F7F7] border-r border-b border-[#E6E6E6] sticky top-0 left-0 z-30';
+        headerEmpty.className = 'bg-[#F8F7F7] dark:bg-gray-900 border-r border-b border-[#E6E6E6] dark:border-gray-700 sticky top-0 left-0 z-30 transition-colors';
         grid.appendChild(headerEmpty);
 
         days.forEach(d => {
             const dayHeader = document.createElement('div');
-            dayHeader.className = `bg-[#F8F7F7] border-r border-b border-[#E6E6E6] p-3 text-center sticky top-0 z-20 ${d.isToday ? 'bg-[#8BCFDD]/20' : ''} ${d.isWeekend ? 'bg-gray-100' : ''}`;
+            dayHeader.className = `bg-[#F8F7F7] dark:bg-gray-900 border-r border-b border-[#E6E6E6] dark:border-gray-700 p-3 text-center sticky top-0 z-20 transition-colors ${d.isToday ? 'bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10' : ''} ${d.isWeekend ? 'bg-gray-100 dark:bg-gray-800' : ''}`;
             dayHeader.innerHTML = `
-                <div class="text-xs font-medium text-[#0F2532]/60 uppercase">${d.name}</div>
-                <div class="text-lg font-bold text-[#1D5D69] ${d.isToday ? 'w-8 h-8 bg-[#4EABBE] text-white rounded-full flex items-center justify-center mx-auto' : ''}">${d.day}</div>
+                <div class="text-xs font-medium text-[#0F2532]/60 dark:text-gray-400 uppercase">${d.name}</div>
+                <div class="text-lg font-bold text-[#1D5D69] dark:text-[#4EABBE] ${d.isToday ? 'w-8 h-8 bg-[#4EABBE] text-white rounded-full flex items-center justify-center mx-auto' : ''}">${d.day}</div>
             `;
             grid.appendChild(dayHeader);
         });
@@ -247,14 +204,14 @@ export async function initSemanal(container, referenceDate) {
         timeSlots.forEach(time => {
             // Celda de hora
             const timeCell = document.createElement('div');
-            timeCell.className = 'time-cell';
+            timeCell.className = 'time-cell bg-[#F9FAFB] dark:bg-gray-900 border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors';
             timeCell.textContent = time;
             grid.appendChild(timeCell);
 
             // Celdas por día
             days.forEach(day => {
                 const cell = document.createElement('div');
-                cell.className = `grid-cell ${day.isWeekend ? 'bg-gray-50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5' : ''}`;
+                cell.className = `grid-cell border-r border-b border-[#F3F4F6] dark:border-gray-700 transition-colors ${day.isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5 dark:bg-[#8BCFDD]/5' : ''}`;
                 cell.dataset.date = day.date;
                 cell.dataset.time = time;
 
@@ -265,15 +222,15 @@ export async function initSemanal(container, referenceDate) {
                     cell.classList.add('has-appointment');
                     const status = apt.estado || 'pendiente';
                     cell.innerHTML = `
-                        <div class="appointment-block status-${status}" data-apt-id="${apt.id}">
-                            <div class="font-medium text-[#0F2532] truncate">${apt.nombre} ${apt.apellido}</div>
-                            <div class="text-[#0F2532]/60 text-xs truncate">${apt.motivo || 'Sin motivo'}</div>
+                        <div class="appointment-block status-${status} shadow-sm hover:shadow-md transition-all" data-apt-id="${apt.id}">
+                            <div class="font-medium text-white truncate">${apt.nombre} ${apt.apellido}</div>
+                            <div class="text-white/80 text-xs truncate">${apt.motivo || 'Sin motivo'}</div>
                         </div>
                     `;
                 } else if (!day.isWeekend) {
                     cell.innerHTML = `
                         <div class="add-appointment-btn">
-                            <button title="Agregar cita">
+                            <button title="Agregar cita" class="hover:scale-110 transition-transform">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
@@ -322,30 +279,30 @@ export async function initSemanal(container, referenceDate) {
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
         overlay.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" style="animation: slideUp 0.3s ease">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700" style="animation: slideUp 0.3s ease">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">Nueva Cita</h3>
                     <p class="text-white/70 text-sm mt-1">${dateStr} a las ${timeStr}</p>
                 </div>
                 <form id="createAptFormWeekly" class="p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] mb-2">Paciente *</label>
-                        <select id="aptPatientW" required class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE]">
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Paciente *</label>
+                        <select id="aptPatientW" required class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
                             <option value="">Seleccionar...</option>
                             ${patients.map(p => `<option value="${p.id}">${p.nombre} ${p.apellido}</option>`).join('')}
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] mb-2">Dentista</label>
-                        <p class="text-sm text-[#0F2532]/60 italic">Campo no disponible en esta versión</p>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Dentista</label>
+                        <p class="text-sm text-[#0F2532]/60 dark:text-gray-500 italic">Campo no disponible en esta versión</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] mb-2">Motivo</label>
-                        <input type="text" id="aptReasonW" placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] rounded-xl"/>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Motivo</label>
+                        <input type="text" id="aptReasonW" placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
                     </div>
                     <div class="flex gap-3 pt-4">
-                        <button type="button" id="cancelModalW" class="flex-1 py-2.5 border border-[#D9D9D9] rounded-xl hover:bg-[#F8F7F7] font-medium">Cancelar</button>
-                        <button type="submit" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold">Crear</button>
+                        <button type="button" id="cancelModalW" class="flex-1 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-white font-medium transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold shadow-lg shadow-cyan-500/20 transition-all">Crear</button>
                     </div>
                 </form>
             </div>
@@ -384,23 +341,23 @@ export async function initSemanal(container, referenceDate) {
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
         overlay.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">${apt.nombre} ${apt.apellido}</h3>
                     <p class="text-white/70 text-sm mt-1">${new Date(apt.fecha_hora).toLocaleString('es-ES')}</p>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="flex justify-between">
-                        <span class="text-[#0F2532]/60">Estado</span>
-                        <span class="font-medium capitalize">${apt.estado || 'Pendiente'}</span>
+                        <span class="text-[#0F2532]/60 dark:text-gray-400">Estado</span>
+                        <span class="font-medium capitalize text-[#0F2532] dark:text-white">${apt.estado || 'Pendiente'}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-[#0F2532]/60">Motivo</span>
-                        <span class="font-medium">${apt.motivo || 'Sin especificar'}</span>
+                        <span class="text-[#0F2532]/60 dark:text-gray-400">Motivo</span>
+                        <span class="font-medium text-[#0F2532] dark:text-white">${apt.motivo || 'Sin especificar'}</span>
                     </div>
                     <div class="flex gap-3 pt-4">
-                        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-2.5 border border-[#D9D9D9] rounded-xl hover:bg-[#F8F7F7] font-medium">Cerrar</button>
-                        <button onclick="window.location.href='ficha_clinica.html?id=${apt.paciente_id}'" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold">Ver Paciente</button>
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-white font-medium transition-colors">Cerrar</button>
+                        <button onclick="window.location.href='ficha_clinica.html?id=${apt.paciente_id}'" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold shadow-lg shadow-cyan-500/20 transition-all">Ver Paciente</button>
                     </div>
                 </div>
             </div>
