@@ -1,14 +1,25 @@
 // Importar componentes
 import '../components/navbar-component.js';
 
+// Inicializar dark mode desde localStorage
+const initializeDarkMode = () => {
+    const isDark = localStorage.getItem('darkMode') === '1';
+    if (isDark) {
+        document.documentElement.classList.add('dark');
+    }
+};
+
 // Código de inicialización global
 document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar dark mode
+    initializeDarkMode();
+
     // Manejo global de eventos del navbar
     document.addEventListener('navigate', (e) => {
         const page = e.detail.page;
         const openMenu = !!e.detail.openMenu;
         // Manejar navegación según la página
-        switch(page) {
+        switch (page) {
             case 'agenda_diaria':
             case 'agenda_semanal':
                 window.location.href = '../views/agenda.html';
@@ -20,13 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '../views/cajas.html';
                 break;
             case 'administracion':
-                // Si se solicita abrir el menú desde el navbar, guardamos una señal
-                // en sessionStorage y luego navegamos; la página objetivo leerá
-                // la señal y abrirá el dropdown.
                 if (openMenu) {
-                    try { sessionStorage.setItem('openAdminMenu', '1'); } catch (e) {}
+                    try { sessionStorage.setItem('openAdminMenu', '1'); } catch (e) { }
                 }
                 window.location.href = '../views/administracion.html';
+                break;
+            case 'inventario':
+                window.location.href = '../views/inventario.html';
                 break;
             case 'reportes':
                 window.location.href = '../views/reportes.html';

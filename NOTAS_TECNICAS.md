@@ -1,6 +1,6 @@
-# 🛠️ NOTAS TÉCNICAS - SISTEMA DE ENVÍO MASIVO
+# NOTAS TÉCNICAS - SISTEMA DE ENVÍO MASIVO
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────┐

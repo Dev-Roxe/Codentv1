@@ -2,21 +2,19 @@
 <html lang="es">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mi Perfil - Sonalía</title>
-
-  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Inicialización global (navbar, navegación, etc.) -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
   <script src="../scripts/init.js" type="module"></script>
-
-  <!-- Lógica específica del perfil -->
-  <script src="../scripts/perfil.js" type="module"></script>
 </head>
 
-<body class="bg-[#F8F7F7] text-[#0F2532]">
+<body class="bg-[#F8F7F7] dark:bg-gray-900 font-sans text-[#0F2532] dark:text-gray-100">
 
   <!-- Navbar Component -->
   <app-navbar current="perfil"></app-navbar>
@@ -28,13 +26,13 @@
       <!-- Header -->
       <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+          <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
             Cuenta
           </p>
-          <h1 class="text-2xl md:text-3xl font-bold text-[#1D5D69]">
+          <h1 class="text-2xl md:text-3xl font-bold text-[#1D5D69] dark:text-white">
             Mi perfil
           </h1>
-          <p class="mt-1 text-sm text-gray-500">
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Administra tus datos personales, foto de perfil y preferencias de la cuenta.
           </p>
         </div>
@@ -53,16 +51,16 @@
         <section class="space-y-6">
 
           <!-- Card: Información personal -->
-          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1]">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5EEF1]">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#E5EEF1] dark:border-gray-700">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-[#E5EEF1] dark:border-gray-700">
               <div>
-                <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+                <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
                   Configuración
                 </p>
-                <h2 class="text-xl font-semibold text-[#1D5D69]">
+                <h2 class="text-xl font-semibold text-[#1D5D69] dark:text-white">
                   Información personal
                 </h2>
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
                   Datos básicos de tu cuenta de usuario.
                 </p>
               </div>
@@ -81,43 +79,45 @@
               <form id="personal-info-form" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Nombre</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nombre</label>
                     <input id="nombre" type="text" disabled
-                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 transition" />
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Apellido</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Apellido</label>
                     <input id="apellido" type="text" disabled
-                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 transition" />
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label>
                     <input id="email" type="email" disabled
-                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 transition" />
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Teléfono</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Teléfono</label>
                     <input id="telefono" type="tel" disabled
-                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 transition" />
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Fecha de nacimiento</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Fecha de
+                      nacimiento</label>
                     <input id="nacimiento" type="date" disabled
-                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 transition" />
+                      class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 transition" />
                   </div>
                 </div>
 
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1.5">Dirección</label>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Dirección</label>
                   <textarea id="direccion" rows="3" disabled
-                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 resize-none transition"></textarea>
+                    class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1D5D69] focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-700 resize-none transition"></textarea>
                 </div>
 
-                <div id="form-actions" class="hidden flex-wrap gap-3 pt-4 border-t border-[#E5EEF1]">
+                <div id="form-actions"
+                  class="hidden flex-wrap gap-3 pt-4 border-t border-[#E5EEF1] dark:border-gray-700">
                   <button id="updateBtn" type="submit" class="inline-flex items-center justify-center gap-2 px-5 py-2.5
                     rounded-xl text-sm font-medium bg-[#4EABBE] text-white hover:bg-[#1D5D69] transition">
                     Guardar cambios
@@ -132,20 +132,20 @@
           </div>
 
           <!-- Card: Seguridad (placeholder, pero ya lista para más funciones) -->
-          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1]">
-            <div class="px-6 py-4 border-b border-[#E5EEF1]">
-              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#E5EEF1] dark:border-gray-700">
+            <div class="px-6 py-4 border-b border-[#E5EEF1] dark:border-gray-700">
+              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
                 Seguridad
               </p>
-              <h2 class="text-xl font-semibold text-[#1D5D69]">Acceso a la cuenta</h2>
-              <p class="text-xs text-gray-500">
+              <h2 class="text-xl font-semibold text-[#1D5D69] dark:text-white">Acceso a la cuenta</h2>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
                 Aquí podrás configurar cambio de contraseña y opciones avanzadas.
               </p>
             </div>
-            <div class="p-6 space-y-4 text-sm text-gray-600">
+            <div class="p-6 space-y-4 text-sm text-gray-600 dark:text-gray-400">
               <p>
                 Esta sección está preparada para que después conectes el flujo de
-                <span class="font-semibold text-[#1D5D69]">cambio de contraseña</span>
+                <span class="font-semibold text-[#1D5D69] dark:text-white">cambio de contraseña</span>
                 y otros ajustes de seguridad (2FA, bloqueo automático, etc.).
               </p>
               <button type="button"
@@ -162,7 +162,8 @@
         <aside class="space-y-6">
 
           <!-- Card: Resumen + foto de perfil -->
-          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1] p-6 flex flex-col items-center">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#E5EEF1] dark:border-gray-700 p-6 flex flex-col items-center">
             <div class="relative group">
               <!-- Imagen real -->
               <img id="profile-avatar" alt="Foto de perfil"
@@ -188,39 +189,40 @@
               <input id="photoInput" type="file" accept="image/*" class="hidden" />
             </div>
 
-            <h2 id="profile-name" class="mt-4 text-xl font-semibold text-[#1D5D69]">
+            <h2 id="profile-name" class="mt-4 text-xl font-semibold text-[#1D5D69] dark:text-white">
               Usuario
             </h2>
-            <p id="profile-role" class="text-sm text-gray-500">
+            <p id="profile-role" class="text-sm text-gray-500 dark:text-gray-400">
               Rol
             </p>
 
             <span id="user-status"
-              class="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 text-[11px] font-medium px-3 py-1">
+              class="mt-3 inline-flex items-center gap-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[11px] font-medium px-3 py-1">
               <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
               Activo
             </span>
 
-            <dl class="mt-6 w-full border-t border-[#E5EEF1] pt-4 space-y-3 text-sm">
+            <dl class="mt-6 w-full border-t border-[#E5EEF1] dark:border-gray-700 pt-4 space-y-3 text-sm">
               <div class="flex items-center justify-between">
-                <dt class="text-gray-500">Miembro desde</dt>
-                <dd id="member-since" class="font-medium text-[#0F2532]">—</dd>
+                <dt class="text-gray-500 dark:text-gray-400">Miembro desde</dt>
+                <dd id="member-since" class="font-medium text-[#0F2532] dark:text-white">—</dd>
               </div>
               <div class="flex items-center justify-between">
-                <dt class="text-gray-500">Último acceso</dt>
-                <dd id="last-login-text" class="font-medium text-[#0F2532]">—</dd>
+                <dt class="text-gray-500 dark:text-gray-400">Último acceso</dt>
+                <dd id="last-login-text" class="font-medium text-[#0F2532] dark:text-white">—</dd>
               </div>
             </dl>
           </div>
 
           <!-- Card: Preferencias -->
-          <div class="bg-white rounded-2xl shadow-sm border border-[#E5EEF1] p-6 space-y-4">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#E5EEF1] dark:border-gray-700 p-6 space-y-4">
             <div>
-              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD]">
+              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
                 Preferencias
               </p>
-              <h2 class="text-lg font-semibold text-[#1D5D69]">Experiencia de uso</h2>
-              <p class="mt-1 text-xs text-gray-500">
+              <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Experiencia de uso</h2>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Estas opciones se guardan localmente en este equipo.
               </p>
             </div>
@@ -228,8 +230,8 @@
             <div class="space-y-3 text-sm">
               <label class="flex items-center justify-between gap-3">
                 <div>
-                  <p class="font-medium text-[#0F2532]">Notificaciones por correo</p>
-                  <p class="text-xs text-gray-500">
+                  <p class="font-medium text-[#0F2532] dark:text-white">Notificaciones por correo</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
                     Recibir resúmenes de agenda y recordatorios importantes.
                   </p>
                 </div>
@@ -237,10 +239,11 @@
                   class="h-4 w-4 rounded border-gray-300 text-[#4EABBE] focus:ring-[#4EABBE]" />
               </label>
 
-              <label class="flex items-center justify-between gap-3 pt-2 border-t border-[#E5EEF1]">
+              <label
+                class="flex items-center justify-between gap-3 pt-2 border-t border-[#E5EEF1] dark:border-gray-700">
                 <div>
-                  <p class="font-medium text-[#0F2532]">Modo compacto</p>
-                  <p class="text-xs text-gray-500">
+                  <p class="font-medium text-[#0F2532] dark:text-white">Modo compacto</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
                     Reduce el espaciado en tablas y listados.
                   </p>
                 </div>
@@ -255,6 +258,8 @@
       </main>
     </div>
   </div>
+
+  <script src="../scripts/perfil.js"></script>
 </body>
 
 </html>

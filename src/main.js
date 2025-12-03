@@ -6,12 +6,12 @@ const bcrypt = require('bcryptjs');
 // -------------------------------------------------------------
 // DEV-ONLY: AUTO-RELOAD
 // -------------------------------------------------------------
-if (process.env.NODE_ENV !== 'production') {
-  require('electron-reload')(__dirname, {
-    electron: path.join(__dirname, '../node_modules/.bin/electron'),
-    hardResetMethod: 'exit',
-  });
-}
+// if (process.env.NODE_ENV !== 'production') {
+//   require('electron-reload')(__dirname, {
+//     electron: path.join(__dirname, '../node_modules/.bin/electron'),
+//     hardResetMethod: 'exit',
+//   });
+// }
 
 // -------------------------------------------------------------
 // MAIN WINDOW
@@ -131,7 +131,6 @@ ipcMain.handle('update-user-profile', async (event, userData) => {
       SET
         nombre = ?,
         apellido = ?,
-        apellidos = ?, 
         email = ?,
         telefono = ?,
         fecha_nacimiento = ?,
@@ -141,7 +140,6 @@ ipcMain.handle('update-user-profile', async (event, userData) => {
       `,
       [
         nombre || '',
-        apellido || '',
         apellido || '',
         email || '',
         telefono || '',

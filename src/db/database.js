@@ -118,6 +118,50 @@ db.serialize(() => {
         notas TEXT,
         FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
     )`);
+
+    // Tabla de Inventario / Medicamentos
+    db.run(`CREATE TABLE IF NOT EXISTS medicamentos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        descripcion TEXT,
+        stock INTEGER DEFAULT 0,
+        precio REAL DEFAULT 0.0,
+        fecha_vencimiento DATE,
+        lote TEXT,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Tabla de Padecimientos Default
+    db.run(`CREATE TABLE IF NOT EXISTS padecimientos_default (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT UNIQUE NOT NULL
+    )`, (err) => {
+        if (!err) {
+            // Insertar valores por defecto si la tabla está vacía
+            db.get("SELECT count(*) as count FROM padecimientos_default", (err, row) => {
+                if (!err && row.count === 0) {
+                    const defaults = ['Gingivitis', 'Periodontitis', 'Caries', 'Bruxismo', 'Sensibilidad Dental', 'Halitosis'];
+                    const stmt = db.prepare("INSERT INTO padecimientos_default (nombre) VALUES (?)");
+                    defaults.forEach(d => stmt.run(d));
+                    stmt.finalize();
+                }
+            });
+        }
+    });
+
+    // Asegurar columna `padecimientos` en `antecedentes_clinicos`
+    db.all("PRAGMA table_info(antecedentes_clinicos)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla antecedentes_clinicos', err);
+        const cols = (rows || []).map(r => r.name);
+        if (!cols.includes('padecimientos')) {
+            try {
+                db.run(`ALTER TABLE antecedentes_clinicos ADD COLUMN padecimientos TEXT`);
+                console.log('Added column to antecedentes_clinicos: padecimientos');
+            } catch (e) {
+                console.warn('Could not add column padecimientos to antecedentes_clinicos', e && e.message);
+            }
+        }
+    });
 });
 
 module.exports = db;

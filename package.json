@@ -13,7 +13,6 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
-    "electron": "^37.3.1",
     "googleapis": "^166.0.0",
     "nodemailer": "^7.0.10",
     "sqlite3": "^5.1.7",
@@ -22,6 +21,7 @@
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
+    "electron": "^33.4.11",
     "electron-reload": "^2.0.0-alpha.1",
     "postcss": "^8.5.6"
   }
