@@ -131,7 +131,6 @@ ipcMain.handle('update-user-profile', async (event, userData) => {
       SET
         nombre = ?,
         apellido = ?,
-        apellidos = ?, 
         email = ?,
         telefono = ?,
         fecha_nacimiento = ?,
@@ -141,7 +140,6 @@ ipcMain.handle('update-user-profile', async (event, userData) => {
       `,
       [
         nombre || '',
-        apellido || '',
         apellido || '',
         email || '',
         telefono || '',

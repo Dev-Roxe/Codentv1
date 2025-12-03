@@ -11,8 +11,11 @@ const ROUTES = {
   ficha_clinica: 'ficha_clinica.html',
   cajas: 'cajas.html',
   administracion: 'administracion.html',
+  inventario: 'inventario.html',
   reportes: 'reportes.html',
   crm: 'crm.html',
+  perfil: 'perfil.html',
+  configuracion: 'configuracion.html',
   login: 'login.html',
   register: 'register.html'
 };
@@ -45,7 +48,7 @@ export function getCurrentPage() {
  */
 export function initNavbarListeners(options = {}) {
   const navbar = document.querySelector('app-navbar');
-  
+
   if (!navbar) {
     console.error('Navbar component no encontrado');
     return;
@@ -54,13 +57,13 @@ export function initNavbarListeners(options = {}) {
   // Event listener para navegación
   navbar.addEventListener('navigate', (e) => {
     const { page } = e.detail;
-    
+
     // Callback personalizado antes de navegar
     if (options.beforeNavigate) {
       const shouldNavigate = options.beforeNavigate(page);
       if (shouldNavigate === false) return;
     }
-    
+
     navigateTo(page);
   });
 
@@ -76,7 +79,7 @@ export function initNavbarListeners(options = {}) {
   // Event listener para búsqueda en tiempo real
   navbar.addEventListener('search', (e) => {
     const { query } = e.detail;
-    
+
     if (options.onSearch) {
       options.onSearch(query);
     }
@@ -85,7 +88,7 @@ export function initNavbarListeners(options = {}) {
   // Event listener para búsqueda al presionar Enter
   navbar.addEventListener('searchSubmit', (e) => {
     const { query } = e.detail;
-    
+
     if (options.onSearchSubmit) {
       options.onSearchSubmit(query);
     }
@@ -99,7 +102,7 @@ export function initNavbarListeners(options = {}) {
 export function getUserName() {
   // Si tienes Electron IPC configurado para obtener usuario:
   // return window.electronAPI?.getUserName() || localStorage.getItem('userName') || 'Usuario';
-  
+
   return localStorage.getItem('userName') || 'Usuario';
 }
 
@@ -109,7 +112,7 @@ export function getUserName() {
  */
 export function setUserName(name) {
   localStorage.setItem('userName', name);
-  
+
   // Si usas Electron store:
   // window.electronAPI?.setUserName(name);
 }

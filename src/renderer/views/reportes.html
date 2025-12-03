@@ -6,53 +6,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reportes - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease',
+            'slide-up': 'slideUp 0.3s ease',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          },
+        },
+      },
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="../scripts/init.js" type="module"></script>
-  <style>
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease;
-    }
-
-    .animate-slide-up {
-      animation: slideUp 0.3s ease;
-    }
-
-    .report-card {
-      transition: all 0.3s ease;
-    }
-
-    .report-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .chart-container {
-      position: relative;
-      height: 300px;
-    }
-  </style>
 </head>
 
 <body class="bg-gray-50 dark:bg-gray-900 text-slate-900 dark:text-white transition-colors duration-300">
@@ -123,7 +101,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slide-up"
       style="animation-delay: 0.1s;">
       <div
-        class="report-card bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-xl p-6 text-white shadow-lg shadow-cyan-900/20">
+        class="transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-gray-900/50 bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] rounded-xl p-6 text-white shadow-lg shadow-cyan-900/20">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium opacity-90">Ingresos Totales</h3>
           <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -136,7 +114,7 @@
       </div>
 
       <div
-        class="report-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        class="transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-gray-900/50 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Citas Realizadas</h3>
           <svg class="w-8 h-8 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +128,7 @@
       </div>
 
       <div
-        class="report-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        class="transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-gray-900/50 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Nuevos Pacientes</h3>
           <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +141,7 @@
       </div>
 
       <div
-        class="report-card bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        class="transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-gray-900/50 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium text-slate-500 dark:text-slate-400">Ticket Promedio</h3>
           <svg class="w-8 h-8 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,7 +159,7 @@
       <!-- Ingresos por Mes -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
         <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Ingresos Mensuales</h3>
-        <div class="chart-container">
+        <div class="relative h-[300px]">
           <canvas id="ingresosChart"></canvas>
         </div>
       </div>
@@ -189,7 +167,7 @@
       <!-- Citas por Estado -->
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
         <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Distribución de Citas</h3>
-        <div class="chart-container">
+        <div class="relative h-[300px]">
           <canvas id="citasChart"></canvas>
         </div>
       </div>
