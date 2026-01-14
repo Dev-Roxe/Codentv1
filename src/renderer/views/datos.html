@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<!--
+  Pestana Datos: formulario para ver y editar los datos basicos del paciente.
+  Usa la misma paleta oscura que odontograma/periodontograma.
+-->
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Datos del Paciente</title>
+  <link rel="stylesheet" href="../styles/output.css" />
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+    <header class="space-y-1">
+      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clinica</p>
+      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Datos del paciente</h1>
+      <p class="text-sm text-[#0F2532] dark:text-slate-400">Edita la informacion base para contacto y seguimiento.
+      </p>
+    </header>
+
+    <section
+      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-6 space-y-5 dark:bg-[#0E1A25] dark:border-slate-800">
+      <form id="form-datos" class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Nombre</label>
+            <input type="text" name="nombre"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Apellido</label>
+            <input type="text" name="apellido"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Telefono</label>
+            <input type="tel" name="telefono"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Email</label>
+            <input type="email" name="email"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Direccion</label>
+            <input type="text" name="direccion"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Fecha
+              de
+              nacimiento</label>
+            <input type="date" name="fecha_nacimiento"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Nombre
+              social</label>
+            <input type="text" name="nombre_social"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">CURP</label>
+            <input type="text" name="curp"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Convenio</label>
+            <input type="text" name="convenio"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Numero
+              interno</label>
+            <input type="text" name="numero_interno"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Profesion</label>
+            <input type="text" name="profesion"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Empleador</label>
+            <input type="text" name="empleador"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Observaciones</label>
+          <textarea name="observaciones" rows="4"
+            class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="button" id="save-datos"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition dark:shadow-[#4EABBE]/20">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="../scripts/datos.js"></script>
+</body>
+
+</html>

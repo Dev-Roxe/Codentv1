@@ -43,29 +43,13 @@ const masterFields = [
 /* ============================================================================
    UTILITIES
 ============================================================================ */
+import toast from './toast.js';
+
 const isShown = (key) => !!(State.fieldConfig[key]?.show);
 const isRequired = (key) => !!(State.fieldConfig[key]?.required);
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-
-    const toast = document.createElement('div');
-    toast.className = `animate-slide-up px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 ${type === 'success' ? 'bg-green-600 text-white' :
-        type === 'error' ? 'bg-red-600 text-white' :
-            type === 'warning' ? 'bg-yellow-500 text-white' :
-                'bg-[#1D5D69] text-white'
-        }`;
-
-    const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-    toast.innerHTML = `<span class="text-lg">${icons[type]}</span><span>${message}</span>`;
-    container.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    toast.show(message, type);
 }
 
 function formatDate(dateStr) {

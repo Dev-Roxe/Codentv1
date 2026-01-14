@@ -3,9 +3,15 @@ import '../components/navbar-component.js';
 
 // Inicializar dark mode desde localStorage
 const initializeDarkMode = () => {
-    const isDark = localStorage.getItem('darkMode') === '1';
+    const savedTheme = localStorage.getItem('theme');
+    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    // Si está en auto y no hay preferencia guardada, o si es explícitamente dark
+    const root = document.documentElement;
     if (isDark) {
-        document.documentElement.classList.add('dark');
+        root.classList.add('dark');
+    } else {
+        root.classList.remove('dark');
     }
 };
 
@@ -47,6 +53,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             case 'perfil':
                 window.location.href = '../views/perfil.html';
+                break;
+            case 'configuracion':
+                window.location.href = '../views/configuracion.html';
                 break;
         }
     });

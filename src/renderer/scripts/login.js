@@ -1,70 +1,83 @@
+import toast from './toast.js';
+
 document.addEventListener('DOMContentLoaded', () => {
     const username = document.getElementById('username');
     const password = document.getElementById('password');
     const loginBtn = document.getElementById('loginBtn');
     const msg = document.getElementById('msg');
 
-    if (!loginBtn) return; 
+    // Clear legacy message element if it exists
+    if (msg) msg.innerHTML = '';
 
-    const setMsg = (text, isError = true) => {
-        if (msg) {
-            msg.innerText = text;
-            msg.style.color = isError ? 'red' : 'green';
-        } else {
-            alert(text);
-        }
-    };
+    if (!loginBtn) return;
 
     loginBtn.addEventListener('click', async (e) => {
         e.preventDefault();
-        if (!window.api || !window.api.loginUser) return setMsg('Función de login no disponible');
+        if (!window.api || !window.api.loginUser) {
+            toast.show('Función de login no disponible', 'error');
+            return;
+        }
 
         const email = username ? username.value.trim() : '';
         const pwd = password ? password.value : '';
 
-        if (!email || !pwd) return setMsg('Por favor completa los campos');
+        if (!email || !pwd) {
+            toast.show('Por favor completa todos los campos', 'warning');
+            return;
+        }
 
         loginBtn.disabled = true;
-        setMsg('Iniciando sesión...', false);
+        // Optional: show loading toast or just rely on button state
+        // toast.show('Iniciando sesión...', 'info'); 
 
         // Log para debugging
         if (window.logToMain && window.logToMain.log) window.logToMain.log(`Intentando login para ${email}`);
 
         try {
             const res = await window.api.loginUser({ email, password: pwd });
-                if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
-            // Exitoso: res debería contener id, nombre, rol según main.js
-            setMsg('Login exitoso', false);
-            
-            // Guardar datos de sesión en localStorage para que perfil.html y otras vistas puedan acceder
+            if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
+
+            toast.show('¡Bienvenido de nuevo!', 'success');
+
+            // Guardar datos de sesión en localStorage
             try {
-              localStorage.setItem('sesionActual', JSON.stringify({
-                id: res.id,
-                nombre: res.nombre,
-                rol: res.rol
-              }));
-              if (window.logToMain && window.logToMain.log) window.logToMain.log('Sesión guardada en localStorage');
+                localStorage.setItem('sesionActual', JSON.stringify({
+                    id: res.id,
+                    nombre: res.nombre,
+                    rol: res.rol
+                }));
+                if (window.logToMain && window.logToMain.log) window.logToMain.log('Sesión guardada en localStorage');
             } catch (storageErr) {
-              if (window.logToMain && window.logToMain.log) window.logToMain.log('Error guardando sesión: ' + storageErr.message);
+                if (window.logToMain && window.logToMain.log) window.logToMain.log('Error guardando sesión: ' + storageErr.message);
             }
-            
-            // Redirigir a la vista de pacientes usando la API segura del preload
+
+            // Redirigir a la vista de pacientes
             if (window.api && window.api.openView) {
                 try {
                     await window.api.openView('pacientes');
                 } catch (navErr) {
-                    // Si falla, mostrar mensaje y escribir log
                     if (window.logToMain && window.logToMain.log) window.logToMain.log('openView error: ' + String(navErr));
-                    setMsg('No se pudo abrir la vista de pacientes.');
+                    toast.show('No se pudo redirigir a la vista de pacientes', 'error');
                 }
             } else {
-                // Fallback: intentar navegación relativa (puede fallar en Electron por seguridad)
                 window.location = '../pacientes.html';
             }
         } catch (err) {
-                if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser rejected: ' + JSON.stringify(err));
-            const message = (err && err.message) ? err.message : String(err);
-            setMsg('Error al iniciar sesión: ' + message);
+            if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser rejected: ' + JSON.stringify(err));
+
+            let message = (err && err.message) ? err.message : String(err);
+
+            // Clean up error message
+            if (message.includes('Contraseña incorrecta') || message.includes('Incorrect password')) {
+                message = 'Contraseña incorrecta. Verifícala e inténtalo de nuevo.';
+            } else if (message.includes('User not found') || message.includes('Usuario no encontrado')) {
+                message = 'Usuario no encontrado. Verifica tu correo.';
+            } else {
+                // Remove generic Electron error prefix
+                message = message.replace(/Error invoking remote method '[^']+': Error: /, '');
+            }
+
+            toast.show(message, 'error');
         } finally {
             loginBtn.disabled = false;
         }

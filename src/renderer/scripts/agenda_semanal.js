@@ -34,15 +34,13 @@ export async function initSemanal(container, referenceDate) {
     const prevWeekBtn = $('#prevWeek');
     const nextWeekBtn = $('#nextWeek');
     const todayBtn = $('#todayBtn');
-    const daysContainer = $('#daysContainer');
     const gridContainer = $('#gridContainer');
     const currentMonthYear = $('#currentMonthYear');
     const dentistSelect = $('#dentistSelectWeekly');
 
     // Verificar que existen los elementos necesarios
-    if (!daysContainer || !gridContainer) {
+    if (!gridContainer) {
         console.error('Elementos necesarios no encontrados:', {
-            daysContainer: !!daysContainer,
             gridContainer: !!gridContainer,
             container: container.innerHTML.substring(0, 200)
         });
@@ -142,25 +140,6 @@ export async function initSemanal(container, referenceDate) {
         appointments.forEach(apt => {
             const date = toSQLDate(new Date(apt.fecha_hora));
             appointmentsByDay[date] = (appointmentsByDay[date] || 0) + 1;
-        });
-
-        // Renderizar botones de días
-        daysContainer.innerHTML = days.map((d, idx) => `
-            <button class="day-btn ${d.isToday ? 'today' : ''} ${idx === 0 ? 'active' : ''} ${d.isWeekend ? 'opacity-70' : ''} dark:bg-gray-800 dark:border-gray-700 dark:text-white transition-colors" 
-                    data-date="${d.date}" data-index="${idx}">
-                <span class="day-name dark:text-gray-400">${d.name}</span>
-                <span class="day-number">${d.day}</span>
-                ${appointmentsByDay[d.date] ? `<span class="appointments-count dark:bg-teal-900 dark:text-teal-100">${appointmentsByDay[d.date]} citas</span>` : ''}
-            </button>
-        `).join('');
-
-        // Event listeners para días
-        daysContainer.querySelectorAll('.day-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                daysContainer.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                console.log('Día seleccionado:', btn.dataset.date);
-            });
         });
 
         // Renderizar grilla

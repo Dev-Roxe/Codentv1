@@ -1,332 +1,326 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odontograma - Sonalía</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Odontograma Digital</title>
+  <link rel="stylesheet" href="../styles/output.css" />
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <style>
+    :root {
+      --odonto-ink: #0F2532;
+      --odonto-brand: #1D5D69;
+      --odonto-accent: #4EABBE;
+      --odonto-soft: #8BCFDD;
+      --odonto-bg: #F8F7F7;
+      --tooth-w: clamp(48px, 5.5vw, 68px);
+      --tooth-h: calc(var(--tooth-w) * 1.3);
+      --tooth-gap: clamp(6px, 1.1vw, 10px);
+    }
+
+    body {
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+    }
+
+    h2, h3, .odonto-title {
+      font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      letter-spacing: 0.2px;
+    }
+
+    #odontogramaCanvas {
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(120% 100% at 50% -10%, rgba(139, 207, 221, 0.22), rgba(255, 255, 255, 0) 55%),
+        linear-gradient(180deg, #FFFFFF 0%, #F8F7F7 100%);
+    }
+
+    #odontogramaCanvas::after {
+      content: "";
+      position: absolute;
+      inset: 14px;
+      border-radius: 18px;
+      border: 1px dashed rgba(139, 207, 221, 0.35);
+      pointer-events: none;
+    }
+
+    .dark #odontogramaCanvas {
+      background:
+        radial-gradient(120% 100% at 50% -10%, rgba(78, 171, 190, 0.22), rgba(11, 23, 33, 0) 55%),
+        linear-gradient(180deg, #0E1A25 0%, #0B1721 100%);
+    }
+
+    .dark #odontogramaCanvas::after {
+      border-color: rgba(139, 207, 221, 0.2);
+    }
+
+    .odonto-arc {
+      position: relative;
+      padding: 8px 0 6px;
+    }
+
+    .odonto-arc::before {
+      content: "";
+      position: absolute;
+      left: 6%;
+      right: 6%;
+      height: 34px;
+      border-radius: 999px;
+      background: radial-gradient(closest-side, rgba(239, 125, 138, 0.22), rgba(239, 125, 138, 0.03));
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .odonto-arc--upper::before {
+      top: 8px;
+    }
+
+    .odonto-arc--lower::before {
+      bottom: 8px;
+    }
+
+    .dark .odonto-arc::before {
+      background: radial-gradient(closest-side, rgba(78, 171, 190, 0.25), rgba(14, 26, 37, 0.05));
+    }
+
+    .odonto-row {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      gap: var(--tooth-gap);
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 6px 10px;
+      scroll-snap-type: x proximity;
+    }
+
+    .odonto-row::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .odonto-row::-webkit-scrollbar-thumb {
+      background: rgba(29, 93, 105, 0.25);
+      border-radius: 999px;
+    }
+
+    .odonto-tooth {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: var(--tooth-w);
+    }
+
+    .odonto-tooth-number {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--odonto-brand);
+      letter-spacing: 0.2px;
+      opacity: 0.7;
+    }
+
+    .dark .odonto-tooth-number {
+      color: #CDE9F0;
+    }
+
+    .odonto-tooth-btn {
+      width: var(--tooth-w);
+      height: var(--tooth-h);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #FFFFFF, #F3F6F8);
+      border: 2px solid var(--odonto-soft);
+      box-shadow: 0 6px 14px rgba(15, 37, 50, 0.08);
+      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dark .odonto-tooth-btn {
+      background: linear-gradient(180deg, #162534, #0B1721);
+    }
+
+    .odonto-tooth-btn:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 10px 22px rgba(15, 37, 50, 0.16);
+    }
+
+    .odonto-tooth-btn.is-selected {
+      border-color: var(--odonto-accent);
+      box-shadow: 0 0 0 4px rgba(78, 171, 190, 0.25), 0 12px 24px rgba(15, 37, 50, 0.18);
+    }
+
+    .odonto-tooth-btn.has-treatment::after {
+      content: "";
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--treat-color, #4EABBE);
+      box-shadow: 0 0 0 2px #FFFFFF;
+    }
+
+    .odonto-tooth-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--odonto-accent);
+      opacity: 0;
+      transform: translateY(-2px);
+      transition: opacity 150ms ease, transform 150ms ease;
+      text-align: center;
+      min-height: 12px;
+    }
+
+    .dark .odonto-tooth-label {
+      color: #8BCFDD;
+    }
+
+    .odonto-tooth:hover .odonto-tooth-label {
+      opacity: 0.9;
+      transform: translateY(0);
+    }
+  </style>
 </head>
 
-<body
-    class="bg-gray-100 dark:bg-gray-900 min-h-screen p-6 text-[#0F2532] dark:text-white transition-colors duration-200">
-
-    <div class="max-w-7xl mx-auto">
-
-        <!-- Header -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-6 transition-colors">
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-5">🦷 Odontograma Dental</h1>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" id="nombrePaciente" placeholder="Nombre del paciente"
-                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" />
-                <input type="date" id="fechaConsulta"
-                    class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500" />
-            </div>
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <div class="h-full flex flex-col p-4">
+    <!-- Toolbar superior -->
+    <div class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-4 mb-4 border border-[#8BCFDD]/50 dark:border-slate-800">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-4">
+          <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white" id="tituloDenticion">Odontograma</h2>
+          <div class="flex gap-2">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="denticion" id="radioAdulto" checked class="w-4 h-4 text-[#4EABBE] focus:ring-[#4EABBE]">
+              <span class="text-sm font-medium text-[#0F2532] dark:text-slate-200">Dentigrama Adulto</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="radio" name="denticion" id="radioInfantil" class="w-4 h-4 text-[#4EABBE] focus:ring-[#4EABBE]">
+              <span class="text-sm font-medium text-[#0F2532] dark:text-slate-200">Dentigrama Infantil</span>
+            </label>
+          </div>
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-
-            <!-- Panel lateral -->
-            <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 transition-colors">
-
-                    <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Condiciones</h2>
-
-                    <div id="dienteSeleccionado"
-                        class="hidden bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-3 rounded mb-4">
-                        <p class="text-sm text-blue-800 dark:text-blue-300 font-semibold">
-                            Diente seleccionado: <span id="numeroDiente" class="text-lg font-bold"></span>
-                        </p>
-                    </div>
-
-                    <div id="botonesCondiciones" class="space-y-2">
-                        <!-- Se generan con JS -->
-                    </div>
-
-                    <div class="mt-6 space-y-2">
-                        <button onclick="guardarOdontograma()"
-                            class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium shadow-md transition">
-                            💾 Guardar
-                        </button>
-
-                        <button onclick="limpiarOdontograma()"
-                            class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium shadow-md transition">
-                            🗑 Limpiar
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Leyenda -->
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 mt-4 transition-colors">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Leyenda</h3>
-                    <div id="leyenda" class="space-y-2"></div>
-                </div>
+        
+        <!-- Tratamientos disponibles -->
+        <div class="flex items-center gap-2 flex-wrap relative">
+          <div class="relative">
+            <button id="btnProfilaxis" class="px-3 py-2 rounded-lg text-sm font-medium bg-[#8BCFDD]/25 dark:bg-slate-800 border border-[#8BCFDD] dark:border-slate-700 hover:bg-[#4EABBE] hover:text-white transition">
+              <span>🪥</span> Profilaxis
+            </button>
+            <!-- Dropdown Profilaxis -->
+            <div id="dropdownProfilaxis" class="hidden absolute top-full left-0 mt-2 bg-white dark:bg-[#0E1A25] rounded-lg shadow-xl border border-[#8BCFDD]/50 dark:border-slate-800 z-50 min-w-[200px]">
+              <button class="w-full text-left px-4 py-2 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 rounded-t-lg text-[#0F2532] dark:text-slate-200" data-treatment="profilaxis-simple">
+                Profilaxis Simple
+              </button>
+              <button class="w-full text-left px-4 py-2 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 rounded-b-lg text-[#0F2532] dark:text-slate-200" data-treatment="profilaxis-profunda">
+                Profilaxis Profunda
+              </button>
             </div>
-
-            <!-- Odontograma -->
-            <div class="lg:col-span-3">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 transition-colors">
-
-                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">Dentadura</h2>
-
-                    <!-- Arcada superior -->
-                    <div class="mb-10">
-                        <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 text-center mb-3">Arcada
-                            Superior</h3>
-                        <div id="arcadaSuperior" class="flex justify-center gap-3 flex-wrap"></div>
-                    </div>
-
-                    <div class="border-t border-gray-300 dark:border-gray-600 my-6"></div>
-
-                    <!-- Arcada inferior -->
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 text-center mb-3">Arcada
-                            Inferior</h3>
-                        <div id="arcadaInferior" class="flex justify-center gap-3 flex-wrap"></div>
-                    </div>
-
-                    <div
-                        class="mt-8 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                            <strong>Instrucciones:</strong> Selecciona un diente y luego elige una condición en la
-                            izquierda.
-                        </p>
-                    </div>
-                </div>
-            </div>
+          </div>
+          <button id="btnAyuda" class="px-3 py-2 rounded-lg text-sm font-medium text-[#4EABBE] hover:underline">
+            Ayuda: ¿Cómo se usa?
+          </button>
         </div>
+      </div>
     </div>
 
-    <script>
-        /* ==========================================================
-            ESTADO
-        ========================================================== */
-        let dientes = {};
-        let dienteSeleccionado = null;
+    <!-- Contenedor principal del odontograma -->
+    <div class="flex-1 overflow-auto">
+      <div id="odontogramaCanvas" class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-6 border border-[#8BCFDD]/50 dark:border-slate-800">
+        <div class="mb-6">
 
-        const dientesSuperiores = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28];
-        const dientesInferiores = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38];
+          <!-- Superior -->
+          <div class="mb-8 odonto-arc odonto-arc--upper">
+            <div class="text-center mb-3">
+              <span class="inline-block px-4 py-2 rounded-lg text-sm font-semibold bg-[#8BCFDD] dark:bg-[#1D5D69] text-[#0F2532] dark:text-white">
+                SUPERIOR
+              </span>
+            </div>
+            <div id="filaSuperior" class="odonto-row"></div>
+          </div>
 
-        const condiciones = [
-            { id: 'sano', label: 'Sano', color: 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600' },
-            { id: 'caries', label: 'Caries', color: 'bg-red-500 text-white' },
-            { id: 'obturado', label: 'Obturado', color: 'bg-blue-500 text-white' },
-            { id: 'ausente', label: 'Ausente', color: 'bg-gray-900 dark:bg-black text-white' },
-            { id: 'corona', label: 'Corona', color: 'bg-yellow-500 text-white' },
-            { id: 'endodoncia', label: 'Endodoncia', color: 'bg-purple-500 text-white' },
-            { id: 'fractura', label: 'Fractura', color: 'bg-orange-500 text-white' },
-            { id: 'implante', label: 'Implante', color: 'bg-green-500 text-white' }
-        ];
+          <div class="h-px rounded-full mb-8 bg-[#8BCFDD] dark:bg-slate-700"></div>
 
-        /* ==========================================================
-            INICIALIZAR FECHA
-        ========================================================== */
-        document.getElementById("fechaConsulta").valueAsDate = new Date();
+          <!-- Inferior -->
+          <div class="odonto-arc odonto-arc--lower">
+            <div id="filaInferior" class="odonto-row mb-3"></div>
+            <div class="text-center">
+              <span class="inline-block px-4 py-2 rounded-lg text-sm font-semibold bg-[#8BCFDD] dark:bg-[#1D5D69] text-[#0F2532] dark:text-white">
+                INFERIOR
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        /* ==========================================================
-            CREAR ODONTOGRAMA
-        ========================================================== */
-        function crearDiente(num, contenedor) {
-            const d = document.createElement("div");
-            d.className = "flex flex-col items-center";
+      <!-- Panel de tratamientos lateral (si hay espacio) o dropdown -->
+      <div id="tratamientosPanel" class="hidden fixed top-20 right-4 bg-white dark:bg-[#0E1A25] rounded-xl shadow-xl p-4 border border-[#8BCFDD]/50 dark:border-slate-800 z-50 min-w-[250px] max-w-[300px]">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#8BCFDD]/30 dark:border-slate-700">
+          <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Tratamientos</h3>
+          <button id="btnCerrarPanel" class="text-[#1D5D69] dark:text-slate-400 hover:text-[#4EABBE]">✕</button>
+        </div>
+        <div class="mb-3 p-3 rounded-lg text-center bg-[rgba(78,171,190,0.15)] dark:bg-slate-800">
+          <p class="text-xs mb-1 text-[#1D5D69] dark:text-slate-400 opacity-80">Pieza dental</p>
+          <p id="piezaPanel" class="text-2xl font-bold text-[#4EABBE]"></p>
+        </div>
+        <div id="listaTratamientos" class="space-y-2"></div>
+      </div>
+    </div>
 
-            d.innerHTML = `
-        <span class="text-xs font-semibold text-gray-600 dark:text-gray-400">${num}</span>
-        <button 
-            id="diente-${num}"
-            onclick="seleccionarDiente(${num})"
-            class="w-12 h-14 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:shadow-md hover:scale-[1.05] transition relative"
-        ></button>
-    `;
+    <!-- Leyenda -->
+    <div class="mt-4 bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-4 border border-[#8BCFDD]/50 dark:border-slate-800">
+      <div class="flex items-center gap-2 mb-4 pb-2 border-b border-[#8BCFDD]/30 dark:border-slate-700">
+        <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Leyenda de Tratamientos</h3>
+      </div>
+      <div id="leyenda" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+    </div>
+  </div>
 
-            contenedor.appendChild(d);
-        }
+  <!-- Modal caras -->
+  <div id="modalOverlay" class="hidden fixed inset-0 z-50 items-center justify-center bg-[rgba(15,37,50,0.7)] dark:bg-[rgba(0,0,0,0.8)]">
+    <div class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden border border-[#8BCFDD]/50 dark:border-slate-800">
+      <div class="p-6 bg-[#1D5D69] dark:bg-[#0F2532] text-white flex items-center justify-between">
+        <h2 class="text-2xl font-bold">
+          Selección de Caras - Pieza <span id="modalPieza"></span>
+        </h2>
+        <button id="btnCancelarModal"
+          class="px-6 py-3 rounded-xl font-bold bg-[#6B7280] hover:bg-[#4B5563] transition"
+        >
+          Cancelar
+        </button>
+      </div>
 
-        function inicializarOdontograma() {
-            const sup = document.getElementById("arcadaSuperior");
-            const inf = document.getElementById("arcadaInferior");
+      <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Vista -->
+        <div class="rounded-xl p-4 bg-[#F8F7F7] dark:bg-[#0B1721] border-2 border-[#8BCFDD] dark:border-slate-700">
+          <h3 class="text-center font-bold text-xl mb-4 text-[#1D5D69] dark:text-white">Vista Anatómica</h3>
+          <div id="vistaCaras" class="w-full"></div>
+        </div>
 
-            dientesSuperiores.forEach(n => crearDiente(n, sup));
-            dientesInferiores.forEach(n => crearDiente(n, inf));
+        <!-- Lista -->
+        <div>
+          <h3 class="font-bold text-xl mb-4 text-[#1D5D69] dark:text-white">Seleccione las caras afectadas</h3>
+          <div id="listaCaras" class="space-y-3"></div>
+        </div>
+      </div>
 
-            crearBotonesCondiciones();
-            crearLeyenda();
-        }
+      <div class="p-6 flex gap-4 border-t border-[#8BCFDD]/30 dark:border-slate-700">
+        <button id="btnGuardarModal"
+          class="flex-1 py-4 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition bg-[#4EABBE] dark:bg-[#1D5D69]"
+        >
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
 
-        /* ==========================================================
-            BOTONES DE CONDICIONES
-        ========================================================== */
-        function crearBotonesCondiciones() {
-            const cont = document.getElementById("botonesCondiciones");
-
-            condiciones.forEach(c => {
-                const b = document.createElement("button");
-                b.id = `btn-${c.id}`;
-                b.textContent = c.label;
-                b.className = `w-full py-2 rounded-lg shadow-sm ${c.color} opacity-50 cursor-not-allowed`;
-                b.onclick = () => aplicarCondicion(c.id);
-                b.disabled = true;
-                cont.appendChild(b);
-            });
-        }
-
-        /* ==========================================================
-            LEYENDA
-        ========================================================== */
-        function crearLeyenda() {
-            const cont = document.getElementById("leyenda");
-
-            condiciones.forEach(c => {
-                const item = document.createElement("div");
-                item.className = "flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300";
-
-                item.innerHTML = `
-            <div class="w-5 h-5 rounded border ${c.color}"></div>
-            ${c.label}
-        `;
-
-                cont.appendChild(item);
-            });
-        }
-
-        /* ==========================================================
-            SELECCIONAR DIENTE
-        ========================================================== */
-        function seleccionarDiente(num) {
-            dienteSeleccionado = num;
-
-            document.getElementById("dienteSeleccionado").classList.remove("hidden");
-            document.getElementById("numeroDiente").textContent = num;
-
-            // Reset selección
-            document.querySelectorAll("[id^='diente-']").forEach(d => {
-                d.classList.remove("ring-2", "ring-blue-400", "border-blue-600");
-                d.classList.add("border-gray-300", "dark:border-gray-600");
-            });
-
-            const btn = document.getElementById(`diente-${num}`);
-            btn.classList.remove("border-gray-300", "dark:border-gray-600");
-            btn.classList.add("border-blue-600", "ring-2", "ring-blue-300");
-
-            habilitarBotones();
-        }
-
-        /* ==========================================================
-            APLICAR CONDICIÓN
-        ========================================================== */
-        function habilitarBotones() {
-            condiciones.forEach(c => {
-                const btn = document.getElementById(`btn-${c.id}`);
-                btn.disabled = false;
-                btn.classList.remove("opacity-50", "cursor-not-allowed");
-                btn.classList.add("cursor-pointer", "hover:opacity-90");
-            });
-        }
-
-        function aplicarCondicion(id) {
-            if (!dienteSeleccionado) return;
-
-            dientes[dienteSeleccionado] = id;
-            actualizarDiente(dienteSeleccionado);
-        }
-
-        /* ==========================================================
-            ACTUALIZAR DIENTE
-        ========================================================== */
-        function actualizarDiente(num) {
-            const btn = document.getElementById(`diente-${num}`);
-            const estado = dientes[num];
-            const cond = condiciones.find(c => c.id === estado);
-
-            btn.className = `w-12 h-14 border-2 rounded-lg hover:scale-[1.05] transition relative ${cond?.color || "bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"}`;
-
-            if (estado === "ausente") {
-                btn.innerHTML = `<div class="absolute inset-0 flex items-center justify-center">
-            <div class="w-12 h-1 bg-white rotate-45"></div>
-        </div>`;
-            } else {
-                btn.innerHTML = "";
-            }
-        }
-
-        /* ==========================================================
-            GUARDAR ODONTOGRAMA
-        ========================================================== */
-        function guardarOdontograma() {
-            const datos = {
-                paciente: {
-                    nombre: nombrePaciente.value,
-                    fecha: fechaConsulta.value
-                },
-                dientes: dientes,
-                guardado: new Date().toISOString()
-            };
-
-            localStorage.setItem("odontograma", JSON.stringify(datos));
-
-            alert("✅ Odontograma guardado.");
-        }
-
-        /* ==========================================================
-            LIMPIAR TODO
-        ========================================================== */
-        function limpiarOdontograma() {
-            if (!confirm("¿Seguro? Se borrará todo.")) return;
-
-            dientes = {};
-            dienteSeleccionado = null;
-
-            document.getElementById("dienteSeleccionado").classList.add("hidden");
-
-            [...dientesSuperiores, ...dientesInferiores].forEach(num => {
-                const btn = document.getElementById(`diente-${num}`);
-                btn.className = "w-12 h-14 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:scale-[1.05] transition";
-                btn.innerHTML = "";
-            });
-
-            condiciones.forEach(c => {
-                const b = document.getElementById(`btn-${c.id}`);
-                b.disabled = true;
-                b.classList.add("opacity-50", "cursor-not-allowed");
-                b.classList.remove("cursor-pointer");
-            });
-
-            alert("🗑 Odontograma limpiado.");
-        }
-
-        /* ==========================================================
-            CARGAR GUARDADO
-        ========================================================== */
-        function cargarOdontogramaGuardado() {
-            const guardado = JSON.parse(localStorage.getItem("odontograma") || "{}");
-
-            if (guardado.paciente) {
-                nombrePaciente.value = guardado.paciente.nombre || "";
-                fechaConsulta.value = guardado.paciente.fecha || "";
-            }
-
-            if (guardado.dientes) {
-                dientes = guardado.dientes;
-
-                Object.keys(dientes).forEach(num => actualizarDiente(parseInt(num)));
-            }
-        }
-
-        /* ==========================================================
-            INIT
-        ========================================================== */
-        window.onload = () => {
-            inicializarOdontograma();
-            cargarOdontogramaGuardado();
-        };
-    </script>
-
+  <script src="../scripts/odontograma.js"></script>
 </body>
-
 </html>

@@ -28,13 +28,32 @@ document.addEventListener('DOMContentLoaded', () => {
         await initSemanal(contenedor, dateStr);
       }
 
-      // Actualiza estilos activos (clases tailwind usadas en los botones)
-      btnDiaria.classList.toggle('bg-white', vista === 'diaria');
-      btnDiaria.classList.toggle('text-cyan-600', vista === 'diaria');
-      btnDiaria.classList.toggle('bg-white', vista !== 'diaria', false);
+      // Actualizar estilos del segmented control
+      const viewIndicator = document.getElementById('viewIndicator');
 
-      btnSemanal.classList.toggle('bg-white', vista === 'semanal');
-      btnSemanal.classList.toggle('text-cyan-600', vista === 'semanal');
+      if (vista === 'diaria') {
+        // Mover indicador a la izquierda (Vista Diaria)
+        if (viewIndicator) {
+          viewIndicator.style.transform = 'translateX(0)';
+        }
+        // Botón Diaria: texto blanco (activo)
+        btnDiaria.classList.add('text-white');
+        btnDiaria.classList.remove('text-gray-600', 'dark:text-gray-400');
+        // Botón Semanal: texto gris (inactivo)
+        btnSemanal.classList.remove('text-white');
+        btnSemanal.classList.add('text-gray-600', 'dark:text-gray-400');
+      } else {
+        // Mover indicador a la derecha (Vista Semanal)
+        if (viewIndicator) {
+          viewIndicator.style.transform = 'translateX(calc(100% + 4px))';
+        }
+        // Botón Semanal: texto blanco (activo)
+        btnSemanal.classList.add('text-white');
+        btnSemanal.classList.remove('text-gray-600', 'dark:text-gray-400');
+        // Botón Diaria: texto gris (inactivo)
+        btnDiaria.classList.remove('text-white');
+        btnDiaria.classList.add('text-gray-600', 'dark:text-gray-400');
+      }
     } catch (error) {
       contenedor.innerHTML = `<p class="text-red-500">Error al cargar la vista: ${error.message}</p>`;
     }
@@ -62,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnFecha) {
     btnFecha.addEventListener('click', async () => {
-      const input = prompt('Selecciona fecha (YYYY-MM-DD)', new Date().toISOString().slice(0,10));
+      const input = prompt('Selecciona fecha (YYYY-MM-DD)', new Date().toISOString().slice(0, 10));
       if (input) {
         // cargar vista diaria para esa fecha
         await cargarVista('diaria', input);

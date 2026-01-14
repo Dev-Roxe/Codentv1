@@ -1,4 +1,5 @@
 // reportes.js - Sistema de reportes y análisis
+import toast from './toast.js';
 
 let db;
 if (window.api && window.api.db) db = window.api.db;
@@ -40,26 +41,7 @@ function formatDate(date) {
 }
 
 function showToast(message, type = 'info') {
-    const toast = document.createElement('div');
-
-    const colors = {
-        success: 'bg-green-600 dark:bg-green-700',
-        error: 'bg-red-600 dark:bg-red-700',
-        warning: 'bg-yellow-500 dark:bg-yellow-600',
-        info: 'bg-[#1D5D69] dark:bg-[#154650]'
-    };
-
-    toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-xl shadow-lg z-50 flex items-center gap-2 animate-slide-up text-white ${colors[type] || colors.info}`;
-
-    const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
-    toast.innerHTML = `<span class="text-lg font-bold">${icons[type]}</span><span class="font-medium">${message}</span>`;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(10px)';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    toast.show(message, type);
 }
 
 function setDateRange(period) {

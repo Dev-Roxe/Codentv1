@@ -1,4 +1,5 @@
 // cajas.js - Gestión de cajas registradoras
+import toast from './toast.js';
 import '../components/navbar-component.js';
 import { initNavbarListeners, getUserName } from './navigation.js';
 
@@ -637,9 +638,9 @@ function showDetalleCaja(cajaId) {
                 <div class="flex items-center gap-3">
                   <div class="w-10 h-10 rounded-full flex items-center justify-center ${mov.tipo === 'ingreso' ? 'bg-green-500' : 'bg-red-500'}">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      ${mov.tipo === 'ingreso' ? 
-                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m0-16l-4 4m4-4l4 4"/>' : 
-                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m0 16l-4-4m4 4l4-4"/>'}
+                      ${mov.tipo === 'ingreso' ?
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m0-16l-4 4m4-4l4 4"/>' :
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m0 16l-4-4m4 4l4-4"/>'}
                     </svg>
                   </div>
                   <div>
@@ -675,7 +676,7 @@ function showDetalleCaja(cajaId) {
   // Event listeners
   overlay.querySelector('#btnCloseDetail')?.addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-  
+
   overlay.querySelector('#btnExportarReporte')?.addEventListener('click', () => {
     showNotification('Exportando reporte...', 'info');
     // Simulación de exportación
@@ -781,7 +782,7 @@ function showNuevoMovimientoModal(cajaId) {
     // Simulación de guardado
     overlay.remove();
     showNotification(`${tipoSeleccionado === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado exitosamente`, 'success');
-    
+
     // Actualizar la vista si es necesario
     setTimeout(() => {
       showDetalleCaja(cajaId);
@@ -791,53 +792,10 @@ function showNuevoMovimientoModal(cajaId) {
 
 // Notificación toast mejorada
 function showNotification(message, type = 'info') {
-  const colors = {
-    success: 'from-green-500 to-green-600',
-    error: 'from-red-500 to-red-600',
-    info: 'from-[#4EABBE] to-[#1D5D69]',
-    warning: 'from-yellow-500 to-yellow-600'
-  };
-
-  const icons = {
-    success: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>',
-    error: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>',
-    info: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>',
-    warning: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>'
-  };
-
-  const toast = document.createElement('div');
-  toast.className = `fixed top-6 right-6 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] animate-slide-in-right backdrop-blur-sm min-w-[300px]`;
-  toast.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
-  toast.innerHTML = `
-    <div class="flex items-center gap-3">
-      <div class="flex-shrink-0">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          ${icons[type]}
-        </svg>
-      </div>
-      <span class="font-semibold text-sm flex-1">${message}</span>
-      <button class="flex-shrink-0 hover:bg-white/20 rounded-lg p-1 transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(toast);
-
-  // Cerrar al hacer clic en el botón
-  toast.querySelector('button').addEventListener('click', () => {
-    toast.style.animation = 'slideInRight 0.3s ease-out reverse';
-    setTimeout(() => toast.remove(), 300);
-  });
-
-  // Auto-cerrar después de 4 segundos
-  setTimeout(() => {
-    toast.style.animation = 'slideInRight 0.3s ease-out reverse';
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  toast.show(message, type);
 }
+
+
 
 // Formatear moneda
 function formatCurrency(amount) {

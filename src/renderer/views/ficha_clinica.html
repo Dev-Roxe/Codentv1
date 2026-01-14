@@ -1,408 +1,156 @@
-<!doctype html>
+<!DOCTYPE html>
+<!--
+  Pagina principal de ficha clinica.
+  Muestra encabezado del paciente y carga cada pestana en iframes independientes.
+-->
 <html lang="es">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ficha Clínica</title>
-  <link rel="stylesheet" href="../styles/output.css">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha Clinica</title>
+  <link rel="stylesheet" href="../styles/output.css" />
   <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-    // Check local storage or system preference
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark')
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark')
+      document.documentElement.classList.remove('dark');
     }
   </script>
 </head>
 
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-[#0F2532] dark:text-gray-100 transition-colors duration-200">
-  <div class="container mx-auto p-6" id="app">
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <div class="min-h-screen flex flex-col">
+    <!-- Encabezado superior -->
+    <header
+      class="border-b border-[#8BCFDD]/50 dark:border-slate-800 bg-white/95 dark:bg-[#0E1A25]/95 shadow-sm backdrop-blur">
+      <div class="px-5 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <button id="btn-back"
+            class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[#0F2532] dark:text-slate-100 bg-white dark:bg-[#101F2E] border border-[#8BCFDD] dark:border-slate-700 rounded-xl hover:bg-[#8BCFDD]/15 hover:border-[#4EABBE] hover:text-[#1D5D69] dark:hover:text-white hover:shadow transition focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#0E1A25]">
+            <span aria-hidden="true">&larr;</span>
+            <span>Regresar</span>
+          </button>
+          <h1 class="text-xl font-bold text-[#1D5D69] dark:text-white" id="header-nombre">Información del Paciente</h1>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[#0F2532] dark:text-slate-100 bg-white dark:bg-[#101F2E] border border-[#8BCFDD] dark:border-slate-700 rounded-xl hover:bg-[#8BCFDD]/15 transition">
+            <span>📧</span>
+            <span>Enviar encuesta</span>
+          </button>
+          <button class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[#0F2532] dark:text-slate-100 bg-white dark:bg-[#101F2E] border border-[#8BCFDD] dark:border-slate-700 rounded-xl hover:bg-[#8BCFDD]/15 transition">
+            <span>🖨️</span>
+            <span>Recaudación</span>
+          </button>
+        </div>
+      </div>
+    </header>
 
-    <!-- Header -->
-    <div class="mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Ficha Clínica — <span
-            id="header-nombre">Cargando...</span></h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400">ID: <span id="header-id">-</span> • Registrado: <span
-            id="header-fecha">-</span></p>
-      </div>
-      <div class="flex gap-3 items-center">
-        <button id="back-btn"
-          class="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Volver</button>
-        <button id="save-all"
-          class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded shadow-sm transition-colors">Guardar
-          todo</button>
-      </div>
+    <!-- Contenedor principal con layout vertical: sidebar izquierdo + contenido central -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar izquierdo -->
+      <aside class="w-64 border-r border-[#8BCFDD]/50 dark:border-slate-800 bg-white/95 dark:bg-[#0E1A25]/95 overflow-y-auto">
+        <!-- Información del paciente -->
+        <div class="p-4 border-b border-[#8BCFDD]/30 dark:border-slate-800">
+          <div class="flex flex-col items-center gap-2 mb-4">
+            <div class="w-16 h-16 rounded-full bg-[#8BCFDD]/20 dark:bg-slate-700 flex items-center justify-center">
+              <span class="text-2xl">👤</span>
+            </div>
+            <div class="text-center">
+              <p class="font-semibold text-[#0F2532] dark:text-slate-100" id="sidebar-nombre">Paciente</p>
+              <p class="text-xs text-[#1D5D69] dark:text-slate-400" id="sidebar-id">ID</p>
+              <p class="text-xs text-[#1D5D69] dark:text-slate-400" id="sidebar-edad">Edad</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menú de navegación vertical -->
+        <nav class="p-2 space-y-1">
+          <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">Paciente</p>
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="datos">
+            <span>👤</span>
+            <span>Datos Personales</span>
+          </button>
+          <p class="px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">Clínico</p>
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="recetas">
+            <span>💊</span>
+            <span>Prescripciones Médicas</span>
+          </button>
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="antecedentes">
+            <span>📋</span>
+            <span>Historial & Alertas Clínicas</span>
+          </button>
+          
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="tratamientos">
+            <span>❤️</span>
+            <span>Planes de Tratamiento</span>
+          </button>
+          
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="odontograma">
+            <span>🦷</span>
+            <span>Odontograma</span>
+          </button>
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="periodontograma">
+            <span>🦷</span>
+            <span>Periodontograma</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- Contenido central principal -->
+      <main class="flex-1 flex flex-col overflow-hidden">
+        <!-- Área de contenido con tabs -->
+        <div class="flex-1 overflow-hidden">
+          <div class="relative w-full h-full">
+            <iframe id="frame-datos" class="tab-frame absolute inset-0 w-full h-full border-0"></iframe>
+            <iframe id="frame-antecedentes" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-tratamientos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-recetas" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-odontograma" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-periodontograma" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-galeria" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-contactos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-diagnostico" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-documentos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-agenda" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+          </div>
+        </div>
+
+        <!-- Tabla de historial en la parte inferior -->
+        <div class="border-t border-[#8BCFDD]/50 dark:border-slate-800 bg-white dark:bg-[#0E1A25] p-4 max-h-48 overflow-y-auto">
+          <h3 class="text-sm font-semibold text-[#1D5D69] dark:text-slate-300 mb-2">Historial de Servicios</h3>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-[#8BCFDD]/30 dark:border-slate-700">
+                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Fecha</th>
+                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Servicio</th>
+                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Pieza</th>
+                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Caras</th>
+              </tr>
+            </thead>
+            <tbody id="historial-servicios">
+              <!-- El historial se cargará dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </main>
     </div>
+  </div>
 
-    <!-- Tabs Container -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6 transition-colors">
-      <div class="flex gap-2 mb-4 overflow-x-auto pb-2" id="tabs">
-        <button data-tab="datos"
-          class="tab-btn px-3 py-2 bg-cyan-50 dark:bg-cyan-900/30 rounded text-cyan-600 dark:text-cyan-400 whitespace-nowrap font-medium shadow-sm border border-cyan-100 dark:border-cyan-800 transition-colors">Datos</button>
-        <button data-tab="antecedentes"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Antecedentes</button>
-        <button data-tab="tratamientos"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Tratamientos</button>
-        <button data-tab="recetas"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Recetas</button>
-        <button data-tab="odontograma"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Odontograma</button>
-        <button data-tab="periodontograma"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Periodontograma</button>
-        <button data-tab="evolucion"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Evolución</button>
-        <button data-tab="imagenes"
-          class="tab-btn px-3 py-2 rounded whitespace-nowrap text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Imágenes</button>
-      </div>
-
-      <!-- Tab Content Area -->
-      <div id="tab-content">
-
-        <!-- TAB: DATOS -->
-        <div id="tab-datos" class="tab-pane">
-          <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow transition-colors">
-            <form id="form-datos" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                <input name="nombre"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Apellido</label>
-                <input name="apellido"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
-                <input name="telefono"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                <input name="email"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
-                <input name="direccion"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de
-                  Nacimiento</label>
-                <input type="date" name="fecha_nacimiento"
-                  class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-              </div>
-
-              <div class="md:col-span-2">
-                <h3 class="text-md font-semibold mt-4 text-gray-800 dark:text-gray-200">Campos adicionales</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Nombre social</label>
-                    <input name="nombre_social"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">CURP / RFC</label>
-                    <input name="curp"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Convenio</label>
-                    <input name="convenio"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Número interno</label>
-                    <input name="numero_interno"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Profesión</label>
-                    <input name="profesion"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Empleador</label>
-                    <input name="empleador"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors" />
-                  </div>
-                  <div class="md:col-span-2">
-                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Observaciones</label>
-                    <textarea name="observaciones" rows="3"
-                      class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-200 dark:focus:ring-cyan-800 focus:border-cyan-500 dark:bg-gray-700 dark:text-white transition-colors"></textarea>
-                  </div>
-                </div>
-              </div>
-
-              <div class="md:col-span-2 flex justify-end gap-3 mt-4">
-                <button type="button" id="save-datos"
-                  class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-md transition-colors shadow-sm">Guardar
-                  Datos</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <!-- TAB: ANTECEDENTES -->
-        <div id="tab-antecedentes" class="tab-pane hidden">
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Formulario Antecedentes -->
-            <div
-              class="lg:col-span-1 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 h-fit transition-colors">
-              <h3 class="text-lg font-bold text-[#1D5D69] dark:text-[#4EABBE] mb-4 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Antecedentes Médicos
-              </h3>
-              <form id="form-antecedentes-ficha" class="space-y-4">
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Padecimientos
-                    Odontológicos</label>
-                  <div
-                    class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border border-gray-200 dark:border-gray-600 transition-colors">
-                    <div id="lista-padecimientos" class="space-y-2 mb-3 max-h-40 overflow-y-auto">
-                      <!-- Checkboxes injected here -->
-                      <p class="text-xs text-gray-400">Cargando...</p>
-                    </div>
-                    <div class="flex gap-2">
-                      <input id="new-padecimiento" type="text" placeholder="Nuevo padecimiento..."
-                        class="flex-1 text-xs p-2 border border-gray-300 dark:border-gray-500 rounded focus:outline-none focus:border-[#4EABBE] dark:bg-gray-600 dark:text-white dark:placeholder-gray-400">
-                      <button type="button" id="btn-add-padecimiento"
-                        class="px-3 py-1 bg-[#4EABBE] text-white rounded text-xs hover:bg-[#1D5D69] transition">+</button>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Alergias</label>
-                  <textarea name="alergias" rows="2"
-                    class="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-gray-50 dark:bg-gray-700 dark:text-white text-sm transition-colors"></textarea>
-                </div>
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Enfermedades
-                    Crónicas</label>
-                  <textarea name="enfermedades" rows="2"
-                    class="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-gray-50 dark:bg-gray-700 dark:text-white text-sm transition-colors"></textarea>
-                </div>
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Medicamentos</label>
-                  <textarea name="medicamentos" rows="2"
-                    class="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-gray-50 dark:bg-gray-700 dark:text-white text-sm transition-colors"></textarea>
-                </div>
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Tipo
-                    de sangre</label>
-                  <input name="tipo_sangre"
-                    class="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-gray-50 dark:bg-gray-700 dark:text-white text-sm transition-colors" />
-                </div>
-                <div>
-                  <label
-                    class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Observaciones</label>
-                  <textarea name="observaciones" rows="3"
-                    class="w-full p-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-gray-50 dark:bg-gray-700 dark:text-white text-sm transition-colors"></textarea>
-                </div>
-                <div class="pt-2">
-                  <button type="button" id="save-antecedentes-ficha"
-                    class="w-full py-2.5 bg-[#1D5D69] hover:bg-[#154650] text-white rounded-lg transition font-medium shadow-sm">Guardar
-                    Antecedentes</button>
-                </div>
-              </form>
-            </div>
-
-            <!-- Timeline Histórico -->
-            <div
-              class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 transition-colors">
-              <h3 class="text-lg font-bold text-[#1D5D69] dark:text-[#4EABBE] mb-6 flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Historial Clínico (Timeline)
-              </h3>
-              <div id="timeline-container"
-                class="relative pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-8 transition-colors">
-                <p class="text-gray-400 text-sm italic pl-4">Cargando historia...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB: TRATAMIENTOS -->
-        <div id="tab-tratamientos" class="tab-pane hidden">
-          <div
-            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-bold text-[#1D5D69] dark:text-[#4EABBE]">Historial de Tratamientos</h2>
-              <button id="add-tratamiento-btn"
-                class="px-4 py-2 bg-[#4EABBE] hover:bg-[#1D5D69] text-white rounded-lg transition font-semibold shadow-sm flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Nuevo Tratamiento
-              </button>
-            </div>
-
-            <div id="tratamientos-list"
-              class="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 mb-6 transition-colors">
-              <div
-                class="w-16 h-16 bg-purple-50 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg class="w-8 h-8 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2">Galería de Imágenes</h3>
-              <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">Aquí podrás almacenar radiografías,
-                fotografías
-                intraorales y otros documentos visuales.</p>
-              <button
-                class="mt-6 px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition-colors">
-                Próximamente
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-
-    <!-- MODALS -->
-
-    <!-- Modal Nuevo Tratamiento -->
-    <div id="modal-tratamiento"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden animate-fade-in">
-      <div
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up transition-colors">
-        <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center">
-          <h3 class="text-xl font-bold">Registrar Tratamiento</h3>
-          <button id="close-modal-tratamiento" class="hover:bg-white/20 rounded p-1"><svg class="w-6 h-6" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg></button>
-        </div>
-        <form id="form-tratamiento" class="p-6 space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Procedimiento</label>
-              <input name="procedimiento" required
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-gray-700 dark:text-white"
-                placeholder="Ej. Limpieza dental, Resina..." />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Diente (Opcional)</label>
-              <input name="diente"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-gray-700 dark:text-white"
-                placeholder="Ej. 18" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Costo</label>
-              <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400">$</span>
-                <input name="costo" type="number" step="0.01"
-                  class="w-full pl-8 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-gray-700 dark:text-white"
-                  placeholder="0.00" />
-              </div>
-            </div>
-            <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas /
-                Observaciones</label>
-              <textarea name="notas" rows="3"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-gray-700 dark:text-white"></textarea>
-            </div>
-
-            <!-- Inventory Integration -->
-            <div class="col-span-2 border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Receta / Medicamentos
-                (Inventario)</label>
-              <div class="flex gap-2">
-                <select id="select-medicamento-tratamiento"
-                  class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] dark:bg-gray-700 dark:text-white">
-                  <option value="">Seleccionar medicamento...</option>
-                </select>
-                <button type="button" id="btn-add-med-tratamiento"
-                  class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition">
-                  + Agregar
-                </button>
-              </div>
-              <div id="lista-receta-tratamiento" class="mt-3 space-y-2 text-sm text-gray-600 dark:text-gray-400"></div>
-            </div>
-          </div>
-
-          <div class="pt-4 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-700 mt-4">
-            <button type="button" id="cancel-tratamiento"
-              class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-gray-700 dark:text-gray-300">Cancelar</button>
-            <button type="submit"
-              class="px-6 py-2 bg-[#4EABBE] hover:bg-[#1D5D69] text-white rounded-lg font-semibold shadow-sm">Guardar
-              Tratamiento</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal Nueva Receta -->
-    <div id="modal-receta"
-      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center hidden animate-fade-in">
-      <div
-        class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-slide-up transition-colors">
-        <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center">
-          <h2 class="text-xl font-bold">Nueva Receta Médica</h2>
-          <button id="closeRecetaModal" class="hover:bg-white/20 rounded p-1"><svg class="w-6 h-6" fill="none"
-              stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg></button>
-        </div>
-        <div class="p-6 space-y-6">
-          <!-- Inventory Selection -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Agregar Medicamento del
-              Inventario</label>
-            <div class="flex gap-2">
-              <select id="select-medicamento-receta"
-                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] dark:bg-gray-700 dark:text-white">
-                <option value="">Seleccionar medicamento...</option>
-              </select>
-              <button id="btn-add-med-receta"
-                class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition font-medium">Agregar</button>
-            </div>
-          </div>
-
-          <!-- Prescription Content -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contenido de la
-              Receta</label>
-            <textarea id="receta-contenido" rows="6"
-              class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] resize-none dark:bg-gray-700 dark:text-white"
-              placeholder="Escribe aquí las indicaciones o agrega medicamentos..."></textarea>
-          </div>
-
-          <div class="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
-            <button id="cancelReceta"
-              class="px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 font-medium text-gray-700 dark:text-gray-300">Cancelar</button>
-            <button id="saveReceta"
-              class="px-6 py-2.5 bg-[#4EABBE] hover:bg-[#1D5D69] text-white rounded-xl font-semibold shadow-sm">Guardar
-              Receta</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <script type="module" src="../scripts/ficha_clinica.js"></script>
+  <script src="../scripts/ficha_clinica.js"></script>
 </body>
 
 </html>
+ 

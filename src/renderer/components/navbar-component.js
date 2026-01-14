@@ -115,44 +115,7 @@ export class NavbarComponent extends HTMLElement {
       });
     }
 
-    // Dark mode toggle - Consolidated Logic
-    const themeBtn = this.querySelector('#themeToggle');
-    if (themeBtn) {
-      const sun = themeBtn.querySelector('.sun-icon');
-      const moon = themeBtn.querySelector('.moon-icon');
-      const root = document.documentElement;
 
-      // Initialize state based on localStorage or system preference
-      const savedTheme = localStorage.getItem('theme');
-      const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-      if (isDark) {
-        root.classList.add('dark');
-        this.updateThemeIcons(true, themeBtn, sun, moon);
-      } else {
-        root.classList.remove('dark');
-        this.updateThemeIcons(false, themeBtn, sun, moon);
-      }
-
-      themeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const isCurrentlyDark = root.classList.contains('dark');
-        const newIsDark = !isCurrentlyDark;
-
-        if (newIsDark) {
-          root.classList.add('dark');
-          localStorage.setItem('theme', 'dark');
-        } else {
-          root.classList.remove('dark');
-          localStorage.setItem('theme', 'light');
-        }
-
-        this.updateThemeIcons(newIsDark, themeBtn, sun, moon);
-        console.log('[navbar] Theme changed to:', newIsDark ? 'dark' : 'light');
-      });
-    }
   }
 
   updateUser(userName, userRole) {
@@ -162,31 +125,7 @@ export class NavbarComponent extends HTMLElement {
     if (role) role.textContent = this.escapeHtml(userRole);
   }
 
-  updateThemeIcons(isDark, btn, sun, moon) {
-    if (isDark) {
-      btn.classList.remove('bg-white');
-      btn.classList.add('bg-[#1D5D69]');
-      if (sun) {
-        sun.classList.remove('opacity-100', 'rotate-0', 'scale-100');
-        sun.classList.add('opacity-0', '-rotate-90', 'scale-0');
-      }
-      if (moon) {
-        moon.classList.remove('opacity-0', 'rotate-90', 'scale-0');
-        moon.classList.add('opacity-100', 'rotate-0', 'scale-100');
-      }
-    } else {
-      btn.classList.remove('bg-[#1D5D69]');
-      btn.classList.add('bg-white');
-      if (sun) {
-        sun.classList.remove('opacity-0', '-rotate-90', 'scale-0');
-        sun.classList.add('opacity-100', 'rotate-0', 'scale-100');
-      }
-      if (moon) {
-        moon.classList.remove('opacity-100', 'rotate-0', 'scale-100');
-        moon.classList.add('opacity-0', 'rotate-90', 'scale-0');
-      }
-    }
-  }
+
 }
 
 customElements.define('app-navbar', NavbarComponent);

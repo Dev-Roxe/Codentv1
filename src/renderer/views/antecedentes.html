@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<!--
+  Pestana Antecedentes: historial clinico, padecimientos y linea de tiempo.
+  Mantiene la paleta oscura compartida.
+-->
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antecedentes Clinicos</title>
+  <link rel="stylesheet" href="../styles/output.css" />
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+</head>
+
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+    <header class="space-y-1">
+      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clinica</p>
+      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Antecedentes clinicos</h1>
+      <p class="text-sm text-[#0F2532] dark:text-slate-400">Registra alergias, enfermedades y eventos relevantes.</p>
+    </header>
+
+    <section
+      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-6 space-y-5 dark:bg-[#0E1A25] dark:border-slate-800">
+      <form id="form-antecedentes-ficha" class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Alergias</label>
+            <textarea name="alergias" rows="3"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Enfermedades</label>
+            <textarea name="enfermedades" rows="3"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Medicamentos</label>
+            <textarea name="medicamentos" rows="3"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Tipo
+              de
+              sangre</label>
+            <input type="text" name="tipo_sangre"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Observaciones</label>
+            <textarea name="observaciones" rows="3"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="button" id="save-antecedentes-ficha"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
+            Guardar antecedentes
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="grid gap-6 md:grid-cols-2">
+      <div
+        class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 space-y-4 dark:bg-[#0E1A25] dark:border-slate-800">
+        <header class="space-y-1">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Padecimientos</p>
+          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Seguimiento rapido</h2>
+        </header>
+        <div class="flex gap-2">
+          <input type="text" id="new-padecimiento" placeholder="Nuevo padecimiento"
+            class="flex-1 px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+          <button type="button" id="btn-add-padecimiento"
+            class="px-4 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow shadow-[#4EABBE]/30 transition">Anadir</button>
+        </div>
+        <div id="lista-padecimientos" class="space-y-2 text-sm text-[#0F2532] dark:text-slate-100"></div>
+      </div>
+
+      <div
+        class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 space-y-4 dark:bg-[#0E1A25] dark:border-slate-800">
+        <header class="space-y-1">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Linea de tiempo</p>
+          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Eventos clinicos</h2>
+        </header>
+        <div id="timeline-container" class="space-y-3 text-sm text-[#0F2532] dark:text-slate-100"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="../scripts/antecedentes.js"></script>
+</body>
+
+</html>

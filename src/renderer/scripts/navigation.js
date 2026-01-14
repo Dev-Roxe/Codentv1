@@ -17,7 +17,8 @@ const ROUTES = {
   perfil: 'perfil.html',
   configuracion: 'configuracion.html',
   login: 'login.html',
-  register: 'register.html'
+  register: 'register.html',
+  odontograma: 'odontograma.html'
 };
 
 /**
