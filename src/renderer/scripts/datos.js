@@ -2,6 +2,9 @@
 // Manejo de la pestaña de datos básicos del paciente.
 
 let db = (window.api && window.api.db) ? window.api.db : null;
+if (!db && window.parent && window.parent !== window && window.parent.api && window.parent.api.db) {
+  db = window.parent.api.db;
+}
 
 function dbGet(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -31,7 +34,14 @@ function dbRun(sql, params = []) {
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
-  return params.get(name);
+  const value = params.get(name);
+  if (value !== null && value !== '') return value;
+  if (window.parent && window.parent !== window) {
+    const parentParams = new URLSearchParams(window.parent.location.search);
+    const parentValue = parentParams.get(name);
+    if (parentValue !== null && parentValue !== '') return parentValue;
+  }
+  return null;
 }
 
 let currentPaciente = null;
@@ -47,12 +57,35 @@ async function loadPaciente(id) {
 }
 
 async function init() {
+  console.log('[datos.js] Initializing...');
+
   const id = getQueryParam('id');
-  if (!id) return;
+  console.log('[datos.js] Patient ID from URL:', id);
+
+  if (!id) {
+    console.error('[datos.js] No patient ID provided');
+    return;
+  }
+
+  console.log('[datos.js] Loading patient data for ID:', id);
   currentPaciente = await loadPaciente(id);
-  if (!currentPaciente) return;
+
+  if (!currentPaciente) {
+    console.error('[datos.js] Patient not found for ID:', id);
+    return;
+  }
+
+  console.log('[datos.js] Patient loaded successfully:', currentPaciente);
+
   const form = document.getElementById('form-datos');
+  if (!form) {
+    console.error('[datos.js] Form not found!');
+    return;
+  }
+
   const meta = (() => { try { return JSON.parse(currentPaciente.meta || '{}'); } catch (e) { return {}; } })();
+  console.log('[datos.js] Patient meta data:', meta);
+
   // Poblar formulario
   form.nombre.value = currentPaciente.nombre || '';
   form.apellido.value = currentPaciente.apellido || '';
@@ -67,6 +100,9 @@ async function init() {
   form.profesion.value = meta.profesion || '';
   form.empleador.value = meta.empleador || '';
   form.observaciones.value = meta.observaciones || '';
+
+  console.log('[datos.js] Form populated successfully');
+
   // Guardar
   document.getElementById('save-datos').addEventListener('click', async () => {
     const formData = new FormData(form);
@@ -79,7 +115,7 @@ async function init() {
       fecha_nacimiento: formData.get('fecha_nacimiento') || null
     };
     const newMeta = Object.assign({}, meta);
-    ['nombre_social','curp','convenio','numero_interno','profesion','empleador','observaciones'].forEach(k => {
+    ['nombre_social', 'curp', 'convenio', 'numero_interno', 'profesion', 'empleador', 'observaciones'].forEach(k => {
       newMeta[k] = formData.get(k) || '';
     });
     const sql = `UPDATE pacientes SET nombre = ?, apellido = ?, telefono = ?, email = ?, direccion = ?, fecha_nacimiento = ?, meta = ? WHERE id = ?`;

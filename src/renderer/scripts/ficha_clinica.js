@@ -44,6 +44,57 @@ function dbAll(sql, params = []) {
   });
 }
 
+function respondDbMessage(event, type, requestId, payload) {
+  const message = { type: `${type}-response`, requestId, ...payload };
+  if (event && event.source && typeof event.source.postMessage === 'function') {
+    event.source.postMessage(message, '*');
+    return;
+  }
+  for (let i = 0; i < window.frames.length; i += 1) {
+    try {
+      window.frames[i].postMessage(message, '*');
+    } catch (e) {
+      // Ignore cross-origin or inaccessible frames.
+    }
+  }
+}
+
+function handleDbMessage(event) {
+  const data = event && event.data;
+  if (!data || typeof data !== 'object') return;
+  const { type, requestId, sql, params } = data;
+  if (!type || !requestId) return;
+  if (type !== 'db-all' && type !== 'db-get' && type !== 'db-run') return;
+  if (!db) return respondDbMessage(event, type, requestId, { error: 'DB no disponible' });
+
+  try {
+    if (type === 'db-all') {
+      db.all(sql, params || [], (err, rows) => {
+        if (err) return respondDbMessage(event, type, requestId, { error: err.message });
+        respondDbMessage(event, type, requestId, { result: rows || [] });
+      });
+      return;
+    }
+    if (type === 'db-get') {
+      db.get(sql, params || [], (err, row) => {
+        if (err) return respondDbMessage(event, type, requestId, { error: err.message });
+        respondDbMessage(event, type, requestId, { result: row || null });
+      });
+      return;
+    }
+    if (type === 'db-run') {
+      db.run(sql, params || [], (err, res) => {
+        if (err) return respondDbMessage(event, type, requestId, { error: err.message });
+        respondDbMessage(event, type, requestId, { result: res || null });
+      });
+    }
+  } catch (e) {
+    respondDbMessage(event, type, requestId, { error: e.message || String(e) });
+  }
+}
+
+window.addEventListener('message', handleDbMessage);
+
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name);
@@ -65,40 +116,45 @@ function switchFrame(name) {
   // Mapeo de tabs a archivos (algunos pueden no existir aún)
   const frameMapping = {
     'datos': 'datos.html',
+    'historial': 'historial_tratamientos.html',
     'antecedentes': 'antecedentes.html',
     'tratamientos': 'tratamientos.html',
     'recetas': 'recetas.html',
     'odontograma': 'odontograma.html',
     'periodontograma': 'periodontograma.html',
+    'pagos': 'pagos.html',
     'galeria': 'datos.html', // Temporal: usar datos hasta que exista
     'contactos': 'datos.html', // Temporal: usar datos hasta que exista
     'diagnostico': 'antecedentes.html', // Temporal: usar antecedentes hasta que exista
     'documentos': 'tratamientos.html', // Temporal: usar tratamientos hasta que exista
     'agenda': 'agenda.html'
   };
-  
+
   // Oculta todos los iframes
   document.querySelectorAll('.tab-frame').forEach(frame => frame.classList.add('hidden'));
-  
+
   // Muestra el iframe correspondiente
   const frame = document.getElementById(`frame-${name}`);
   if (frame) {
-    // Si el iframe no tiene src configurado, configúralo
-    if (!frame.src || frame.src === window.location.href) {
+    // Si el iframe no tiene src configurado o no se ha cargado, configúralo
+    if (!frame.dataset.loaded || frame.dataset.loaded !== 'true') {
       const file = frameMapping[name] || 'datos.html';
-      frame.src = file;
-    }
-    
-    frame.classList.remove('hidden');
-    
-    // Si aún no se ha asignado el ID de paciente, añádelo al src
-    if (currentPaciente && frame.dataset.loaded !== 'true') {
-      const url = new URL(frame.src, window.location.href);
-      url.searchParams.set('id', currentPaciente.id);
+      const url = new URL(file, window.location.href);
+
+      // Agregar el ID del paciente si está disponible
+      if (currentPaciente) {
+        url.searchParams.set('paciente_id', currentPaciente.id);
+      }
+
       frame.src = url.toString();
       frame.dataset.loaded = 'true';
+
+      console.log(`Loading iframe ${name} with URL:`, frame.src);
     }
+
+    frame.classList.remove('hidden');
   }
+
   // Actualiza estilos de botones (tanto en nav como en aside)
   const activeClasses = [
     'text-white',
@@ -133,52 +189,15 @@ function calculateAge(fechaNacimiento) {
     const today = new Date();
     let years = today.getFullYear() - birth.getFullYear();
     let months = today.getMonth() - birth.getMonth();
-    
+
     if (months < 0) {
       years--;
       months += 12;
     }
-    
+
     return `${years} años ${months} mes${months !== 1 ? 'es' : ''}`;
   } catch (e) {
     return 'N/A';
-  }
-}
-
-async function loadHistorialServicios(pacienteId) {
-  try {
-    // Cargar historial desde la tabla tratamientos
-    const rows = await dbAll('SELECT * FROM tratamientos WHERE paciente_id = ? AND diente IS NOT NULL ORDER BY fecha DESC LIMIT 10', [pacienteId]);
-    const tbody = document.getElementById('historial-servicios');
-    if (!tbody) return;
-    
-    if (!rows || rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="py-4 px-3 text-center text-[#1D5D69] dark:text-slate-400">No hay servicios registrados</td></tr>';
-      return;
-    }
-    
-    tbody.innerHTML = rows.map(row => {
-      const fecha = row.fecha ? new Date(row.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
-      // Extraer caras de las notas
-      let caras = '—';
-      if (row.notas && row.notas.includes('Caras:')) {
-        caras = row.notas.split('Caras:')[1]?.trim() || '—';
-      }
-      return `
-        <tr class="border-b border-[#8BCFDD]/20 dark:border-slate-700 hover:bg-[#8BCFDD]/10">
-          <td class="py-2 px-3 text-sm text-[#0F2532] dark:text-slate-300">${fecha}</td>
-          <td class="py-2 px-3 text-sm text-[#0F2532] dark:text-slate-300">${row.procedimiento || 'N/A'}</td>
-          <td class="py-2 px-3 text-sm text-[#0F2532] dark:text-slate-300">${row.diente || '—'}</td>
-          <td class="py-2 px-3 text-sm text-[#0F2532] dark:text-slate-300">${caras}</td>
-        </tr>
-      `;
-    }).join('');
-  } catch (e) {
-    console.error('Error cargando historial:', e);
-    const tbody = document.getElementById('historial-servicios');
-    if (tbody) {
-      tbody.innerHTML = '<tr><td colspan="4" class="py-4 px-3 text-center text-[#1D5D69] dark:text-slate-400">Error al cargar historial</td></tr>';
-    }
   }
 }
 
@@ -193,18 +212,18 @@ async function init() {
     alert('Paciente no encontrado');
     return;
   }
-  
+
   // Actualiza encabezado superior
   const headerNombre = document.getElementById('header-nombre');
   if (headerNombre) {
     headerNombre.textContent = 'Información del Paciente';
   }
-  
+
   // Actualiza sidebar
   const sidebarNombre = document.getElementById('sidebar-nombre');
   const sidebarId = document.getElementById('sidebar-id');
   const sidebarEdad = document.getElementById('sidebar-edad');
-  
+
   if (sidebarNombre) {
     sidebarNombre.textContent = `${currentPaciente.nombre || ''} ${currentPaciente.apellido || ''}`.trim() || 'Paciente';
   }
@@ -215,7 +234,7 @@ async function init() {
     const edad = calculateAge(currentPaciente.fecha_nacimiento);
     sidebarEdad.textContent = edad;
   }
-  
+
   // Boton regresar
   const backBtn = document.getElementById('btn-back');
   if (backBtn) {
@@ -223,15 +242,12 @@ async function init() {
       window.location.href = 'pacientes.html';
     });
   }
-  
+
   // Configura navegacion
   document.querySelectorAll('nav .tab-btn, aside .tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchFrame(btn.dataset.tab));
   });
-  
-  // Carga el historial de servicios
-  await loadHistorialServicios(currentPaciente.id);
-  
+
   // Carga la primera pestana
   switchFrame('datos');
 }
@@ -263,14 +279,4 @@ window.addEventListener('themeChanged', () => {
       frame.contentWindow.location.reload();
     }
   });
-});
-
-// Escuchar mensajes de los iframes (por ejemplo, cuando se guarda un tratamiento)
-window.addEventListener('message', async (e) => {
-  if (e.data && e.data.type === 'tratamiento-guardado') {
-    // Recargar historial de servicios
-    if (currentPaciente && currentPaciente.id) {
-      await loadHistorialServicios(currentPaciente.id);
-    }
-  }
 });

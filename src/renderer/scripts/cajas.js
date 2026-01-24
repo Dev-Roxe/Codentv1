@@ -3,13 +3,78 @@ import toast from './toast.js';
 import '../components/navbar-component.js';
 import { initNavbarListeners, getUserName } from './navigation.js';
 
+let db = (window.api && window.api.db) ? window.api.db : null;
+
+function getSessionUser() {
+  try {
+    return JSON.parse(localStorage.getItem('sesionActual')) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function getCurrentUserName() {
+  const session = getSessionUser();
+  return session.nombre || getUserName();
+}
+
+function getCurrentUserId() {
+  const session = getSessionUser();
+  return session.id || null;
+}
+
+function dbAll(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!db) return resolve([]);
+      if (db.all && db.all.length >= 3) {
+        db.all(sql, params, (err, rows) => {
+          if (err) return reject(err);
+          resolve(rows || []);
+        });
+      } else if (db.all) {
+        db.all(sql, params).then(rows => resolve(rows || [])).catch(reject);
+      } else {
+        resolve([]);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!db) return reject(new Error('DB no disponible'));
+      if (db.run && db.run.length >= 3) {
+        db.run(sql, params, function (err) {
+          if (err) return reject(err);
+          resolve(this);
+        });
+      } else if (db.run) {
+        db.run(sql, params).then(res => resolve(res)).catch(reject);
+      } else {
+        reject(new Error('DB methods not available'));
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 let currentTab = 'abiertas';
 let cajas = [];
+let charts = {
+  movimientos: null,
+  comparacion: null
+};
+
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Inicializar navbar
   const navbar = document.querySelector('app-navbar');
-  if (navbar) navbar.setAttribute('user-name', getUserName());
+  if (navbar) navbar.setAttribute('user-name', getCurrentUserName());
 
   initNavbarListeners({
     onSearch: (query) => {
@@ -58,60 +123,48 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Renderizar tab inicial
   renderCurrentTab();
+
+  // Inicializar gráficas
+  createMovimientosChart();
+  createComparacionChart();
+
+  // Observador de cambios de tema para actualizar gráficas
+  setupThemeObserver();
 });
 
 // Cargar cajas desde la base de datos
 async function loadCajas() {
   try {
-    // Simulación - en producción esto vendría de la BD
+    if (!db) {
+      cajas = [];
+      updateStats();
+      createMovimientosChart();
+      createComparacionChart();
+      return;
+    }
+
     const sql = `
       SELECT 
         c.*,
-        u.nombre || ' ' || u.apellido as usuario_nombre,
-        (SELECT COALESCE(SUM(monto), 0) FROM movimientos_caja WHERE caja_id = c.id) as total_movimientos
+        TRIM(COALESCE(u.nombre, '') || ' ' || COALESCE(u.apellido, u.apellidos, '')) as usuario_nombre,
+        (SELECT COALESCE(SUM(CASE WHEN m.tipo = 'egreso' THEN -m.monto ELSE m.monto END), 0) FROM movimientos_caja m WHERE m.caja_id = c.id) as total_movimientos
       FROM cajas c
       LEFT JOIN usuarios u ON c.usuario_id = u.id
       ORDER BY c.fecha_apertura DESC
     `;
 
-    // Temporal: datos de ejemplo
-    cajas = [
-      {
-        id: 1,
-        usuario_nombre: 'EVA MARITZA SOSA TAPIA',
-        fecha_apertura: '2024-05-30T08:00:00',
-        fecha_cierre: null,
-        saldo_inicial: 0,
-        saldo_final: null,
-        estado: 'abierta',
-        total_movimientos: 111200,
-        notas: 'Caja principal recepción'
-      },
-      {
-        id: 2,
-        usuario_nombre: 'JUAN CARLOS PÉREZ',
-        fecha_apertura: '2024-05-29T08:00:00',
-        fecha_cierre: '2024-05-29T18:00:00',
-        saldo_inicial: 500,
-        saldo_final: 45300,
-        estado: 'cerrada',
-        total_movimientos: 44800,
-        notas: null
-      },
-      {
-        id: 3,
-        usuario_nombre: 'MARIA FERNANDA GOMEZ',
-        fecha_apertura: '2024-05-30T09:00:00',
-        fecha_cierre: null,
-        saldo_inicial: 1000,
-        saldo_final: null,
-        estado: 'abierta',
-        total_movimientos: 23400,
-        notas: 'Caja 2 - Área administrativa'
-      }
-    ];
+    const rows = await dbAll(sql);
+    cajas = (rows || []).map(c => ({
+      ...c,
+      usuario_nombre: (c.usuario_nombre || 'Usuario').trim() || 'Usuario',
+      saldo_inicial: Number(c.saldo_inicial || 0),
+      saldo_final: c.saldo_final === null || c.saldo_final === undefined ? null : Number(c.saldo_final),
+      total_movimientos: Number(c.total_movimientos || 0)
+    }));
 
     updateStats();
+    createMovimientosChart();
+    createComparacionChart();
   } catch (error) {
     console.error('Error cargando cajas:', error);
     cajas = [];
@@ -131,6 +184,213 @@ function updateStats() {
   if (statCajasAbiertas) statCajasAbiertas.textContent = cajasAbiertas;
   if (statTotalDia) statTotalDia.textContent = formatCurrency(totalDia);
 }
+
+// Obtener colores según el tema
+function getChartColors() {
+  const isDark = document.documentElement.classList.contains('dark');
+  return {
+    text: isDark ? '#F3F4F6' : '#0F2532',
+    grid: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+    tooltipBg: isDark ? '#1F2937' : '#1D5D69',
+    tooltipText: '#ffffff'
+  };
+}
+
+// Crear gráfica de movimientos diarios
+function createMovimientosChart() {
+  const ctx = document.getElementById('movimientosChart');
+  if (!ctx) return;
+
+  if (charts.movimientos) {
+    charts.movimientos.destroy();
+  }
+
+  const colors = getChartColors();
+
+  // Datos mock - últimos 7 días
+  const labels = [];
+  const ingresosData = [];
+  const egresosData = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    labels.push(date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
+    ingresosData.push(Math.floor(Math.random() * 30000) + 20000);
+    egresosData.push(Math.floor(Math.random() * 5000) + 1000);
+  }
+
+  const data = {
+    labels: labels,
+    datasets: [
+      {
+        label: 'Ingresos',
+        data: ingresosData,
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        borderColor: 'rgba(16, 185, 129, 1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      },
+      {
+        label: 'Egresos',
+        data: egresosData,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderColor: 'rgba(239, 68, 68, 1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }
+    ]
+  };
+
+  charts.movimientos = new Chart(ctx, {
+    type: 'line',
+    data: data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: colors.text,
+            usePointStyle: true,
+            padding: 15
+          }
+        },
+        tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipText,
+          bodyColor: colors.tooltipText,
+          padding: 12,
+          callbacks: {
+            label: function (context) {
+              return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: colors.text,
+            callback: function (value) {
+              return '$' + (value / 1000) + 'K';
+            }
+          },
+          grid: {
+            color: colors.grid
+          }
+        },
+        x: {
+          ticks: { color: colors.text },
+          grid: {
+            display: false
+          }
+        }
+      }
+    }
+  });
+}
+
+// Crear gráfica de comparación de cajas
+function createComparacionChart() {
+  const ctx = document.getElementById('comparacionChart');
+  if (!ctx) return;
+
+  if (charts.comparacion) {
+    charts.comparacion.destroy();
+  }
+
+  const colors = getChartColors();
+  const cajasAbiertas = cajas.filter(c => c.estado === 'abierta');
+
+  if (cajasAbiertas.length === 0) {
+    // Mostrar mensaje si no hay cajas abiertas
+    ctx.parentElement.innerHTML = `
+      <div class="flex items-center justify-center h-full text-[#0F2532]/60 dark:text-gray-400">
+        <p>No hay cajas abiertas para comparar</p>
+      </div>
+    `;
+    return;
+  }
+
+  const labels = cajasAbiertas.map(c => c.usuario_nombre.split(' ')[0]);
+  const data = cajasAbiertas.map(c => c.saldo_inicial + c.total_movimientos);
+  const backgroundColors = [
+    'rgba(78, 171, 190, 0.8)',
+    'rgba(29, 93, 105, 0.8)',
+    'rgba(139, 207, 221, 0.8)',
+    'rgba(16, 185, 129, 0.8)',
+    'rgba(251, 191, 36, 0.8)'
+  ];
+
+  charts.comparacion = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: backgroundColors.slice(0, cajasAbiertas.length),
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            color: colors.text,
+            padding: 15,
+            font: { size: 12 },
+            usePointStyle: true
+          }
+        },
+        tooltip: {
+          backgroundColor: colors.tooltipBg,
+          titleColor: colors.tooltipText,
+          bodyColor: colors.tooltipText,
+          padding: 12,
+          callbacks: {
+            label: function (context) {
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((context.parsed / total) * 100).toFixed(1);
+              return context.label + ': ' + formatCurrency(context.parsed) + ' (' + percentage + '%)';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Actualizar tema de las gráficas
+function updateChartsTheme() {
+  createMovimientosChart();
+  createComparacionChart();
+}
+
+// Configurar observador de cambios de tema
+function setupThemeObserver() {
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        updateChartsTheme();
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+}
+
 
 // Cambiar de tab
 function switchTab(tabName) {
@@ -164,7 +424,7 @@ function renderCurrentTab() {
       break;
     case 'mi-caja':
       // En producción, filtrar por usuario actual
-      const currentUser = getUserName();
+      const currentUser = getCurrentUserName();
       filteredCajas = cajas.filter(c =>
         c.usuario_nombre.includes(currentUser) && c.estado === 'abierta'
       );
@@ -390,29 +650,27 @@ function showAbrirCajaModal() {
     const notas = document.getElementById('notasCaja').value.trim();
 
     try {
-      // En producción: guardar en BD
-      console.log('Abriendo caja:', { saldoInicial, notas });
+      const usuarioId = getCurrentUserId();
+      if (!usuarioId) {
+        showNotification('No hay usuario en sesion', 'error');
+        return;
+      }
+      if (!Number.isFinite(saldoInicial) || saldoInicial < 0) {
+        showNotification('Saldo inicial invalido', 'error');
+        return;
+      }
 
-      // Simulación: agregar nueva caja
-      const nuevaCaja = {
-        id: cajas.length + 1,
-        usuario_nombre: getUserName(),
-        fecha_apertura: new Date().toISOString(),
-        fecha_cierre: null,
-        saldo_inicial: saldoInicial,
-        saldo_final: null,
-        estado: 'abierta',
-        total_movimientos: 0,
-        notas: notas || null
-      };
+      await dbRun(
+        'INSERT INTO cajas (usuario_id, saldo_inicial, notas, estado) VALUES (?, ?, ?, ?)',
+        [usuarioId, saldoInicial, notas || null, 'abierta']
+      );
 
-      cajas.unshift(nuevaCaja);
-      updateStats();
+      await loadCajas();
       renderCurrentTab();
 
       overlay.remove();
 
-      // Notificación de éxito
+      // Notificacion de exito
       showNotification('Caja abierta exitosamente', 'success');
     } catch (error) {
       console.error('Error abriendo caja:', error);
@@ -427,6 +685,7 @@ function showCerrarCajaModal(cajaId) {
   if (!caja) return;
 
   const totalAcumulado = caja.saldo_inicial + caja.total_movimientos;
+  const movimientosClass = caja.total_movimientos >= 0 ? 'text-green-600' : 'text-red-600';
 
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in';
@@ -444,7 +703,7 @@ function showCerrarCajaModal(cajaId) {
           </div>
           <div class="flex justify-between items-center mb-2">
             <span class="text-[#0F2532]/60 text-sm">Movimientos</span>
-            <span class="font-bold text-green-600">${formatCurrency(caja.total_movimientos)}</span>
+            <span class="font-bold ${movimientosClass}">${formatCurrency(caja.total_movimientos)}</span>
           </div>
           <div class="border-t border-[#0F2532]/20 pt-2 mt-2">
             <div class="flex justify-between items-center">
@@ -454,40 +713,40 @@ function showCerrarCajaModal(cajaId) {
           </div>
         </div>
         
-        <form id="formCerrarCaja" class="space-y-4">
-          <div>
-            <label class="block text-sm font-semibold text-[#0F2532] mb-2">Saldo Final (conteo real) *</label>
-            <div class="relative">
-              <span class="absolute left-4 top-3 text-[#0F2532]/60 font-medium">$</span>
-              <input 
-                type="number" 
-                id="saldoFinal" 
-                required 
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                class="w-full pl-8 pr-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
-              />
+        <div class="space-y-4">
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+              <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div>
+                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Realiza el arqueo de caja</p>
+                <p class="text-xs text-blue-700 dark:text-blue-300 mt-1">Cuenta el efectivo y registra las denominaciones para un cierre preciso</p>
+              </div>
             </div>
-            <p class="text-xs text-[#0F2532]/50 mt-1">Ingresa el monto real contado en la caja</p>
           </div>
+
+          <button 
+            type="button"
+            id="btnArqueoCaja"
+            class="w-full py-4 bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] text-white rounded-xl hover:shadow-lg font-semibold transition flex items-center justify-center gap-2"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a22 0 00-2 2v14a2 2 0 002 2z"/>
+            </svg>
+            Realizar Arqueo de Caja
+          </button>
           
-          <div class="flex gap-3 pt-2">
+          <div class="flex gap-3">
             <button 
               type="button" 
               id="btnCancelarCerrar" 
-              class="flex-1 py-3 border-2 border-[#D9D9D9] rounded-xl hover:bg-[#F8F7F7] font-semibold text-[#0F2532] transition"
+              class="flex-1 py-3 border-2 border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 font-semibold text-[#0F2532] dark:text-white transition"
             >
               Cancelar
             </button>
-            <button 
-              type="submit" 
-              class="flex-1 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:shadow-lg font-semibold transition"
-            >
-              Cerrar Caja
-            </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   `;
@@ -498,30 +757,262 @@ function showCerrarCajaModal(cajaId) {
   overlay.querySelector('#btnCancelarCerrar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
-  overlay.querySelector('#formCerrarCaja').addEventListener('submit', async (e) => {
-    e.preventDefault();
+  // Botón de arqueo
+  overlay.querySelector('#btnArqueoCaja').addEventListener('click', () => {
+    overlay.remove();
+    showArqueoCajaModal(cajaId, totalAcumulado);
+  });
+}
 
-    const saldoFinal = parseFloat(document.getElementById('saldoFinal').value);
-    const diferencia = saldoFinal - totalAcumulado;
+// Modal de Arqueo de Caja con denominaciones
+function showArqueoCajaModal(cajaId, totalEsperado) {
+  const caja = cajas.find(c => c.id == cajaId);
+  if (!caja) return;
 
-    if (Math.abs(diferencia) > 0.01) {
+  const denominaciones = {
+    billetes: [
+      { valor: 1000, cantidad: 0 },
+      { valor: 500, cantidad: 0 },
+      { valor: 200, cantidad: 0 },
+      { valor: 100, cantidad: 0 },
+      { valor: 50, cantidad: 0 },
+      { valor: 20, cantidad: 0 }
+    ],
+    monedas: [
+      { valor: 20, cantidad: 0 },
+      { valor: 10, cantidad: 0 },
+      { valor: 5, cantidad: 0 },
+      { valor: 2, cantidad: 0 },
+      { valor: 1, cantidad: 0 },
+      { valor: 0.50, cantidad: 0 }
+    ]
+  };
+
+  const overlay = document.createElement('div');
+  overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in overflow-y-auto p-4';
+  overlay.innerHTML = `
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl my-8 animate-slide-in">
+      <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
+        <h3 class="text-2xl font-bold">Arqueo de Caja #${caja.id}</h3>
+        <p class="text-white/80 text-sm mt-1">${caja.usuario_nombre}</p>
+      </div>
+      
+      <div class="p-6 max-h-[70vh] overflow-y-auto">
+        <!-- Resumen esperado -->
+        <div class="bg-gradient-to-br from-[#4EABBE]/10 to-[#1D5D69]/10 p-4 rounded-xl mb-6">
+          <div class="flex justify-between items-center">
+            <span class="text-[#0F2532]/60 dark:text-gray-400 text-sm font-medium">Total Esperado</span>
+            <span class="font-bold text-2xl text-[#1D5D69] dark:text-[#4EABBE]">${formatCurrency(totalEsperado)}</span>
+          </div>
+        </div>
+
+        <!-- Billetes -->
+        <div class="mb-6">
+          <h4 class="text-lg font-bold text-[#0F2532] dark:text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            Billetes
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${denominaciones.billetes.map(d => `
+              <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:border-[#4EABBE] transition">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg font-bold text-[#1D5D69] dark:text-[#4EABBE]">$${d.valor}</span>
+                  <span class="text-xs text-[#0F2532]/60 dark:text-gray-400 font-medium">Cantidad</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value="0"
+                    data-tipo="billete"
+                    data-valor="${d.valor}"
+                    class="denominacion-input flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white font-semibold text-center"
+                  />
+                  <span class="subtotal-denominacion text-sm font-bold text-green-600 dark:text-green-400 min-w-[80px] text-right">$0</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Monedas -->
+        <div class="mb-6">
+          <h4 class="text-lg font-bold text-[#0F2532] dark:text-white mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Monedas
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            ${denominaciones.monedas.map(d => `
+              <div class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:border-[#4EABBE] transition">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-lg font-bold text-[#1D5D69] dark:text-[#4EABBE]">$${d.valor}</span>
+                  <span class="text-xs text-[#0F2532]/60 dark:text-gray-400 font-medium">Cantidad</span>
+                </div>
+                <div class="flex items-center gap-3">
+                  <input 
+                    type="number" 
+                    min="0" 
+                    value="0"
+                    data-tipo="moneda"
+                    data-valor="${d.valor}"
+                    class="denominacion-input flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white font-semibold text-center"
+                  />
+                  <span class="subtotal-denominacion text-sm font-bold text-green-600 dark:text-green-400 min-w-[80px] text-right">$0</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Total contado y diferencia -->
+        <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-600">
+          <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mb-1">Total Contado</p>
+              <p id="totalContado" class="text-3xl font-bold text-[#1D5D69] dark:text-[#4EABBE]">$0.00</p>
+            </div>
+            <div>
+              <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mb-1">Diferencia</p>
+              <p id="diferencia" class="text-3xl font-bold text-gray-500 dark:text-gray-400">$0.00</p>
+            </div>
+          </div>
+          <div id="alertaDiferencia" class="hidden mt-4"></div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="bg-gray-50 dark:bg-gray-900 p-6 rounded-b-2xl flex gap-3">
+        <button 
+          id="btnCancelarArqueo" 
+          class="flex-1 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold text-[#0F2532] dark:text-white transition"
+        >
+          Cancelar
+        </button>
+        <button 
+          id="btnConfirmarArqueo" 
+          class="flex-1 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:shadow-lg font-semibold transition"
+        >
+          Confirmar y Cerrar Caja
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Función para calcular totales
+  function calcularTotales() {
+    let totalContado = 0;
+    const inputs = overlay.querySelectorAll('.denominacion-input');
+
+    inputs.forEach(input => {
+      const cantidad = parseInt(input.value) || 0;
+      const valor = parseFloat(input.dataset.valor);
+      const subtotal = cantidad * valor;
+
+      // Actualizar subtotal de la denominación
+      const subtotalElement = input.parentElement.querySelector('.subtotal-denominacion');
+      subtotalElement.textContent = formatCurrency(subtotal);
+
+      totalContado += subtotal;
+    });
+
+    // Actualizar total contado
+    const totalContadoElement = overlay.querySelector('#totalContado');
+    totalContadoElement.textContent = formatCurrency(totalContado);
+
+    // Calcular y mostrar diferencia
+    const diferencia = totalContado - totalEsperado;
+    const diferenciaElement = overlay.querySelector('#diferencia');
+    const alertaElement = overlay.querySelector('#alertaDiferencia');
+
+    diferenciaElement.textContent = formatCurrency(Math.abs(diferencia));
+
+    if (Math.abs(diferencia) < 0.01) {
+      diferenciaElement.className = 'text-3xl font-bold text-green-600 dark:text-green-400';
+      alertaElement.className = 'hidden';
+    } else if (diferencia > 0) {
+      diferenciaElement.className = 'text-3xl font-bold text-green-600 dark:text-green-400';
+      alertaElement.className = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 flex items-center gap-2';
+      alertaElement.innerHTML = `
+        <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm font-medium text-green-800 dark:text-green-200">Sobrante de ${formatCurrency(diferencia)}</span>
+      `;
+    } else {
+      diferenciaElement.className = 'text-3xl font-bold text-red-600 dark:text-red-400';
+      alertaElement.className = 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center gap-2';
+      alertaElement.innerHTML = `
+        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-sm font-medium text-red-800 dark:text-red-200">Faltante de ${formatCurrency(Math.abs(diferencia))}</span>
+      `;
+    }
+
+    return { totalContado, diferencia };
+  }
+
+  // Event listeners para inputs
+  overlay.querySelectorAll('.denominacion-input').forEach(input => {
+    input.addEventListener('input', calcularTotales);
+  });
+
+  // Cancelar
+  overlay.querySelector('#btnCancelarArqueo').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Confirmar arqueo y cerrar caja
+  overlay.querySelector('#btnConfirmarArqueo').addEventListener('click', async () => {
+    const { totalContado, diferencia } = calcularTotales();
+
+    // Confirmar si hay diferencia significativa
+    if (Math.abs(diferencia) > 50) {
       const confirmClose = confirm(
         `Hay una diferencia de ${formatCurrency(Math.abs(diferencia))} ${diferencia > 0 ? 'a favor' : 'en contra'}.\n\n¿Deseas cerrar la caja de todas formas?`
       );
       if (!confirmClose) return;
     }
 
-    try {
-      // En producción: actualizar en BD
-      caja.estado = 'cerrada';
-      caja.fecha_cierre = new Date().toISOString();
-      caja.saldo_final = saldoFinal;
+    // Recopilar arqueo
+    const arqueo = {
+      billetes: {},
+      monedas: {},
+      totalContado: totalContado,
+      diferencia: diferencia
+    };
 
-      updateStats();
+    overlay.querySelectorAll('.denominacion-input').forEach(input => {
+      const tipo = input.dataset.tipo;
+      const valor = input.dataset.valor;
+      const cantidad = parseInt(input.value) || 0;
+
+      if (cantidad > 0) {
+        if (tipo === 'billete') {
+          arqueo.billetes[valor] = cantidad;
+        } else {
+          arqueo.monedas[valor] = cantidad;
+        }
+      }
+    });
+
+    // Cerrar caja con arqueo
+    try {
+      await dbRun(
+        'UPDATE cajas SET estado = ?, fecha_cierre = CURRENT_TIMESTAMP, saldo_final = ?, arqueo = ? WHERE id = ?',
+        ['cerrada', totalContado, JSON.stringify(arqueo), cajaId]
+      );
+
+      await loadCajas();
       renderCurrentTab();
       overlay.remove();
 
-      showNotification('Caja cerrada exitosamente', 'success');
+      showNotification('Caja cerrada exitosamente con arqueo completo', 'success');
     } catch (error) {
       console.error('Error cerrando caja:', error);
       showNotification('Error al cerrar la caja', 'error');
@@ -529,23 +1020,39 @@ function showCerrarCajaModal(cajaId) {
   });
 }
 
+
 // Ver detalle de caja
-function showDetalleCaja(cajaId) {
+async function showDetalleCaja(cajaId) {
   const caja = cajas.find(c => c.id == cajaId);
   if (!caja) return;
 
-  // Datos de ejemplo de movimientos
-  const movimientos = [
-    { id: 1, tipo: 'ingreso', monto: 50000, concepto: 'Pago paciente consulta', fecha: '2024-05-30T10:30:00', usuario: 'Eva Maritza' },
-    { id: 2, tipo: 'ingreso', monto: 35200, concepto: 'Pago tratamiento ortodoncia', fecha: '2024-05-30T11:15:00', usuario: 'Eva Maritza' },
-    { id: 3, tipo: 'egreso', monto: -5000, concepto: 'Compra material dental', fecha: '2024-05-30T12:00:00', usuario: 'Eva Maritza' },
-    { id: 4, tipo: 'ingreso', monto: 28000, concepto: 'Pago limpieza dental', fecha: '2024-05-30T14:30:00', usuario: 'Eva Maritza' },
-    { id: 5, tipo: 'ingreso', monto: 3000, concepto: 'Pago consulta', fecha: '2024-05-30T15:45:00', usuario: 'Eva Maritza' }
-  ];
+  let movimientos = [];
+  if (db) {
+    try {
+      movimientos = await dbAll(`
+        SELECT 
+          m.id, m.tipo, m.monto, m.concepto, m.fecha,
+          TRIM(COALESCE(u.nombre, '') || ' ' || COALESCE(u.apellido, u.apellidos, '')) as usuario
+        FROM movimientos_caja m
+        LEFT JOIN usuarios u ON u.id = m.usuario_id
+        WHERE m.caja_id = ?
+        ORDER BY m.fecha ASC, m.id ASC
+      `, [cajaId]);
+    } catch (error) {
+      console.error('Error cargando movimientos:', error);
+      movimientos = [];
+    }
+  }
+
+  movimientos = (movimientos || []).map(m => ({
+    ...m,
+    monto: Math.abs(Number(m.monto || 0)),
+    usuario: (m.usuario || '').trim() || 'Sistema'
+  }));
 
   const totalAcumulado = caja.saldo_inicial + caja.total_movimientos;
   const totalIngresos = movimientos.filter(m => m.tipo === 'ingreso').reduce((sum, m) => sum + m.monto, 0);
-  const totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + Math.abs(m.monto), 0);
+  const totalEgresos = movimientos.filter(m => m.tipo === 'egreso').reduce((sum, m) => sum + m.monto, 0);
 
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 modal-overlay flex items-center justify-center z-50 animate-fade-in';
@@ -774,19 +1281,48 @@ function showNuevoMovimientoModal(cajaId) {
 
   overlay.querySelector('#formNuevoMovimiento').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const monto = parseFloat(document.getElementById('montoMovimiento').value);
+    const montoRaw = parseFloat(document.getElementById('montoMovimiento').value);
     const concepto = document.getElementById('conceptoMovimiento').value.trim();
 
-    console.log('Nuevo movimiento:', { cajaId, tipo: tipoSeleccionado, monto, concepto });
+    if (!db) {
+      showNotification('DB no disponible', 'error');
+      return;
+    }
+    const caja = cajas.find(c => c.id == cajaId);
+    if (!caja || caja.estado !== 'abierta') {
+      showNotification('La caja esta cerrada', 'error');
+      return;
+    }
+    if (!Number.isFinite(montoRaw) || montoRaw <= 0) {
+      showNotification('Monto invalido', 'error');
+      return;
+    }
+    if (!concepto) {
+      showNotification('Concepto requerido', 'warning');
+      return;
+    }
 
-    // Simulación de guardado
-    overlay.remove();
-    showNotification(`${tipoSeleccionado === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado exitosamente`, 'success');
+    const monto = Math.abs(montoRaw);
+    const usuarioId = getCurrentUserId();
 
-    // Actualizar la vista si es necesario
-    setTimeout(() => {
-      showDetalleCaja(cajaId);
-    }, 500);
+    try {
+      await dbRun(
+        'INSERT INTO movimientos_caja (caja_id, tipo, monto, concepto, usuario_id) VALUES (?, ?, ?, ?, ?)',
+        [cajaId, tipoSeleccionado, monto, concepto, usuarioId]
+      );
+
+      await loadCajas();
+      renderCurrentTab();
+      overlay.remove();
+      showNotification(`${tipoSeleccionado === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado exitosamente`, 'success');
+
+      setTimeout(() => {
+        showDetalleCaja(cajaId);
+      }, 200);
+    } catch (error) {
+      console.error('Error registrando movimiento:', error);
+      showNotification('Error al registrar movimiento', 'error');
+    }
   });
 }
 

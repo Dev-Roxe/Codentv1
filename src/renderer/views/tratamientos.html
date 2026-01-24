@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <!--
-  Pestana Tratamientos: listado y modal para nuevos procedimientos.
-  Usa la paleta oscura alineada con odontograma/periodontograma.
+  Pestaña Planes de Tratamiento: Asignar y gestionar tratamientos del catálogo para el paciente.
+  Muestra tratamientos disponibles y permite seleccionar según el problema diagnosticado.
 -->
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tratamientos</title>
+  <title>Planes de Tratamiento</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -20,90 +20,148 @@
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
-  <main class="max-w-6xl mx-auto p-6 space-y-6">
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-      <div>
-        <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clinica</p>
-        <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Tratamientos</h1>
-        <p class="text-sm text-[#0F2532] dark:text-slate-400">Gestiona los procedimientos realizados y sus costos.
-        </p>
-      </div>
-      <button id="add-tratamiento-btn"
-        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
-        Anadir tratamiento
-      </button>
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+    <header class="space-y-1">
+      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
+      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Planes de Tratamiento</h1>
+      <p class="text-sm text-[#0F2532] dark:text-slate-400">Selecciona tratamientos del catalogo para este paciente.</p>
     </header>
 
-    <section
-      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 dark:bg-[#0E1A25] dark:border-slate-800">
-      <div id="tratamientos-list"
-        class="space-y-3 max-h-[70vh] overflow-auto pr-1 text-sm text-[#0F2532] dark:text-slate-100"></div>
-    </section>
-  </main>
-
-  <!-- Modal -->
-  <div id="modal-tratamiento"
-    class="fixed inset-0 bg-[#0F2532]/70 backdrop-blur-sm flex items-center justify-center hidden">
-    <div
-      class="bg-white border border-[#8BCFDD]/60 rounded-3xl w-full max-w-xl p-6 shadow-2xl shadow-[#8BCFDD]/30 dark:bg-[#0E1A25] dark:border-slate-800">
-      <div class="flex justify-between items-start mb-4">
-        <div>
-          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Nuevo</p>
-          <h3 class="text-xl font-semibold text-[#1D5D69] dark:text-white">Tratamiento</h3>
-        </div>
-        <button id="close-modal-tratamiento"
-          class="text-slate-400 hover:text-[#0F2532] text-lg leading-none dark:hover:text-slate-100">&times;</button>
+    <!-- Contenido Planes Pendientes -->
+    <div id="content-pendientes" class="tab-content space-y-6">
+      <!-- Botón Agregar Plan -->
+      <div class="flex justify-end">
+        <button type="button" id="add-plan-btn"
+          class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] focus:outline-none focus:ring-4 focus:ring-[#8BCFDD]/50 transition shadow-lg shadow-[#4EABBE]/30">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Seleccionar tratamiento</span>
+        </button>
       </div>
 
-      <form id="form-tratamiento" class="space-y-4">
+      <!-- Lista de Planes Pendientes -->
+      <div id="planes-pendientes-list" class="space-y-4">
+        <!-- Se cargarán dinámicamente -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal para Agregar/Editar Plan -->
+  <div id="modal-plan"
+    class="fixed inset-0 bg-[#0F2532]/70 backdrop-blur-sm flex items-center justify-center hidden z-50 overflow-y-auto">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/60 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl shadow-[#8BCFDD]/30 my-8">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400" id="modal-plan-subtitle">Seleccionar</p>
+          <h3 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Plan de Tratamiento</h3>
+        </div>
+        <button id="close-modal-plan"
+          class="text-slate-400 hover:text-[#0F2532] dark:hover:text-slate-100 text-2xl leading-none transition">
+          &times;
+        </button>
+      </div>
+
+      <form id="form-plan" class="space-y-5">
+        <input type="hidden" id="plan-id" name="id">
+
+        <!-- Seleccionar Tratamiento del Catálogo -->
         <div>
           <label
-            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Procedimiento</label>
-          <input type="text" name="procedimiento"
-            class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"
-            required />
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Tratamiento *
+          </label>
+          <select id="select-tratamiento" name="catalogo_id" required
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+            <option value="">Seleccionar tratamiento...</option>
+          </select>
         </div>
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Diente</label>
-            <input type="text" name="diente"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Costo</label>
-            <input type="number" step="0.01" name="costo"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+
+        <!-- Información del Tratamiento (lectura) -->
+        <div id="tratamiento-info" class="hidden bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700">
+          <div class="grid gap-3 text-sm">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Descripción</p>
+              <p id="info-descripcion" class="text-[#0F2532] dark:text-slate-100"></p>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo Base</p>
+                <p id="info-costo-base" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Medicina</p>
+                <p id="info-costo-medicina" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Miscelánea</p>
+                <p id="info-costo-miscelanea" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
+              </div>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo Total Estimado</p>
+              <p id="info-costo-total" class="text-lg font-bold text-[#4EABBE] dark:text-[#8BCFDD]">$0.00</p>
+            </div>
           </div>
         </div>
+
+        <!-- Especialista Asignado -->
         <div>
           <label
-            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Notas</label>
-          <textarea name="notas" rows="3"
-            class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Especialista Asignado
+          </label>
+          <select id="select-especialista" name="especialista_asignado"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+            <option value="">Sin asignar</option>
+            <option value="Odontólogo General">Odontólogo General</option>
+            <option value="Endodoncista">Endodoncista</option>
+            <option value="Periodoncista">Periodoncista</option>
+            <option value="Prostodoncista">Prostodoncista</option>
+            <option value="Ortodoncista">Ortodoncista</option>
+            <option value="Cirujano Bucal">Cirujano Bucal</option>
+          </select>
         </div>
 
-        <div class="space-y-3">
+        <!-- Notas y Problema -->
+        <div>
           <label
-            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Medicamento</label>
-          <select id="select-medicamento-tratamiento"
-            class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></select>
-          <button type="button" id="btn-add-med-tratamiento"
-            class="px-4 py-2 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow shadow-[#4EABBE]/30 transition">Anadir
-            medicamento</button>
-          <div id="lista-receta-tratamiento" class="space-y-2 text-sm text-[#0F2532] dark:text-slate-100"></div>
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Notas del Plan (Problema, observaciones, etc.)
+          </label>
+          <textarea id="plan-notas" name="notas" rows="3"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+            placeholder="Describe el problema diagnosticado, recomendaciones especiales..."></textarea>
         </div>
 
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" id="cancel-tratamiento"
-            class="px-4 py-2 rounded-xl border border-[#8BCFDD] text-[#0F2532] hover:border-[#4EABBE] hover:text-[#1D5D69] transition dark:text-slate-100 dark:border-slate-700 dark:hover:border-[#4EABBE] dark:hover:text-white">Cancelar</button>
+        <!-- Fecha Estimada de Inicio -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Fecha Estimada de Inicio
+          </label>
+          <input type="date" id="plan-fecha-inicio" name="fecha_inicio"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-[#8BCFDD]/30 dark:border-slate-700">
+          <button type="button" id="cancel-plan"
+            class="px-5 py-2.5 rounded-xl border border-[#8BCFDD] dark:border-slate-700 text-[#0F2532] dark:text-slate-100 hover:border-[#4EABBE] hover:text-[#1D5D69] dark:hover:border-[#4EABBE] dark:hover:text-white transition">
+            Cancelar
+          </button>
           <button type="submit"
-            class="px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">Guardar</button>
+            class="px-6 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
+            Guardar Plan
+          </button>
         </div>
       </form>
     </div>
   </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
   <script src="../scripts/tratamientos.js"></script>
 </body>

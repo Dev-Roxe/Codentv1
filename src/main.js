@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db/database');
 const bcrypt = require('bcryptjs');
 
@@ -214,26 +215,6 @@ ipcMain.handle('db-run', async (event, sql, params) => {
 });
 
 // -------------------------------------------------------------
-// GET PATIENTS (used by CRM)
-// -------------------------------------------------------------
-ipcMain.handle('get-patients', async (event, params = {}) => {
-  return new Promise((resolve, reject) => {
-    let query =
-      `SELECT id, nombre, email FROM pacientes WHERE email IS NOT NULL AND email != ''`;
-
-    if (params.group === 'active') query += ` AND id > 0`;
-    if (params.group === 'inactive') query += ` AND id > 0`;
-
-    query += ` LIMIT 500`;
-
-    db.all(query, [], (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows || []);
-    });
-  });
-});
-
-// -------------------------------------------------------------
 // APP LIFECYCLE
 // -------------------------------------------------------------
 app.whenReady().then(() => {
@@ -278,6 +259,88 @@ ipcMain.handle('gmail-save-token', async (event, code) => {
   } catch (e) {
     return { success: false, error: e.message };
   }
+});
+
+ipcMain.handle('gmail-has-token', async () => {
+  try {
+    const tokenPath = path.join(__dirname, 'main', 'google', 'token.json');
+    return { success: true, connected: fs.existsSync(tokenPath) };
+  } catch (e) {
+    return { success: false, connected: false, error: e.message };
+  }
+});
+
+function replaceTemplateVars(text, data) {
+  const safeText = String(text || '');
+  const map = {
+    '{nombre}': data?.nombre || '',
+    '{apellido}': data?.apellido || '',
+    '{telefono}': data?.telefono || '',
+    '{email}': data?.email || '',
+    '{fecha_cita}': data?.fecha_cita || '',
+    '{doctor}': data?.doctor || '',
+  };
+  return Object.keys(map).reduce((acc, key) => acc.split(key).join(map[key]), safeText);
+}
+
+function toHtmlBody(text) {
+  const escaped = String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  const withBreaks = escaped.replace(/\r?\n/g, '<br>');
+  return `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6;">${withBreaks}</div>`;
+}
+
+ipcMain.handle('send-bulk-email', async (event, payload = {}) => {
+  const recipients = Array.isArray(payload.recipients) ? payload.recipients : [];
+  const subject = payload.subject || '';
+  const body = payload.body || '';
+  const attachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+
+  if (!recipients.length) {
+    return { success: false, sent: 0, failed: 0, error: 'No recipients provided' };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+
+  for (let i = 0; i < recipients.length; i += 1) {
+    const recipient = recipients[i] || {};
+    const personalizedSubject = replaceTemplateVars(subject, recipient);
+    const personalizedBody = replaceTemplateVars(body, recipient);
+
+    try {
+      await sendEmail({
+        to: recipient.email,
+        subject: personalizedSubject,
+        html: toHtmlBody(personalizedBody),
+        attachments,
+      });
+      sent += 1;
+    } catch (e) {
+      failed += 1;
+      errors.push({ email: recipient.email || '', error: e.message || 'send failed' });
+    }
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('email-progress', {
+        current: i + 1,
+        total: recipients.length,
+      });
+    }
+  }
+
+  return {
+    success: failed === 0,
+    sent,
+    failed,
+    errors,
+    error: failed ? 'Some emails failed' : null,
+  };
 });
 
 ipcMain.handle('gmail-send', async (event, { to, subject, html, attachments }) => {

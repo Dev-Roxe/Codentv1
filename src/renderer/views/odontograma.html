@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Odontograma Digital</title>
+  <title>Odontograma</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -12,315 +13,296 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+
   <style>
+    /* MINIMO: tamaños/curva/animaciones (lo demás es Tailwind) */
     :root {
-      --odonto-ink: #0F2532;
-      --odonto-brand: #1D5D69;
-      --odonto-accent: #4EABBE;
-      --odonto-soft: #8BCFDD;
-      --odonto-bg: #F8F7F7;
-      --tooth-w: clamp(48px, 5.5vw, 68px);
-      --tooth-h: calc(var(--tooth-w) * 1.3);
-      --tooth-gap: clamp(6px, 1.1vw, 10px);
-    }
-
-    body {
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-    }
-
-    h2, h3, .odonto-title {
-      font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
-      letter-spacing: 0.2px;
-    }
-
-    #odontogramaCanvas {
-      position: relative;
-      overflow: hidden;
-      background:
-        radial-gradient(120% 100% at 50% -10%, rgba(139, 207, 221, 0.22), rgba(255, 255, 255, 0) 55%),
-        linear-gradient(180deg, #FFFFFF 0%, #F8F7F7 100%);
-    }
-
-    #odontogramaCanvas::after {
-      content: "";
-      position: absolute;
-      inset: 14px;
-      border-radius: 18px;
-      border: 1px dashed rgba(139, 207, 221, 0.35);
-      pointer-events: none;
-    }
-
-    .dark #odontogramaCanvas {
-      background:
-        radial-gradient(120% 100% at 50% -10%, rgba(78, 171, 190, 0.22), rgba(11, 23, 33, 0) 55%),
-        linear-gradient(180deg, #0E1A25 0%, #0B1721 100%);
-    }
-
-    .dark #odontogramaCanvas::after {
-      border-color: rgba(139, 207, 221, 0.2);
-    }
-
-    .odonto-arc {
-      position: relative;
-      padding: 8px 0 6px;
-    }
-
-    .odonto-arc::before {
-      content: "";
-      position: absolute;
-      left: 6%;
-      right: 6%;
-      height: 34px;
-      border-radius: 999px;
-      background: radial-gradient(closest-side, rgba(239, 125, 138, 0.22), rgba(239, 125, 138, 0.03));
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .odonto-arc--upper::before {
-      top: 8px;
-    }
-
-    .odonto-arc--lower::before {
-      bottom: 8px;
-    }
-
-    .dark .odonto-arc::before {
-      background: radial-gradient(closest-side, rgba(78, 171, 190, 0.25), rgba(14, 26, 37, 0.05));
+      --tooth-w: clamp(52px, 5.6vw, 74px);
+      --tooth-h: calc(var(--tooth-w) * 1.38);
+      --tooth-gap: clamp(8px, 1.15vw, 12px);
     }
 
     .odonto-row {
       display: flex;
-      flex-wrap: nowrap;
       justify-content: center;
       gap: var(--tooth-gap);
+      padding: 10px 8px;
       overflow-x: auto;
-      overflow-y: hidden;
-      padding: 6px 6px 10px;
       scroll-snap-type: x proximity;
     }
 
     .odonto-row::-webkit-scrollbar {
-      height: 8px;
+      height: 7px;
+    }
+
+    .odonto-row::-webkit-scrollbar-track {
+      background: rgba(139, 207, 221, 0.1);
+      border-radius: 999px;
     }
 
     .odonto-row::-webkit-scrollbar-thumb {
-      background: rgba(29, 93, 105, 0.25);
+      background: rgba(78, 171, 190, 0.35);
       border-radius: 999px;
+    }
+
+    .dark .odonto-row::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, .06);
+    }
+
+    .dark .odonto-row::-webkit-scrollbar-thumb {
+      background: rgba(139, 207, 221, .35);
     }
 
     .odonto-tooth {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
       min-width: var(--tooth-w);
+      scroll-snap-align: center;
     }
 
-    .odonto-tooth-number {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--odonto-brand);
-      letter-spacing: 0.2px;
-      opacity: 0.7;
-    }
-
-    .dark .odonto-tooth-number {
-      color: #CDE9F0;
-    }
-
-    .odonto-tooth-btn {
+    .tooth-btn {
       width: var(--tooth-w);
       height: var(--tooth-h);
-      border-radius: 18px;
-      background: linear-gradient(180deg, #FFFFFF, #F3F6F8);
-      border: 2px solid var(--odonto-soft);
-      box-shadow: 0 6px 14px rgba(15, 37, 50, 0.08);
-      transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
-      position: relative;
-      overflow: hidden;
     }
 
-    .dark .odonto-tooth-btn {
-      background: linear-gradient(180deg, #162534, #0B1721);
+    @keyframes pulseDot {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
+
+      50% {
+        transform: scale(1.12);
+        opacity: .82
+      }
     }
 
-    .odonto-tooth-btn:hover {
-      transform: translateY(-2px) scale(1.05);
-      box-shadow: 0 10px 22px rgba(15, 37, 50, 0.16);
+    .pulse-dot {
+      animation: pulseDot 2s ease-in-out infinite;
     }
 
-    .odonto-tooth-btn.is-selected {
-      border-color: var(--odonto-accent);
-      box-shadow: 0 0 0 4px rgba(78, 171, 190, 0.25), 0 12px 24px rgba(15, 37, 50, 0.18);
+    @keyframes pop {
+      0% {
+        transform: scale(.96);
+        opacity: 0
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1
+      }
     }
 
-    .odonto-tooth-btn.has-treatment::after {
-      content: "";
-      position: absolute;
-      top: 6px;
-      right: 6px;
-      width: 9px;
-      height: 9px;
-      border-radius: 999px;
-      background: var(--treat-color, #4EABBE);
-      box-shadow: 0 0 0 2px #FFFFFF;
-    }
-
-    .odonto-tooth-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--odonto-accent);
-      opacity: 0;
-      transform: translateY(-2px);
-      transition: opacity 150ms ease, transform 150ms ease;
-      text-align: center;
-      min-height: 12px;
-    }
-
-    .dark .odonto-tooth-label {
-      color: #8BCFDD;
-    }
-
-    .odonto-tooth:hover .odonto-tooth-label {
-      opacity: 0.9;
-      transform: translateY(0);
+    .pop-in {
+      animation: pop .18s ease-out;
     }
   </style>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
-  <div class="h-full flex flex-col p-4">
-    <!-- Toolbar superior -->
-    <div class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-4 mb-4 border border-[#8BCFDD]/50 dark:border-slate-800">
-      <div class="flex items-center justify-between flex-wrap gap-4">
-        <div class="flex items-center gap-4">
-          <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white" id="tituloDenticion">Odontograma</h2>
-          <div class="flex gap-2">
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="denticion" id="radioAdulto" checked class="w-4 h-4 text-[#4EABBE] focus:ring-[#4EABBE]">
-              <span class="text-sm font-medium text-[#0F2532] dark:text-slate-200">Dentigrama Adulto</span>
+  <div class="max-w-7xl mx-auto p-4 space-y-4" style="max-width: 1800px;">
+
+    <!-- Header -->
+    <header class="space-y-1 mb-4">
+      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
+      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Odontograma</h1>
+      <p class="text-sm text-[#0F2532] dark:text-slate-400">Registro dental clínico del paciente</p>
+    </header>
+
+    <!-- Toolbar -->
+    <header
+      class="rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg shadow-[#8BCFDD]/20 p-5">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div class="flex items-center gap-3 flex-wrap">
+          <!-- Dentición switch -->
+          <div
+            class="flex gap-1 p-1 rounded-xl bg-[#8BCFDD]/10 dark:bg-slate-800 border border-[#8BCFDD]/30 dark:border-slate-700">
+            <label id="labelAdulto"
+              class="px-4 py-2 rounded-lg cursor-pointer select-none flex items-center gap-2 text-sm font-semibold transition hover:bg-[#8BCFDD]/20 dark:hover:bg-slate-700">
+              <input id="radioAdulto" type="radio" name="denticion" checked class="accent-[#4EABBE]">
+              <span>Adulto</span>
             </label>
-            <label class="flex items-center gap-2 cursor-pointer">
-              <input type="radio" name="denticion" id="radioInfantil" class="w-4 h-4 text-[#4EABBE] focus:ring-[#4EABBE]">
-              <span class="text-sm font-medium text-[#0F2532] dark:text-slate-200">Dentigrama Infantil</span>
+            <label id="labelInfantil"
+              class="px-4 py-2 rounded-lg cursor-pointer select-none flex items-center gap-2 text-sm font-semibold transition hover:bg-[#8BCFDD]/20 dark:hover:bg-slate-700">
+              <input id="radioInfantil" type="radio" name="denticion" class="accent-[#4EABBE]">
+              <span>Infantil</span>
             </label>
           </div>
-        </div>
-        
-        <!-- Tratamientos disponibles -->
-        <div class="flex items-center gap-2 flex-wrap relative">
+
+          <!-- Acción rápida -->
           <div class="relative">
-            <button id="btnProfilaxis" class="px-3 py-2 rounded-lg text-sm font-medium bg-[#8BCFDD]/25 dark:bg-slate-800 border border-[#8BCFDD] dark:border-slate-700 hover:bg-[#4EABBE] hover:text-white transition">
-              <span>🪥</span> Profilaxis
+            <button id="btnProfilaxis" class="relative overflow-hidden px-4 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg
+                     bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD] hover:from-[#1D5D69] hover:to-[#4EABBE] transition">
+              Profilaxis
             </button>
-            <!-- Dropdown Profilaxis -->
-            <div id="dropdownProfilaxis" class="hidden absolute top-full left-0 mt-2 bg-white dark:bg-[#0E1A25] rounded-lg shadow-xl border border-[#8BCFDD]/50 dark:border-slate-800 z-50 min-w-[200px]">
-              <button class="w-full text-left px-4 py-2 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 rounded-t-lg text-[#0F2532] dark:text-slate-200" data-treatment="profilaxis-simple">
-                Profilaxis Simple
+
+            <div id="dropdownProfilaxis" class="hidden absolute top-full right-0 mt-2 w-[240px] rounded-xl bg-white dark:bg-[#0E1A25]
+                     border border-[#8BCFDD]/30 dark:border-slate-800 shadow-2xl overflow-hidden pop-in z-50">
+              <button
+                class="w-full px-5 py-3 text-left hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition font-semibold"
+                data-treatment="profilaxis-simple">
+                <div class="flex items-center gap-3">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#4EABBE"></span>
+                  Profilaxis Simple
+                </div>
               </button>
-              <button class="w-full text-left px-4 py-2 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 rounded-b-lg text-[#0F2532] dark:text-slate-200" data-treatment="profilaxis-profunda">
-                Profilaxis Profunda
+              <div class="h-px bg-[#8BCFDD]/30 dark:border-slate-800"></div>
+              <button
+                class="w-full px-5 py-3 text-left hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition font-semibold"
+                data-treatment="profilaxis-profunda">
+                <div class="flex items-center gap-3">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background:#2C93A8"></span>
+                  Profilaxis Profunda
+                </div>
               </button>
             </div>
           </div>
-          <button id="btnAyuda" class="px-3 py-2 rounded-lg text-sm font-medium text-[#4EABBE] hover:underline">
-            Ayuda: ¿Cómo se usa?
+
+          <!-- Botón limpiar -->
+          <button id="btnLimpiarSeleccion" class="px-4 py-2.5 rounded-xl text-sm font-bold border border-[#8BCFDD]/30 dark:border-slate-700
+                   bg-white dark:bg-[#0E1A25] hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition shadow-sm">
+            Limpiar selección
           </button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- Contenedor principal del odontograma -->
-    <div class="flex-1 overflow-auto">
-      <div id="odontogramaCanvas" class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-6 border border-[#8BCFDD]/50 dark:border-slate-800">
-        <div class="mb-6">
+    <!-- Canvas -->
+    <section id="odontogramaCanvas"
+      class="rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg shadow-[#8BCFDD]/20 p-6">
 
-          <!-- Superior -->
-          <div class="mb-8 odonto-arc odonto-arc--upper">
-            <div class="text-center mb-3">
-              <span class="inline-block px-4 py-2 rounded-lg text-sm font-semibold bg-[#8BCFDD] dark:bg-[#1D5D69] text-[#0F2532] dark:text-white">
-                SUPERIOR
-              </span>
-            </div>
-            <div id="filaSuperior" class="odonto-row"></div>
-          </div>
-
-          <div class="h-px rounded-full mb-8 bg-[#8BCFDD] dark:bg-slate-700"></div>
-
-          <!-- Inferior -->
-          <div class="odonto-arc odonto-arc--lower">
-            <div id="filaInferior" class="odonto-row mb-3"></div>
-            <div class="text-center">
-              <span class="inline-block px-4 py-2 rounded-lg text-sm font-semibold bg-[#8BCFDD] dark:bg-[#1D5D69] text-[#0F2532] dark:text-white">
-                INFERIOR
-              </span>
-            </div>
-          </div>
+      <!-- Superior -->
+      <div class="mb-10">
+        <div class="text-center mb-4">
+          <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-extrabold text-white shadow-lg
+                       bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD]">
+            <span class="opacity-95">Arcada superior</span>
+          </span>
         </div>
+        <div id="filaSuperior" class="odonto-row"></div>
       </div>
 
-      <!-- Panel de tratamientos lateral (si hay espacio) o dropdown -->
-      <div id="tratamientosPanel" class="hidden fixed top-20 right-4 bg-white dark:bg-[#0E1A25] rounded-xl shadow-xl p-4 border border-[#8BCFDD]/50 dark:border-slate-800 z-50 min-w-[250px] max-w-[300px]">
-        <div class="flex items-center justify-between mb-4 pb-2 border-b border-[#8BCFDD]/30 dark:border-slate-700">
-          <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Tratamientos</h3>
-          <button id="btnCerrarPanel" class="text-[#1D5D69] dark:text-slate-400 hover:text-[#4EABBE]">✕</button>
-        </div>
-        <div class="mb-3 p-3 rounded-lg text-center bg-[rgba(78,171,190,0.15)] dark:bg-slate-800">
-          <p class="text-xs mb-1 text-[#1D5D69] dark:text-slate-400 opacity-80">Pieza dental</p>
-          <p id="piezaPanel" class="text-2xl font-bold text-[#4EABBE]"></p>
-        </div>
-        <div id="listaTratamientos" class="space-y-2"></div>
+      <!-- Separator -->
+      <div class="relative my-8">
+        <div class="h-px bg-gradient-to-r from-transparent via-[#8BCFDD]/30 dark:via-slate-700 to-transparent"></div>
       </div>
-    </div>
+
+      <!-- Inferior -->
+      <div>
+        <div id="filaInferior" class="odonto-row mb-4"></div>
+        <div class="text-center">
+          <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-extrabold text-white shadow-lg
+                       bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD]">
+            <span class="opacity-95">Arcada inferior</span>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel tratamientos (flotante y movible) -->
+    <aside id="tratamientosPanel"
+      class="hidden fixed top-24 right-6 z-50 w-[320px] max-w-[92vw]
+             rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-2xl p-5 pop-in cursor-move">
+      <div id="panelHeader"
+        class="flex items-center justify-between mb-5 pb-4 border-b border-[#8BCFDD]/30 dark:border-slate-700 cursor-grab active:cursor-grabbing">
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4EABBE] to-[#8BCFDD] shadow flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-extrabold">Tratamientos</h3>
+            <p class="text-xs text-black/50 dark:text-white/50">Arrastra para mover</p>
+          </div>
+        </div>
+
+        <button id="btnCerrarPanel"
+          class="w-9 h-9 rounded-lg hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition flex items-center justify-center">
+          <svg class="w-5 h-5 text-black/70 dark:text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div
+        class="mb-4 p-4 rounded-xl text-center border border-[#8BCFDD]/30 dark:border-slate-700 bg-[#8BCFDD]/5 dark:bg-slate-800/30">
+        <p class="text-xs mb-1 text-black/60 dark:text-white/60 font-semibold">Pieza seleccionada</p>
+        <p id="piezaPanel" class="text-3xl font-extrabold text-[#4EABBE]"></p>
+      </div>
+
+      <div id="listaTratamientos" class="space-y-2 max-h-[420px] overflow-y-auto pr-1"></div>
+    </aside>
 
     <!-- Leyenda -->
-    <div class="mt-4 bg-white dark:bg-[#0E1A25] rounded-xl shadow-lg p-4 border border-[#8BCFDD]/50 dark:border-slate-800">
-      <div class="flex items-center gap-2 mb-4 pb-2 border-b border-[#8BCFDD]/30 dark:border-slate-700">
-        <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Leyenda de Tratamientos</h3>
+    <section
+      class="rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg shadow-[#8BCFDD]/20 p-5">
+      <div class="flex items-center gap-3 mb-5 pb-4 border-b border-[#8BCFDD]/30 dark:border-slate-700">
+        <div
+          class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] shadow flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-extrabold">Leyenda</h3>
       </div>
+
       <div id="leyenda" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"></div>
-    </div>
+    </section>
   </div>
 
-  <!-- Modal caras -->
-  <div id="modalOverlay" class="hidden fixed inset-0 z-50 items-center justify-center bg-[rgba(15,37,50,0.7)] dark:bg-[rgba(0,0,0,0.8)]">
-    <div class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-2xl max-w-4xl w-full mx-4 overflow-hidden border border-[#8BCFDD]/50 dark:border-slate-800">
-      <div class="p-6 bg-[#1D5D69] dark:bg-[#0F2532] text-white flex items-center justify-between">
-        <h2 class="text-2xl font-bold">
-          Selección de Caras - Pieza <span id="modalPieza"></span>
-        </h2>
-        <button id="btnCancelarModal"
-          class="px-6 py-3 rounded-xl font-bold bg-[#6B7280] hover:bg-[#4B5563] transition"
-        >
+  <!-- Modal overlay -->
+  <div id="modalOverlay"
+    class="hidden fixed inset-0 z-50 items-center justify-center bg-[#0F2532]/70 backdrop-blur-sm p-4">
+    <div class="w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl
+                bg-white dark:bg-[#0E1A25]
+                border border-[#8BCFDD]/30 dark:border-slate-800 pop-in">
+      <div class="p-6 text-white flex items-center justify-between bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD]">
+        <div>
+          <h2 class="text-2xl font-extrabold">Selección de Caras</h2>
+          <p class="text-white/85 text-sm">Pieza <span id="modalPieza"></span></p>
+        </div>
+        <button id="btnCancelarModal" class="px-5 py-2.5 rounded-xl font-bold bg-white/20 hover:bg-white/30 transition">
           Cancelar
         </button>
       </div>
 
       <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Vista -->
-        <div class="rounded-xl p-4 bg-[#F8F7F7] dark:bg-[#0B1721] border-2 border-[#8BCFDD] dark:border-slate-700">
-          <h3 class="text-center font-bold text-xl mb-4 text-[#1D5D69] dark:text-white">Vista Anatómica</h3>
+        <div
+          class="rounded-xl p-5 border-2 border-[#8BCFDD]/30 dark:border-slate-700 bg-[#8BCFDD]/5 dark:bg-slate-800/30">
+          <h3 class="text-center font-extrabold text-xl mb-4">Vista Anatómica</h3>
           <div id="vistaCaras" class="w-full"></div>
         </div>
 
-        <!-- Lista -->
         <div>
-          <h3 class="font-bold text-xl mb-4 text-[#1D5D69] dark:text-white">Seleccione las caras afectadas</h3>
+          <h3 class="font-extrabold text-xl mb-4">Seleccione las caras</h3>
           <div id="listaCaras" class="space-y-3"></div>
         </div>
       </div>
 
-      <div class="p-6 flex gap-4 border-t border-[#8BCFDD]/30 dark:border-slate-700">
-        <button id="btnGuardarModal"
-          class="flex-1 py-4 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition bg-[#4EABBE] dark:bg-[#1D5D69]"
-        >
+      <div
+        class="p-6 flex gap-4 border-t border-[#8BCFDD]/30 dark:border-slate-700 bg-[#8BCFDD]/5 dark:bg-slate-800/30">
+        <button id="btnGuardarModal" class="flex-1 py-4 rounded-xl font-extrabold text-white shadow-lg hover:shadow-xl transition
+                 bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD] hover:from-[#1D5D69] hover:to-[#4EABBE]">
           Guardar
         </button>
       </div>
     </div>
   </div>
 
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] hidden">
+    <div id="toastBox" class="rounded-xl px-4 py-3 shadow-2xl border border-[#8BCFDD]/30 dark:border-slate-800
+             bg-white dark:bg-[#0E1A25] flex items-center gap-3 pop-in">
+      <span id="toastDot" class="w-2.5 h-2.5 rounded-full bg-[#4EABBE] pulse-dot"></span>
+      <p id="toastText" class="text-sm font-semibold"></p>
+    </div>
+  </div>
+
   <script src="../scripts/odontograma.js"></script>
 </body>
+
 </html>

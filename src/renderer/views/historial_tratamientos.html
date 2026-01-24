@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial Clínico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <script src="../scripts/init.js" type="module"></script>
+</head>
+
+<body class="bg-[#F8F7F7] dark:bg-gray-900 font-sans text-[#0F2532] dark:text-gray-100 p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <header class="space-y-1 mb-6">
+            <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
+            <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Historial Clínico</h1>
+            <p class="text-[#0F2532] dark:text-slate-400 mt-1">Tratamientos y prescripciones del paciente</p>
+        </header>
+
+        <!-- Tabs -->
+        <div class="mb-6">
+            <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+                <button id="tab-tratamientos"
+                    class="tab-historial px-6 py-3 font-semibold text-[#4EABBE] border-b-2 border-[#4EABBE] transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    Tratamientos
+                </button>
+                <button id="tab-recetas"
+                    class="tab-historial px-6 py-3 font-semibold text-gray-500 dark:text-gray-400 border-b-2 border-transparent hover:text-[#4EABBE] transition flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Recetas Médicas
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total</p>
+                <p id="stat-total" class="text-2xl font-bold text-[#1D5D69] dark:text-white mt-1">0</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Completados</p>
+                <p id="stat-completados" class="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">0</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">En Proceso</p>
+                <p id="stat-proceso" class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">0</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Pendientes</p>
+                <p id="stat-pendientes" class="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="mb-6 flex gap-3">
+            <select id="filter-estado"
+                class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none">
+                <option value="">Todos los estados</option>
+                <option value="completado">Completado</option>
+                <option value="en_proceso">En Proceso</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+        </div>
+
+        <!-- Timeline Tratamientos -->
+        <div id="content-tratamientos"
+            class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div id="timeline-tratamientos" class="space-y-6">
+                <!-- Los tratamientos se cargarán dinámicamente -->
+            </div>
+
+            <!-- Empty State Tratamientos -->
+            <div id="empty-tratamientos" class="hidden text-center py-16">
+                <svg class="w-24 h-24 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <p class="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-2">Sin tratamientos registrados</p>
+                <p class="text-gray-400 dark:text-gray-500">No hay tratamientos en el historial de este paciente</p>
+            </div>
+        </div>
+
+        <!-- Timeline Recetas -->
+        <div id="content-recetas"
+            class="hidden bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+            <div id="timeline-recetas" class="space-y-6">
+                <!-- Las recetas se cargarán dinámicamente -->
+            </div>
+
+            <!-- Empty State Recetas -->
+            <div id="empty-recetas" class="hidden text-center py-16">
+                <svg class="w-24 h-24 mx-auto text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-xl font-semibold text-gray-500 dark:text-gray-400 mb-2">Sin recetas registradas</p>
+                <p class="text-gray-400 dark:text-gray-500">No hay recetas médicas en el historial de este paciente</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="../scripts/historial_tratamientos.js"></script>
+</body>
+
+</html>

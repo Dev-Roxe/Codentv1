@@ -81,7 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnFecha) {
     btnFecha.addEventListener('click', async () => {
-      const input = prompt('Selecciona fecha (YYYY-MM-DD)', new Date().toISOString().slice(0, 10));
+      const now = new Date();
+      const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const input = prompt('Selecciona fecha (YYYY-MM-DD)', defaultDate);
       if (input) {
         // cargar vista diaria para esa fecha
         await cargarVista('diaria', input);

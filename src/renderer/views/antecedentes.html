@@ -1,14 +1,10 @@
 <!DOCTYPE html>
-<!--
-  Pestana Antecedentes: historial clinico, padecimientos y linea de tiempo.
-  Mantiene la paleta oscura compartida.
--->
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Antecedentes Clinicos</title>
+  <title>Antecedentes Médicos</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -22,45 +18,120 @@
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
   <main class="max-w-5xl mx-auto p-6 space-y-6">
     <header class="space-y-1">
-      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clinica</p>
-      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Antecedentes clinicos</h1>
-      <p class="text-sm text-[#0F2532] dark:text-slate-400">Registra alergias, enfermedades y eventos relevantes.</p>
+      <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
+      <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Antecedentes Médicos</h1>
+      <p class="text-sm text-[#0F2532] dark:text-slate-400">Información médica relevante del paciente</p>
     </header>
 
+    <!-- Formulario Principal -->
     <section
       class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-6 space-y-5 dark:bg-[#0E1A25] dark:border-slate-800">
       <form id="form-antecedentes-ficha" class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
+          <!-- Alergias -->
           <div class="md:col-span-2">
             <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Alergias</label>
-            <textarea name="alergias" rows="3"
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+              </svg>
+              Alergias
+            </label>
+            <textarea name="alergias" rows="3" placeholder="Ej: Penicilina, Látex, Polen..."
               class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
           </div>
+
+          <!-- Enfermedades Crónicas -->
           <div class="md:col-span-2">
             <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Enfermedades</label>
-            <textarea name="enfermedades" rows="3"
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Enfermedades Crónicas
+            </label>
+            <textarea name="enfermedades" rows="3" placeholder="Ej: Diabetes, Hipertensión, Asma..."
               class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
           </div>
+
+          <!-- Medicamentos Actuales -->
           <div class="md:col-span-2">
             <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Medicamentos</label>
-            <textarea name="medicamentos" rows="3"
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+              </svg>
+              Medicamentos Actuales
+            </label>
+            <textarea name="medicamentos" rows="3" placeholder="Medicamentos que toma actualmente..."
               class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
           </div>
+
+          <!-- Cirugías Previas -->
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Cirugías Previas
+            </label>
+            <textarea name="cirugias" rows="3" placeholder="Cirugías realizadas anteriormente..."
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+
+          <!-- Tipo de Sangre -->
           <div>
             <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Tipo
-              de
-              sangre</label>
-            <input type="text" name="tipo_sangre"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+              Tipo de Sangre
+            </label>
+            <select name="tipo_sangre"
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100">
+              <option value="">Seleccionar...</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
           </div>
+
+          <!-- Antecedentes Familiares -->
           <div>
             <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Observaciones</label>
-            <textarea name="observaciones" rows="3"
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              Antecedentes Familiares
+            </label>
+            <textarea name="antecedentes_familiares" rows="3" placeholder="Enfermedades hereditarias..."
+              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
+          </div>
+
+          <!-- Observaciones -->
+          <div class="md:col-span-2">
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Observaciones Adicionales
+            </label>
+            <textarea name="observaciones" rows="3" placeholder="Otra información relevante..."
               class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
           </div>
         </div>
@@ -68,35 +139,74 @@
         <div class="flex justify-end">
           <button type="button" id="save-antecedentes-ficha"
             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
-            Guardar antecedentes
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Guardar Antecedentes
           </button>
         </div>
       </form>
     </section>
 
+    <!-- Secciones Adicionales -->
     <section class="grid gap-6 md:grid-cols-2">
+      <!-- Padecimientos Actuales -->
       <div
         class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 space-y-4 dark:bg-[#0E1A25] dark:border-slate-800">
         <header class="space-y-1">
-          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Padecimientos</p>
-          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Seguimiento rapido</h2>
+          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Condiciones</p>
+          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Padecimientos Actuales</h2>
         </header>
         <div class="flex gap-2">
           <input type="text" id="new-padecimiento" placeholder="Nuevo padecimiento"
             class="flex-1 px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
           <button type="button" id="btn-add-padecimiento"
-            class="px-4 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow shadow-[#4EABBE]/30 transition">Anadir</button>
+            class="px-4 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow shadow-[#4EABBE]/30 transition">
+            Añadir
+          </button>
         </div>
         <div id="lista-padecimientos" class="space-y-2 text-sm text-[#0F2532] dark:text-slate-100"></div>
       </div>
 
+      <!-- Eventos Clínicos Importantes -->
       <div
         class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 space-y-4 dark:bg-[#0E1A25] dark:border-slate-800">
         <header class="space-y-1">
-          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Linea de tiempo</p>
-          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Eventos clinicos</h2>
+          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Línea de tiempo</p>
+          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Eventos Clínicos</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Hospitalizaciones, accidentes, etc.</p>
         </header>
         <div id="timeline-container" class="space-y-3 text-sm text-[#0F2532] dark:text-slate-100"></div>
+      </div>
+    </section>
+
+    <section
+      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 space-y-4 dark:bg-[#0E1A25] dark:border-slate-800">
+      <header class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="space-y-1">
+          <p class="text-[11px] uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Tratamientos</p>
+          <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Historial de tratamientos</h2>
+          <p class="text-xs text-gray-600 dark:text-gray-400">Ultimos procedimientos completados.</p>
+        </div>
+        <button type="button" id="refresh-tratamientos-historial"
+          class="px-4 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow shadow-[#4EABBE]/30 transition">
+          Actualizar
+        </button>
+      </header>
+
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-[#F8F7F7] dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 dark:text-gray-300 uppercase">Fecha</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 dark:text-gray-300 uppercase">Procedimiento</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 dark:text-gray-300 uppercase">Especialista</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-[#0F2532]/60 dark:text-gray-300 uppercase">Costo</th>
+            </tr>
+          </thead>
+          <tbody id="tratamientos-historial-list" class="divide-y divide-[#E6E6E6] dark:divide-gray-700"></tbody>
+        </table>
       </div>
     </section>
   </main>

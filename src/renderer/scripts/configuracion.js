@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         workStartInput: document.getElementById('work-start'),
         workEndInput: document.getElementById('work-end'),
         defaultDurationSelect: document.getElementById('default-duration'),
+        workDaysCheckboxes: document.querySelectorAll('input[name="work-days"]'),
+        appointmentIntervalSelect: document.getElementById('appointment-interval'),
+        autoConfirmCheckbox: document.getElementById('auto-confirm'),
         weeklyViewCheckbox: document.getElementById('weekly-view'),
 
         // Sistema
@@ -57,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
         workStart: '08:00',
         workEnd: '18:00',
         defaultDuration: '30',
+        workDays: [1, 2, 3, 4, 5], // Lunes a Viernes por defecto
+        appointmentInterval: '10',
+        autoConfirm: false,
         weeklyView: false,
 
         // Sistema
@@ -94,6 +100,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elements.workStartInput) elements.workStartInput.value = settings.workStart || defaultSettings.workStart;
         if (elements.workEndInput) elements.workEndInput.value = settings.workEnd || defaultSettings.workEnd;
         if (elements.defaultDurationSelect) elements.defaultDurationSelect.value = settings.defaultDuration || defaultSettings.defaultDuration;
+
+        // Días laborales
+        const workDays = settings.workDays || defaultSettings.workDays;
+        elements.workDaysCheckboxes.forEach(checkbox => {
+            checkbox.checked = workDays.includes(parseInt(checkbox.value));
+        });
+
+        if (elements.appointmentIntervalSelect) elements.appointmentIntervalSelect.value = settings.appointmentInterval || defaultSettings.appointmentInterval;
+        if (elements.autoConfirmCheckbox) elements.autoConfirmCheckbox.checked = settings.autoConfirm || false;
         if (elements.weeklyViewCheckbox) elements.weeklyViewCheckbox.checked = settings.weeklyView || false;
 
         // Sistema
@@ -132,6 +147,11 @@ document.addEventListener('DOMContentLoaded', () => {
             workStart: elements.workStartInput?.value || defaultSettings.workStart,
             workEnd: elements.workEndInput?.value || defaultSettings.workEnd,
             defaultDuration: elements.defaultDurationSelect?.value || defaultSettings.defaultDuration,
+            workDays: Array.from(elements.workDaysCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => parseInt(cb.value)),
+            appointmentInterval: elements.appointmentIntervalSelect?.value || defaultSettings.appointmentInterval,
+            autoConfirm: elements.autoConfirmCheckbox?.checked || false,
             weeklyView: elements.weeklyViewCheckbox?.checked || false,
 
             // Sistema
@@ -141,10 +161,23 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         localStorage.setItem('app_settings', JSON.stringify(settings));
+
+        // También guardar en formato individual para compatibilidad con agenda
+        localStorage.setItem('work-start', settings.workStart);
+        localStorage.setItem('work-end', settings.workEnd);
+        localStorage.setItem('default-duration', settings.defaultDuration);
+        localStorage.setItem('appointment-interval', settings.appointmentInterval);
+        localStorage.setItem('time-format', '24h');
+
         applyTheme(settings.theme);
 
+        // Disparar evento personalizado para que la agenda se actualice
+        window.dispatchEvent(new CustomEvent('configurationChanged', {
+            detail: settings
+        }));
+
         console.log('[configuracion] Configuración guardada:', settings);
-        toast.show('✅ Configuración guardada correctamente', 'success');
+        toast.show('Configuracion guardada correctamente', 'success');
     };
 
     // ==========================================
@@ -190,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadSettings();
         applyTheme(defaultSettings.theme);
 
-        toast.show('🔄 Configuración restaurada a valores por defecto', 'success');
+        toast.show('Configuracion restaurada a valores por defecto', 'success');
     };
 
     // ==========================================
@@ -224,6 +257,9 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.workStartInput,
             elements.workEndInput,
             elements.defaultDurationSelect,
+            ...elements.workDaysCheckboxes,
+            elements.appointmentIntervalSelect,
+            elements.autoConfirmCheckbox,
             elements.weeklyViewCheckbox,
             elements.autoSaveCheckbox,
             elements.languageSelect,

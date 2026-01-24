@@ -18,7 +18,7 @@ const SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
 ============================================================ */
 function getOAuthClient() {
     if (!fs.existsSync(CREDENTIALS_PATH)) {
-        throw new Error("⚠️ No existe credentials.json en /src/main/google/");
+        throw new Error("No existe credentials.json en /src/main/google/");
     }
 
     const content = fs.readFileSync(CREDENTIALS_PATH, "utf8");
@@ -51,7 +51,7 @@ async function saveToken(code) {
     const { tokens } = await client.getToken(code);
 
     fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
-    console.log("💾 Token guardado correctamente");
+    console.log("Token guardado correctamente");
 
     return true;
 }
@@ -74,11 +74,11 @@ async function authorize() {
     const client = getOAuthClient();
     client.setCredentials(token);
 
-    // 🔁 Si Google devuelve un nuevo refresh token, lo guardamos
+    // Si Google devuelve un nuevo refresh token, lo guardamos
     client.on("tokens", (tokens) => {
         if (tokens.refresh_token) {
             fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens, null, 2));
-            console.log("🔄 Token actualizado automáticamente");
+            console.log("Token actualizado automaticamente");
         }
     });
 
@@ -130,6 +130,7 @@ async function sendEmail({ to, subject, html, attachments }) {
         // simple html-only message
         const parts = [];
         parts.push(`To: ${to}`);
+        parts.push(`Subject: ${subject}`);
         parts.push('MIME-Version: 1.0');
         parts.push('Content-Type: text/html; charset=UTF-8');
         parts.push('');
@@ -148,7 +149,7 @@ async function sendEmail({ to, subject, html, attachments }) {
         requestBody: { raw: encodedMessage },
     });
 
-    console.log(`📩 Email enviado a ${to}`);
+    console.log(`Email enviado a ${to}`);
     return true;
 }
 

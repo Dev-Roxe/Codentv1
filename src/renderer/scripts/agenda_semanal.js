@@ -65,6 +65,34 @@ export async function initSemanal(container, referenceDate) {
         return dateStr === toSQLDate(new Date());
     }
 
+    // Cargar configuración del localStorage
+    function loadConfig() {
+        const savedSettings = localStorage.getItem('app_settings');
+        let workDays = [1, 2, 3, 4, 5]; // Default: Lunes a Viernes
+
+        if (savedSettings) {
+            try {
+                const settings = JSON.parse(savedSettings);
+                if (settings.workDays && Array.isArray(settings.workDays)) {
+                    workDays = settings.workDays;
+                }
+            } catch (e) {
+                console.error('Error parsing settings:', e);
+            }
+        }
+
+        return {
+            workStart: parseInt(localStorage.getItem('work-start')?.split(':')[0] || '8'),
+            workEnd: parseInt(localStorage.getItem('work-end')?.split(':')[0] || '18'),
+            defaultDuration: parseInt(localStorage.getItem('default-duration') || '30'),
+            appointmentInterval: parseInt(localStorage.getItem('appointment-interval') || '10'),
+            timeFormat: localStorage.getItem('time-format') || '24h',
+            workDays: workDays
+        };
+    }
+
+    let config = loadConfig();
+
     // Cargar dentistas
     async function loadDentists() {
         if (!dentistSelect) return;
@@ -78,12 +106,21 @@ export async function initSemanal(container, referenceDate) {
         }
     }
 
-    // Generar slots de tiempo
+    // Generar slots de tiempo basados en configuración
     function generateTimeSlots() {
         const slots = [];
-        for (let hour = 8; hour <= 20; hour++) {
-            for (let minute = 0; minute < 60; minute += 30) {
-                if (hour === 20 && minute > 0) break;
+        const startHour = config.workStart;
+        const endHour = config.workEnd;
+        let interval = config.appointmentInterval;
+
+        // Validar intervalo para evitar loops infinitos
+        if (!interval || interval <= 0 || interval > 60) {
+            interval = 30; // Default a 30 minutos si es inválido
+        }
+
+        for (let hour = startHour; hour <= endHour; hour++) {
+            for (let minute = 0; minute < 60; minute += interval) {
+                if (hour === endHour && minute > 0) break;
                 slots.push(`${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`);
             }
         }
@@ -98,13 +135,17 @@ export async function initSemanal(container, referenceDate) {
         for (let i = 0; i < 7; i++) {
             const d = new Date(weekStart);
             d.setDate(weekStart.getDate() + i);
+            const dayOfWeek = d.getDay();
+            const isWorkDay = config.workDays.includes(dayOfWeek);
+
             days.push({
                 name: d.toLocaleString('es-ES', { weekday: 'short' }).replace(/^./, s => s.toUpperCase()),
                 fullName: d.toLocaleString('es-ES', { weekday: 'long' }).replace(/^./, s => s.toUpperCase()),
                 day: d.getDate(),
                 date: toSQLDate(d),
                 isToday: isToday(toSQLDate(d)),
-                isWeekend: d.getDay() === 0 || d.getDay() === 6
+                isWeekend: !isWorkDay,
+                dayOfWeek: dayOfWeek
             });
         }
 
@@ -120,10 +161,12 @@ export async function initSemanal(container, referenceDate) {
 
         try {
             let sql = `
-                SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado,
-                       p.nombre, p.apellido
+                SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado, c.dentista_id, c.monto,
+                       p.nombre, p.apellido,
+                       u.nombre as dentista_nombre, u.apellido as dentista_apellido
                 FROM citas c
                 JOIN pacientes p ON p.id = c.paciente_id
+                LEFT JOIN usuarios u ON u.id = c.dentista_id
                 WHERE date(c.fecha_hora) BETWEEN ? AND ?
                 ORDER BY c.fecha_hora
             `;
@@ -207,6 +250,7 @@ export async function initSemanal(container, referenceDate) {
                         </div>
                     `;
                 } else if (!day.isWeekend) {
+                    // Solo mostrar botón de agregar si es día laboral
                     cell.innerHTML = `
                         <div class="add-appointment-btn">
                             <button title="Agregar cita" class="hover:scale-110 transition-transform">
@@ -273,7 +317,10 @@ export async function initSemanal(container, referenceDate) {
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Dentista</label>
-                        <p class="text-sm text-[#0F2532]/60 dark:text-gray-500 italic">Campo no disponible en esta versión</p>
+                        <select id="aptDentistW" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
+                            <option value="">Sin asignar</option>
+                            ${dentists.map(d => `<option value="${d.id}">Dr(a). ${d.nombre} ${d.apellido}</option>`).join('')}
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Motivo</label>
@@ -295,14 +342,15 @@ export async function initSemanal(container, referenceDate) {
         overlay.querySelector('#createAptFormWeekly').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pacienteId = overlay.querySelector('#aptPatientW').value;
+            const dentistaId = overlay.querySelector('#aptDentistW').value || null;
             const motivo = overlay.querySelector('#aptReasonW').value;
 
             if (!pacienteId) return alert('Selecciona un paciente');
 
             try {
                 await window.api.db.run(
-                    'INSERT INTO citas (paciente_id, fecha_hora, motivo, estado) VALUES (?, ?, ?, ?)',
-                    [pacienteId, `${dateStr} ${timeStr}:00`, motivo, 'pendiente']
+                    'INSERT INTO citas (paciente_id, dentista_id, fecha_hora, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?)',
+                    [pacienteId, dentistaId, `${dateStr} ${timeStr}:00`, motivo, 'pendiente', 0]
                 );
                 overlay.remove();
                 await renderWeek();
@@ -358,6 +406,22 @@ export async function initSemanal(container, referenceDate) {
             selectedChair = tab.dataset.chair;
             // Recargar si filtras por sillón
         });
+    });
+
+    // Escuchar cambios en la configuración (mismo window)
+    window.addEventListener('configurationChanged', (e) => {
+        console.log('Configuración actualizada (mismo window), recargando vista semanal...');
+        config = loadConfig();
+        renderWeek();
+    });
+
+    // Escuchar cambios en la configuración (otras pestañas)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval') {
+            console.log('Configuración actualizada (otra pestaña), recargando vista semanal...');
+            config = loadConfig();
+            renderWeek();
+        }
     });
 
     // Event listeners

@@ -27,10 +27,34 @@
         <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Recetas</h1>
         <p class="text-sm text-[#0F2532] dark:text-slate-400">Genera y consulta las recetas registradas.</p>
       </div>
-      <button id="btn-nueva-receta"
-        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
-        Nueva receta
-      </button>
+      <div class="flex gap-2">
+        <button id="btn-receta-rapida"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+            </path>
+          </svg>
+          Receta Rápida
+        </button>
+        <button id="btn-nueva-receta"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#4EABBE] text-[#1D5D69] dark:text-[#4EABBE] hover:bg-[#4EABBE]/10 font-semibold transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+            </path>
+          </svg>
+          Receta Completa
+        </button>
+        <button id="btn-lista-recetas"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#4EABBE] text-[#1D5D69] dark:text-[#4EABBE] hover:bg-[#4EABBE]/10 font-semibold transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+            </path>
+          </svg>
+          Ver Historial
+        </button>
+      </div>
     </header>
 
     <section

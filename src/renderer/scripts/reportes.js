@@ -4,6 +4,46 @@ import toast from './toast.js';
 let db;
 if (window.api && window.api.db) db = window.api.db;
 
+function dbGet(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        try {
+            if (!db) return resolve(null);
+            if (db.get && db.get.length >= 3) {
+                db.get(sql, params, (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row || null);
+                });
+            } else if (db.get) {
+                db.get(sql, params).then(row => resolve(row || null)).catch(reject);
+            } else {
+                resolve(null);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
+function dbAll(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        try {
+            if (!db) return resolve([]);
+            if (db.all && db.all.length >= 3) {
+                db.all(sql, params, (err, rows) => {
+                    if (err) return reject(err);
+                    resolve(rows || []);
+                });
+            } else if (db.all) {
+                db.all(sql, params).then(rows => resolve(rows || [])).catch(reject);
+            } else {
+                resolve([]);
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+}
+
 /* ============================================================================
    STATE
 ============================================================================ */
@@ -18,7 +58,15 @@ const State = {
         ingresos: 0,
         citas: 0,
         pacientes: 0,
-        tratamientos: []
+        tratamientos: [],
+        ingresosMensuales: { labels: [], data: [] },
+        usaMovimientos: false,
+        citasEstado: {
+            completadas: 0,
+            pendientes: 0,
+            canceladas: 0,
+            noAsistio: 0
+        }
     }
 };
 
@@ -92,30 +140,47 @@ async function loadReportData() {
     }
 
     try {
-        // Cargar ingresos (simulado desde citas - en producción vendría de pagos)
         const ingresosQuery = `
             SELECT COUNT(*) as total_citas, SUM(COALESCE(monto, 0)) as total_ingresos
             FROM citas
             WHERE date(fecha_hora) BETWEEN ? AND ?
             AND estado = 'atendido'
         `;
+        const recetasQuery = `
+            SELECT SUM(COALESCE(costo, 0)) as total_recetas
+            FROM tratamientos
+            WHERE date(fecha) BETWEEN ? AND ?
+            AND (procedimiento LIKE 'Receta:%' OR procedimiento LIKE 'Receta M%')
+        `;
+        const movimientosQuery = `
+            SELECT SUM(CASE WHEN tipo = 'ingreso' THEN 1 ELSE 0 END) as total_ingresos_count,
+                   SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) as total_ingresos
+            FROM movimientos_caja
+            WHERE date(fecha) BETWEEN ? AND ?
+        `;
 
-        const ingresosResult = await db.get(ingresosQuery, [State.startDate, State.endDate]);
-        State.data.ingresos = ingresosResult?.total_ingresos || 0;
-        State.data.citas = ingresosResult?.total_citas || 0;
+        const ingresosResult = await dbGet(ingresosQuery, [State.startDate, State.endDate]);
+        const recetasResult = await dbGet(recetasQuery, [State.startDate, State.endDate]);
+        const movimientosResult = await dbGet(movimientosQuery, [State.startDate, State.endDate]);
+        const legacyIngresos = Number(ingresosResult?.total_ingresos || 0) + Number(recetasResult?.total_recetas || 0);
+        const movimientosIngresos = Number(movimientosResult?.total_ingresos || 0);
+        const movimientosCount = Number(movimientosResult?.total_ingresos_count || 0);
 
-        // Cargar nuevos pacientes
+        State.data.usaMovimientos = movimientosCount > 0;
+        State.data.ingresos = State.data.usaMovimientos ? movimientosIngresos : legacyIngresos;
+        State.data.citas = Number(ingresosResult?.total_citas || 0);
+
         const pacientesQuery = `
             SELECT COUNT(*) as total
             FROM pacientes
             WHERE date(created_at) BETWEEN ? AND ?
         `;
+        const pacientesResult = await dbGet(pacientesQuery, [State.startDate, State.endDate]);
+        State.data.pacientes = Number(pacientesResult?.total || 0);
 
-        const pacientesResult = await db.get(pacientesQuery, [State.startDate, State.endDate]);
-        State.data.pacientes = pacientesResult?.total || 0;
-
-        // Cargar tratamientos (mock data)
-        State.data.tratamientos = getMockTratamientos();
+        State.data.tratamientos = await loadTratamientosResumen();
+        State.data.ingresosMensuales = await loadIngresosMensuales();
+        State.data.citasEstado = await loadCitasEstado();
 
         updateKPIs();
         updateCharts();
@@ -133,7 +198,18 @@ function loadMockData() {
         ingresos: 125400,
         citas: 87,
         pacientes: 23,
-        tratamientos: getMockTratamientos()
+        tratamientos: getMockTratamientos(),
+        ingresosMensuales: {
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+            data: [45000, 52000, 48000, 61000, 58000, 67000, 72000, 68000, 75000, 82000, 79000, 85000]
+        },
+        usaMovimientos: false,
+        citasEstado: {
+            completadas: 65,
+            pendientes: 20,
+            canceladas: 10,
+            noAsistio: 5
+        }
     };
 
     updateKPIs();
@@ -149,6 +225,134 @@ function getMockTratamientos() {
         { nombre: 'Endodoncia', cantidad: 8, ingresos: 16000, promedio: 2000 },
         { nombre: 'Extracción', cantidad: 15, ingresos: 7500, promedio: 500 }
     ];
+}
+
+function buildMonthBuckets(startDate, endDate) {
+    if (!startDate || !endDate) return [];
+    const start = new Date(`${startDate}T00:00:00`);
+    const end = new Date(`${endDate}T00:00:00`);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [];
+    const buckets = [];
+    const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    const last = new Date(end.getFullYear(), end.getMonth(), 1);
+    while (cursor <= last) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+        const label = cursor.toLocaleString('es-MX', { month: 'short' });
+        buckets.push({ key, label });
+        cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return buckets;
+}
+
+async function loadIngresosMensuales() {
+    const buckets = buildMonthBuckets(State.startDate, State.endDate);
+    if (!buckets.length) {
+        return { labels: ['N/A'], data: [0] };
+    }
+    let rows = [];
+    if (State.data.usaMovimientos) {
+        rows = await dbAll(`
+            SELECT strftime('%Y-%m', fecha) as mes, SUM(COALESCE(monto, 0)) as total
+            FROM movimientos_caja
+            WHERE date(fecha) BETWEEN ? AND ?
+            AND tipo = 'ingreso'
+            GROUP BY mes
+            ORDER BY mes
+        `, [State.startDate, State.endDate]);
+    } else {
+        rows = await dbAll(`
+            SELECT strftime('%Y-%m', fecha) as mes, SUM(ingreso) as total
+            FROM (
+                SELECT fecha_hora as fecha, COALESCE(monto, 0) as ingreso
+                FROM citas
+                WHERE date(fecha_hora) BETWEEN ? AND ?
+                AND estado = 'atendido'
+                UNION ALL
+                SELECT fecha as fecha, COALESCE(costo, 0) as ingreso
+                FROM tratamientos
+                WHERE date(fecha) BETWEEN ? AND ?
+                AND (procedimiento LIKE 'Receta:%' OR procedimiento LIKE 'Receta M%')
+            )
+            GROUP BY mes
+            ORDER BY mes
+        `, [State.startDate, State.endDate, State.startDate, State.endDate]);
+    }
+
+    const totalsByMonth = new Map(rows.map(r => [r.mes, Number(r.total || 0)]));
+    return {
+        labels: buckets.map(b => b.label),
+        data: buckets.map(b => totalsByMonth.get(b.key) || 0)
+    };
+}
+
+async function loadCitasEstado() {
+    const rows = await dbAll(`
+        SELECT estado, COUNT(*) as total
+        FROM citas
+        WHERE date(fecha_hora) BETWEEN ? AND ?
+        GROUP BY estado
+    `, [State.startDate, State.endDate]);
+
+    const buckets = {
+        completadas: 0,
+        pendientes: 0,
+        canceladas: 0,
+        noAsistio: 0
+    };
+
+    rows.forEach(row => {
+        const estado = String(row.estado || '').toLowerCase();
+        const total = Number(row.total || 0);
+        if (estado === 'atendido') {
+            buckets.completadas += total;
+        } else if (estado === 'cancelado') {
+            buckets.canceladas += total;
+        } else if (estado === 'no-asiste') {
+            buckets.noAsistio += total;
+        } else if (estado === 'pendiente' || estado === 'confirmado' || estado === 'en-sala') {
+            buckets.pendientes += total;
+        }
+    });
+
+    return buckets;
+}
+
+async function loadTratamientosResumen() {
+    const rows = await dbAll(`
+        SELECT nombre, COUNT(*) as cantidad, SUM(ingresos) as ingresos
+        FROM (
+            SELECT
+                CASE
+                    WHEN t.procedimiento LIKE 'Receta:%' OR t.procedimiento LIKE 'Receta M%' THEN 'Receta'
+                    WHEN t.procedimiento IS NULL OR t.procedimiento = '' THEN 'Tratamiento'
+                    ELSE t.procedimiento
+                END as nombre,
+                COALESCE(t.costo, 0) as ingresos
+            FROM tratamientos t
+            WHERE date(t.fecha) BETWEEN ? AND ?
+            UNION ALL
+            SELECT
+                COALESCE(NULLIF(tc.nombre, ''), h.descripcion_procedimiento, 'Tratamiento') as nombre,
+                COALESCE(h.costo_total, 0) as ingresos
+            FROM planes_tratamiento_historial h
+            LEFT JOIN tratamientos_catalogo tc ON h.catalogo_id = tc.id
+            WHERE date(h.fecha_ejecucion) BETWEEN ? AND ?
+        )
+        GROUP BY nombre
+        ORDER BY ingresos DESC, cantidad DESC
+        LIMIT 10
+    `, [State.startDate, State.endDate, State.startDate, State.endDate]);
+
+    return rows.map(row => {
+        const cantidad = Number(row.cantidad || 0);
+        const ingresos = Number(row.ingresos || 0);
+        return {
+            nombre: row.nombre || 'Tratamiento',
+            cantidad,
+            ingresos,
+            promedio: cantidad ? ingresos / cantidad : 0
+        };
+    });
 }
 
 /* ============================================================================
@@ -191,12 +395,15 @@ function createIngresosChart() {
 
     const colors = getChartColors();
 
-    // Datos mock por mes
+    const series = State.data.ingresosMensuales || { labels: [], data: [] };
+    const labels = series.labels && series.labels.length ? series.labels : ['N/A'];
+    const values = series.data && series.data.length ? series.data : [0];
+
     const data = {
-        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
+        labels,
         datasets: [{
             label: 'Ingresos',
-            data: [45000, 52000, 48000, 61000, 58000, 67000, 72000, 68000, 75000, 82000, 79000, 85000],
+            data: values,
             backgroundColor: 'rgba(78, 171, 190, 0.1)',
             borderColor: 'rgba(78, 171, 190, 1)',
             borderWidth: 3,
@@ -263,11 +470,17 @@ function createCitasChart() {
     }
 
     const colors = getChartColors();
+    const estado = State.data.citasEstado || {};
 
     const data = {
         labels: ['Completadas', 'Pendientes', 'Canceladas', 'No Asistió'],
         datasets: [{
-            data: [65, 20, 10, 5],
+            data: [
+                Number(estado.completadas || 0),
+                Number(estado.pendientes || 0),
+                Number(estado.canceladas || 0),
+                Number(estado.noAsistio || 0)
+            ],
             backgroundColor: [
                 'rgba(16, 185, 129, 0.8)',
                 'rgba(251, 191, 36, 0.8)',

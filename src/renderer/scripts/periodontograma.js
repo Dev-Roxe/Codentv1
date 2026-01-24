@@ -3,7 +3,11 @@
 
 // DB helpers
 let db = (window.api && window.api.db) ? window.api.db : null;
+if (!db && window.parent && window.parent !== window && window.parent.api && window.parent.api.db) {
+  db = window.parent.api.db;
+}
 let currentPacienteId = null;
+const PEDIATRIC_MAX_YEARS = 12;
 
 function dbGet(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -67,7 +71,27 @@ function dbRun(sql, params = []) {
 
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
-  return params.get(name);
+  const value = params.get(name);
+  if (value !== null && value !== '') return value;
+  if (window.parent && window.parent !== window) {
+    const parentParams = new URLSearchParams(window.parent.location.search);
+    const parentValue = parentParams.get(name);
+    if (parentValue !== null && parentValue !== '') return parentValue;
+  }
+  return null;
+}
+
+function calculateAgeYears(dateStr) {
+  if (!dateStr) return null;
+  const birth = new Date(dateStr);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    years -= 1;
+  }
+  return years;
 }
 
 const COLORS = {
@@ -79,8 +103,66 @@ const COLORS = {
   ok: "#22C55E",
   ink: "#0F2532",
   bg: "#F8F7F7",
-  border: "#D9D9D9",
+  border: "#8BCFDD",
 };
+
+const ICONS = {
+  tooth: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c-3 0-5.5 2.2-5.5 5 0 1.6.7 3 1.8 4 .7.6 1.1 1.5 1.3 2.5.3 1.6 1 3.5 2.4 3.5 1.2 0 1.9-1.1 2-2.6.1 1.5.8 2.6 2 2.6 1.4 0 2.1-1.9 2.4-3.5.2-1 .6-1.9 1.3-2.5 1.1-1 1.8-2.4 1.8-4 0-2.8-2.5-5-5.5-5-.9 0-1.7.3-2.4.8-.4.3-.9.3-1.3 0C13.7 3.3 12.9 3 12 3z" />
+  </svg>`,
+  toothLg: `<svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3c-3 0-5.5 2.2-5.5 5 0 1.6.7 3 1.8 4 .7.6 1.1 1.5 1.3 2.5.3 1.6 1 3.5 2.4 3.5 1.2 0 1.9-1.1 2-2.6.1 1.5.8 2.6 2 2.6 1.4 0 2.1-1.9 2.4-3.5.2-1 .6-1.9 1.3-2.5 1.1-1 1.8-2.4 1.8-4 0-2.8-2.5-5-5.5-5-.9 0-1.7.3-2.4.8-.4.3-.9.3-1.3 0C13.7 3.3 12.9 3 12 3z" />
+  </svg>`,
+  chart: `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17v-5" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17V7" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 17V11" />
+  </svg>`,
+  chartLg: `<svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3v18h18" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 17v-5" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 17V7" />
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 17V11" />
+  </svg>`,
+  check: `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+  </svg>`,
+  warn: `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.65 18h16.7a1 1 0 00.86-1.5l-7.5-13a1 1 0 00-1.72 0z" />
+  </svg>`,
+  danger: `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+  </svg>`,
+  drop: `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3s-5 5.2-5 9a5 5 0 0010 0c0-3.8-5-9-5-9z" />
+  </svg>`,
+  plaque: `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="4" stroke-width="2" />
+    <circle cx="6" cy="8" r="1" fill="currentColor" />
+    <circle cx="18" cy="8" r="1" fill="currentColor" />
+    <circle cx="6" cy="16" r="1" fill="currentColor" />
+    <circle cx="18" cy="16" r="1" fill="currentColor" />
+  </svg>`,
+  checkBadge: `<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+  </svg>`,
+};
+
+function iconSpan(svg, color) {
+  return `<span class="inline-flex items-center" style="color:${color}">${svg}</span>`;
+}
+
+function severityLabel(sev) {
+  if (!sev) return "Sin datos";
+  if (sev === COLORS.ok) return `${iconSpan(ICONS.check, COLORS.ok)} Saludable (0-3 mm)`;
+  if (sev === COLORS.warn) return `${iconSpan(ICONS.warn, COLORS.warn)} Moderado (4-5 mm)`;
+  return `${iconSpan(ICONS.danger, COLORS.danger)} Severo (>= 6 mm)`;
+}
+
+function pillLabel(text, color, svg) {
+  return `<span class="inline-flex items-center gap-2">${iconSpan(svg, color)}<span>${text}</span></span>`;
+}
 
 const SITES = ["MB", "B", "DB", "ML", "L", "DL"];
 const RANGE_PS = { min: 0, max: 15 };
@@ -88,12 +170,12 @@ const RANGE_REC = { min: -10, max: 10 };
 const RANGE_03 = { min: 0, max: 3 };
 
 const adultTeeth = {
-  superior: [18,17,16,15,14,13,12,11,21,22,23,24,25,26,27,28],
-  inferior: [48,47,46,45,44,43,42,41,31,32,33,34,35,36,37,38],
+  superior: [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28],
+  inferior: [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38],
 };
 const childTeeth = {
-  superior: [55,54,53,52,51,61,62,63,64,65],
-  inferior: [85,84,83,82,81,71,72,73,74,75],
+  superior: [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
+  inferior: [85, 84, 83, 82, 81, 71, 72, 73, 74, 75],
 };
 
 let showAdult = true;
@@ -162,206 +244,199 @@ function toothHasAny(num) {
 // Función mejorada para determinar el tipo de diente
 function getToothType(num) {
   // Molares (tres raíces/grandes)
-  if ([16,17,18,26,27,28,36,37,38,46,47,48].includes(num)) {
+  if ([16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48].includes(num)) {
     return 'molar';
   }
   // Premolares (dos cúspides)
-  if ([14,15,24,25,34,35,44,45].includes(num)) {
+  if ([14, 15, 24, 25, 34, 35, 44, 45].includes(num)) {
     return 'premolar';
   }
   // Caninos (puntiagudos)
-  if ([13,23,33,43].includes(num)) {
+  if ([13, 23, 33, 43].includes(num)) {
     return 'canine';
   }
   // Incisivos (planos)
-  if ([11,12,21,22,31,32,41,42].includes(num)) {
+  if ([11, 12, 21, 22, 31, 32, 41, 42].includes(num)) {
     return 'incisor';
   }
   // Dientes infantiles
-  if ([55,54,64,65,85,84,74,75].includes(num)) {
+  if ([55, 54, 64, 65, 85, 84, 74, 75].includes(num)) {
     return 'child-molar';
   }
-  if ([53,63,83,73].includes(num)) {
+  if ([53, 63, 83, 73].includes(num)) {
     return 'child-canine';
   }
-  if ([52,51,61,62,82,81,71,72].includes(num)) {
+  if ([52, 51, 61, 62, 82, 81, 71, 72].includes(num)) {
     return 'child-incisor';
   }
   return 'molar';
 }
 
-// SVG MEJORADO con animaciones y mejor realismo
+// SVG alineado con el odontograma
 function createToothSVG(num, isUpper, isSelected, hasData) {
-  const toothType = getToothType(num);
-  const width = 70;
-  const height = 90;
-  const strokeWidth = 2.5;
-  const borderColor = isSelected ? COLORS.accent : COLORS.soft;
-  
-  let path = '';
-  let gradientId = `grad-${num}-${isUpper ? 'u' : 'l'}`;
-  let detailPath = '';
-  
-  // Diferentes formas según el tipo de diente (MEJORADAS)
-  if (toothType === 'molar') {
-    // Muela - forma cuadrada con 4 cúspides
+  const toothType = getToothType(num).replace("child-", "");
+  const width = 80;
+  const height = 104;
+  const strokeWidth = 2.6;
+  const borderColor = isSelected ? COLORS.accent : "#CBD5E1";
+
+  let path = "";
+  const gradientId = `grad-${num}-${isUpper ? "u" : "l"}`;
+  const shineId = `shine-${num}-${isUpper ? "u" : "l"}`;
+  let detailPath = "";
+
+  if (toothType === "molar") {
     if (isUpper) {
-      path = `M ${width*0.18} ${height*0.12} 
-              L ${width*0.45} ${height*0.08}
-              L ${width*0.55} ${height*0.08}
-              L ${width*0.82} ${height*0.12}
-              Q ${width*0.92} ${height*0.18} ${width*0.92} ${height*0.28}
-              L ${width*0.92} ${height*0.72}
-              Q ${width*0.92} ${height*0.86} ${width*0.82} ${height*0.92}
-              L ${width*0.18} ${height*0.92}
-              Q ${width*0.08} ${height*0.86} ${width*0.08} ${height*0.72}
-              L ${width*0.08} ${height*0.28}
-              Q ${width*0.08} ${height*0.18} ${width*0.18} ${height*0.12}
+      path = `M ${width * 0.18} ${height * 0.12}
+              L ${width * 0.45} ${height * 0.08}
+              L ${width * 0.55} ${height * 0.08}
+              L ${width * 0.82} ${height * 0.12}
+              Q ${width * 0.92} ${height * 0.18} ${width * 0.92} ${height * 0.28}
+              L ${width * 0.92} ${height * 0.72}
+              Q ${width * 0.92} ${height * 0.86} ${width * 0.82} ${height * 0.92}
+              L ${width * 0.18} ${height * 0.92}
+              Q ${width * 0.08} ${height * 0.86} ${width * 0.08} ${height * 0.72}
+              L ${width * 0.08} ${height * 0.28}
+              Q ${width * 0.08} ${height * 0.18} ${width * 0.18} ${height * 0.12}
               Z`;
-      // Líneas de cúspides
       detailPath = `
-        <path d="M ${width*0.25} ${height*0.15} L ${width*0.5} ${height*0.35}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.5" fill="none"/>
-        <path d="M ${width*0.75} ${height*0.15} L ${width*0.5} ${height*0.35}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.5" fill="none"/>
-        <path d="M ${width*0.5} ${height*0.25} L ${width*0.5} ${height*0.55}" 
-              stroke="rgba(139, 207, 221, 0.25)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.25} ${height * 0.16} L ${width * 0.5} ${height * 0.36}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.75} ${height * 0.16} L ${width * 0.5} ${height * 0.36}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.5} ${height * 0.26} L ${width * 0.5} ${height * 0.56}"
+              stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>
       `;
     } else {
-      path = `M ${width*0.18} ${height*0.08} 
-              L ${width*0.82} ${height*0.08}
-              Q ${width*0.92} ${height*0.14} ${width*0.92} ${height*0.28}
-              L ${width*0.92} ${height*0.72}
-              Q ${width*0.92} ${height*0.82} ${width*0.82} ${height*0.88}
-              L ${width*0.55} ${height*0.92}
-              L ${width*0.45} ${height*0.92}
-              L ${width*0.18} ${height*0.88}
-              Q ${width*0.08} ${height*0.82} ${width*0.08} ${height*0.72}
-              L ${width*0.08} ${height*0.28}
-              Q ${width*0.08} ${height*0.14} ${width*0.18} ${height*0.08}
+      path = `M ${width * 0.18} ${height * 0.08}
+              L ${width * 0.82} ${height * 0.08}
+              Q ${width * 0.92} ${height * 0.14} ${width * 0.92} ${height * 0.28}
+              L ${width * 0.92} ${height * 0.72}
+              Q ${width * 0.92} ${height * 0.82} ${width * 0.82} ${height * 0.88}
+              L ${width * 0.55} ${height * 0.92}
+              L ${width * 0.45} ${height * 0.92}
+              L ${width * 0.18} ${height * 0.88}
+              Q ${width * 0.08} ${height * 0.82} ${width * 0.08} ${height * 0.72}
+              L ${width * 0.08} ${height * 0.28}
+              Q ${width * 0.08} ${height * 0.14} ${width * 0.18} ${height * 0.08}
               Z`;
       detailPath = `
-        <path d="M ${width*0.25} ${height*0.85} L ${width*0.5} ${height*0.65}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.5" fill="none"/>
-        <path d="M ${width*0.75} ${height*0.85} L ${width*0.5} ${height*0.65}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.5" fill="none"/>
+        <path d="M ${width * 0.25} ${height * 0.84} L ${width * 0.5} ${height * 0.64}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.75} ${height * 0.84} L ${width * 0.5} ${height * 0.64}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
       `;
     }
-  } else if (toothType === 'premolar') {
-    // Premolar - más pequeño que molar, 2 cúspides
+  } else if (toothType === "premolar") {
     if (isUpper) {
-      path = `M ${width*0.22} ${height*0.15} 
-              L ${width*0.5} ${height*0.10}
-              L ${width*0.78} ${height*0.15}
-              Q ${width*0.88} ${height*0.22} ${width*0.88} ${height*0.32}
-              L ${width*0.88} ${height*0.70}
-              Q ${width*0.88} ${height*0.84} ${width*0.78} ${height*0.90}
-              L ${width*0.22} ${height*0.90}
-              Q ${width*0.12} ${height*0.84} ${width*0.12} ${height*0.70}
-              L ${width*0.12} ${height*0.32}
-              Q ${width*0.12} ${height*0.22} ${width*0.22} ${height*0.15}
+      path = `M ${width * 0.22} ${height * 0.15}
+              L ${width * 0.5} ${height * 0.10}
+              L ${width * 0.78} ${height * 0.15}
+              Q ${width * 0.88} ${height * 0.22} ${width * 0.88} ${height * 0.32}
+              L ${width * 0.88} ${height * 0.70}
+              Q ${width * 0.88} ${height * 0.84} ${width * 0.78} ${height * 0.90}
+              L ${width * 0.22} ${height * 0.90}
+              Q ${width * 0.12} ${height * 0.84} ${width * 0.12} ${height * 0.70}
+              L ${width * 0.12} ${height * 0.32}
+              Q ${width * 0.12} ${height * 0.22} ${width * 0.22} ${height * 0.15}
               Z`;
       detailPath = `
-        <path d="M ${width*0.35} ${height*0.20} L ${width*0.5} ${height*0.35}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.2" fill="none"/>
-        <path d="M ${width*0.65} ${height*0.20} L ${width*0.5} ${height*0.35}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.35} ${height * 0.20} L ${width * 0.5} ${height * 0.35}"
+              stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>
+        <path d="M ${width * 0.65} ${height * 0.20} L ${width * 0.5} ${height * 0.35}"
+              stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>
       `;
     } else {
-      path = `M ${width*0.22} ${height*0.10} 
-              L ${width*0.78} ${height*0.10}
-              Q ${width*0.88} ${height*0.16} ${width*0.88} ${height*0.30}
-              L ${width*0.88} ${height*0.68}
-              Q ${width*0.88} ${height*0.78} ${width*0.78} ${height*0.85}
-              L ${width*0.5} ${height*0.90}
-              L ${width*0.22} ${height*0.85}
-              Q ${width*0.12} ${height*0.78} ${width*0.12} ${height*0.68}
-              L ${width*0.12} ${height*0.30}
-              Q ${width*0.12} ${height*0.16} ${width*0.22} ${height*0.10}
+      path = `M ${width * 0.22} ${height * 0.10}
+              L ${width * 0.78} ${height * 0.10}
+              Q ${width * 0.88} ${height * 0.16} ${width * 0.88} ${height * 0.30}
+              L ${width * 0.88} ${height * 0.68}
+              Q ${width * 0.88} ${height * 0.78} ${width * 0.78} ${height * 0.85}
+              L ${width * 0.5} ${height * 0.90}
+              L ${width * 0.22} ${height * 0.85}
+              Q ${width * 0.12} ${height * 0.78} ${width * 0.12} ${height * 0.68}
+              L ${width * 0.12} ${height * 0.30}
+              Q ${width * 0.12} ${height * 0.16} ${width * 0.22} ${height * 0.10}
               Z`;
       detailPath = `
-        <path d="M ${width*0.35} ${height*0.80} L ${width*0.5} ${height*0.65}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.2" fill="none"/>
-        <path d="M ${width*0.65} ${height*0.80} L ${width*0.5} ${height*0.65}" 
-              stroke="rgba(139, 207, 221, 0.3)" stroke-width="1.2" fill="none"/>
+        <path d="M ${width * 0.35} ${height * 0.80} L ${width * 0.5} ${height * 0.65}"
+              stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>
+        <path d="M ${width * 0.65} ${height * 0.80} L ${width * 0.5} ${height * 0.65}"
+              stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>
       `;
     }
-  } else if (toothType === 'canine') {
-    // Canino - forma puntiaguda característica
+  } else if (toothType === "canine") {
     if (isUpper) {
-      path = `M ${width*0.25} ${height*0.15}
-              Q ${width*0.15} ${height*0.25} ${width*0.18} ${height*0.35}
-              L ${width*0.18} ${height*0.70}
-              Q ${width*0.15} ${height*0.82} ${width*0.25} ${height*0.90}
-              L ${width*0.75} ${height*0.90}
-              Q ${width*0.85} ${height*0.82} ${width*0.82} ${height*0.70}
-              L ${width*0.82} ${height*0.35}
-              Q ${width*0.85} ${height*0.25} ${width*0.75} ${height*0.15}
-              L ${width*0.5} ${height*0.08}
+      path = `M ${width * 0.25} ${height * 0.15}
+              Q ${width * 0.15} ${height * 0.25} ${width * 0.18} ${height * 0.35}
+              L ${width * 0.18} ${height * 0.70}
+              Q ${width * 0.15} ${height * 0.82} ${width * 0.25} ${height * 0.90}
+              L ${width * 0.75} ${height * 0.90}
+              Q ${width * 0.85} ${height * 0.82} ${width * 0.82} ${height * 0.70}
+              L ${width * 0.82} ${height * 0.35}
+              Q ${width * 0.85} ${height * 0.25} ${width * 0.75} ${height * 0.15}
+              L ${width * 0.5} ${height * 0.08}
               Z`;
       detailPath = `
-        <path d="M ${width*0.5} ${height*0.12} L ${width*0.5} ${height*0.50}" 
-              stroke="rgba(139, 207, 221, 0.35)" stroke-width="1.5" fill="none"/>
+        <path d="M ${width * 0.5} ${height * 0.14} L ${width * 0.5} ${height * 0.54}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
       `;
     } else {
-      path = `M ${width*0.25} ${height*0.10}
-              Q ${width*0.15} ${height*0.18} ${width*0.18} ${height*0.30}
-              L ${width*0.18} ${height*0.65}
-              Q ${width*0.15} ${height*0.75} ${width*0.25} ${height*0.85}
-              L ${width*0.5} ${height*0.92}
-              L ${width*0.75} ${height*0.85}
-              Q ${width*0.85} ${height*0.75} ${width*0.82} ${height*0.65}
-              L ${width*0.82} ${height*0.30}
-              Q ${width*0.85} ${height*0.18} ${width*0.75} ${height*0.10}
+      path = `M ${width * 0.25} ${height * 0.10}
+              Q ${width * 0.15} ${height * 0.18} ${width * 0.18} ${height * 0.30}
+              L ${width * 0.18} ${height * 0.65}
+              Q ${width * 0.15} ${height * 0.75} ${width * 0.25} ${height * 0.85}
+              L ${width * 0.5} ${height * 0.92}
+              L ${width * 0.75} ${height * 0.85}
+              Q ${width * 0.85} ${height * 0.75} ${width * 0.82} ${height * 0.65}
+              L ${width * 0.82} ${height * 0.30}
+              Q ${width * 0.85} ${height * 0.18} ${width * 0.75} ${height * 0.10}
               Z`;
       detailPath = `
-        <path d="M ${width*0.5} ${height*0.88} L ${width*0.5} ${height*0.50}" 
-              stroke="rgba(139, 207, 221, 0.35)" stroke-width="1.5" fill="none"/>
+        <path d="M ${width * 0.5} ${height * 0.88} L ${width * 0.5} ${height * 0.50}"
+              stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>
       `;
     }
   } else {
-    // Incisivo - forma plana y rectangular
     if (isUpper) {
-      path = `M ${width*0.25} ${height*0.12}
-              Q ${width*0.20} ${height*0.18} ${width*0.20} ${height*0.28}
-              L ${width*0.20} ${height*0.72}
-              Q ${width*0.20} ${height*0.84} ${width*0.25} ${height*0.90}
-              L ${width*0.75} ${height*0.90}
-              Q ${width*0.80} ${height*0.84} ${width*0.80} ${height*0.72}
-              L ${width*0.80} ${height*0.28}
-              Q ${width*0.80} ${height*0.18} ${width*0.75} ${height*0.12}
+      path = `M ${width * 0.25} ${height * 0.12}
+              Q ${width * 0.20} ${height * 0.18} ${width * 0.20} ${height * 0.28}
+              L ${width * 0.20} ${height * 0.72}
+              Q ${width * 0.20} ${height * 0.84} ${width * 0.25} ${height * 0.90}
+              L ${width * 0.75} ${height * 0.90}
+              Q ${width * 0.80} ${height * 0.84} ${width * 0.80} ${height * 0.72}
+              L ${width * 0.80} ${height * 0.28}
+              Q ${width * 0.80} ${height * 0.18} ${width * 0.75} ${height * 0.12}
               Z`;
       detailPath = `
-        <path d="M ${width*0.35} ${height*0.30} Q ${width*0.5} ${height*0.35} ${width*0.65} ${height*0.30}" 
-              stroke="rgba(139, 207, 221, 0.25)" stroke-width="1" fill="none"/>
+        <path d="M ${width * 0.35} ${height * 0.30} Q ${width * 0.5} ${height * 0.35} ${width * 0.65} ${height * 0.30}"
+              stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>
       `;
     } else {
-      path = `M ${width*0.25} ${height*0.10}
-              Q ${width*0.20} ${height*0.16} ${width*0.20} ${height*0.28}
-              L ${width*0.20} ${height*0.72}
-              Q ${width*0.20} ${height*0.82} ${width*0.25} ${height*0.88}
-              L ${width*0.75} ${height*0.88}
-              Q ${width*0.80} ${height*0.82} ${width*0.80} ${height*0.72}
-              L ${width*0.80} ${height*0.28}
-              Q ${width*0.80} ${height*0.16} ${width*0.75} ${height*0.10}
+      path = `M ${width * 0.25} ${height * 0.10}
+              Q ${width * 0.20} ${height * 0.16} ${width * 0.20} ${height * 0.28}
+              L ${width * 0.20} ${height * 0.72}
+              Q ${width * 0.20} ${height * 0.82} ${width * 0.25} ${height * 0.88}
+              L ${width * 0.75} ${height * 0.88}
+              Q ${width * 0.80} ${height * 0.82} ${width * 0.80} ${height * 0.72}
+              L ${width * 0.80} ${height * 0.28}
+              Q ${width * 0.80} ${height * 0.16} ${width * 0.75} ${height * 0.10}
               Z`;
       detailPath = `
-        <path d="M ${width*0.35} ${height*0.70} Q ${width*0.5} ${height*0.65} ${width*0.65} ${height*0.70}" 
-              stroke="rgba(139, 207, 221, 0.25)" stroke-width="1" fill="none"/>
+        <path d="M ${width * 0.35} ${height * 0.70} Q ${width * 0.5} ${height * 0.65} ${width * 0.65} ${height * 0.70}"
+              stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>
       `;
     }
   }
 
-  // Mini gráfica mejorada si hay datos
-  const miniChart = hasData ? miniChartSVGImproved(num) : '';
+  const miniChart = hasData ? miniChartSVGImproved(num) : "";
 
-  // Indicadores de problemas
   const t = perTooth[num];
-  let warningIndicators = '';
+  let warningIndicators = "";
   if (t) {
     let hasWarning = false;
     let hasDanger = false;
-    
+
     SITES.forEach(site => {
       const ps = Number(t.sites[site].ps);
       if (Number.isFinite(ps)) {
@@ -369,7 +444,7 @@ function createToothSVG(num, isUpper, isSelected, hasData) {
         else if (ps >= 4) hasWarning = true;
       }
     });
-    
+
     if (hasDanger) {
       warningIndicators = `
         <circle cx="${width - 12}" cy="12" r="6" fill="${COLORS.danger}" opacity="0.9">
@@ -380,7 +455,7 @@ function createToothSVG(num, isUpper, isSelected, hasData) {
     } else if (hasWarning) {
       warningIndicators = `
         <circle cx="${width - 12}" cy="12" r="5" fill="${COLORS.warn}" opacity="0.85"/>
-        <text x="${width - 12}" y="14.5" text-anchor="middle" font-size="7" font-weight="bold" fill="white">⚠</text>
+        <text x="${width - 12}" y="14.5" text-anchor="middle" font-size="7" font-weight="bold" fill="white">!</text>
       `;
     }
   }
@@ -389,68 +464,23 @@ function createToothSVG(num, isUpper, isSelected, hasData) {
     <svg viewBox="0 0 ${width} ${height}" class="w-full h-full">
       <defs>
         <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1" />
-          <stop offset="40%" style="stop-color:#FFFBF0;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#F5EFE6;stop-opacity:1" />
+          <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+          <stop offset="55%" style="stop-color:#F5FAFD;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#ECF2F5;stop-opacity:1" />
         </linearGradient>
-        <filter id="shadow-${num}">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-          <feOffset dx="0" dy="3" result="offsetblur"/>
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.4"/>
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <radialGradient id="highlight-${num}" cx="50%" cy="30%">
-          <stop offset="0%" style="stop-color:rgba(255,255,255,0.6);stop-opacity:1" />
+        <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? "30%" : "70%"}">
+          <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1" />
           <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
         </radialGradient>
       </defs>
-      
-      <!-- Sombra externa mejorada -->
-      <path d="${path}" fill="rgba(0,0,0,0.15)" transform="translate(2, 3)" filter="url(#shadow-${num})"/>
-      
-      <!-- Diente principal con gradiente -->
-      <path d="${path}" 
-            fill="url(#${gradientId})" 
-            stroke="${borderColor}" 
-            stroke-width="${strokeWidth}"
-            class="transition-all duration-300"
-            style="filter: ${isSelected ? 'drop-shadow(0 0 12px rgba(78, 171, 190, 0.6))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'};">
-        ${isSelected ? `<animate attributeName="stroke-width" values="${strokeWidth};${strokeWidth + 1};${strokeWidth}" dur="1s" repeatCount="indefinite"/>` : ''}
-      </path>
-      
-      <!-- Detalles anatómicos -->
+
+      <path d="${path}" fill="url(#${gradientId})" stroke="${borderColor}" stroke-width="${strokeWidth}" />
       ${detailPath}
-      
-      <!-- Highlight brillante para dar profundidad -->
-      <ellipse cx="${width*0.5}" cy="${isUpper ? height*0.25 : height*0.75}" 
-               rx="${width*0.28}" ry="${height*0.18}" 
-               fill="url(#highlight-${num})"
-               opacity="0.7"/>
-      
-      <!-- Mini chart -->
+      <ellipse cx="${width * 0.5}" cy="${isUpper ? height * 0.3 : height * 0.7}"
+               rx="${width * 0.28}" ry="${height * 0.18}"
+               fill="url(#${shineId})" opacity="0.7"/>
       ${miniChart}
-      
-      <!-- Indicadores de alerta -->
       ${warningIndicators}
-      
-      <!-- Número del diente con mejor contraste -->
-      <text x="${width/2 + 1}" y="${(isUpper ? height*0.18 : height*0.82) + 1}" 
-            text-anchor="middle" 
-            font-size="11" 
-            font-weight="bold" 
-            fill="rgba(29,93,105,0.25)"
-            class="pointer-events-none">${num}</text>
-      <text x="${width/2}" y="${isUpper ? height*0.18 : height*0.82}" 
-            text-anchor="middle" 
-            font-size="11" 
-            font-weight="bold" 
-            fill="${COLORS.brand}"
-            class="pointer-events-none">${num}</text>
     </svg>
   `;
 }
@@ -461,19 +491,23 @@ function toothButton(num) {
   const teeth = getTeeth();
   const isUpper = teeth.superior.includes(num);
 
-  const border = isSel ? COLORS.accent : COLORS.soft;
-  const ring = isSel ? "0 0 0 4px rgba(78, 171, 190, 0.25)" : "none";
+  const border = isSel ? COLORS.accent : "#CBD5E1";
+  const shadow = isSel
+    ? "0 0 0 4px rgba(78,171,190,0.18), 0 18px 40px rgba(15,37,50,.16)"
+    : hasAny
+      ? "0 0 0 3px rgba(78,171,190,0.18), 0 14px 26px rgba(15,37,50,.14)"
+      : "0 10px 22px rgba(15,37,50,.10)";
   const badge = hasAny ? `
     <span class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] border-2 border-white dark:border-[#0E1A25] flex items-center justify-center shadow-lg animate-pulse">
-      <span class="text-[9px] text-white font-bold">✓</span>
+      ${ICONS.checkBadge}
     </span>
   ` : "";
 
   return `
     <div class="flex flex-col items-center gap-2 group">
       <button data-tooth="${num}"
-        class="relative w-[72px] h-[92px] rounded-2xl border-2 bg-gradient-to-br from-white to-[#F8F7F7] dark:from-[#0B1721] dark:to-[#0E1A25] transition-all duration-300 hover:scale-110 hover:shadow-2xl overflow-hidden"
-        style="border-color:${border}; box-shadow:${ring};"
+        class="relative rounded-2xl border-2 bg-white dark:bg-[#0B1721] transition-all duration-300 hover:scale-110 hover:shadow-2xl overflow-hidden"
+        style="border-color:${border}; box-shadow:${shadow};"
         title="Pieza ${num} - Click para seleccionar"
       >
         ${badge}
@@ -500,8 +534,8 @@ function renderToothRows() {
 }
 
 function renderSelectedLabels() {
-  $("piezaSeleccionada").textContent = selectedTooth ? String(selectedTooth) : "—";
-  $("labelPiezaPanel").textContent = selectedTooth ? String(selectedTooth) : "—";
+  $("piezaSeleccionada").textContent = selectedTooth ? String(selectedTooth) : "--";
+  $("labelPiezaPanel").textContent = selectedTooth ? String(selectedTooth) : "--";
 }
 
 function inputNumber(id, value, placeholder, min, max, highlightColor = null) {
@@ -512,7 +546,7 @@ function inputNumber(id, value, placeholder, min, max, highlightColor = null) {
       inputmode="numeric"
       class="w-full px-3 py-2.5 rounded-xl border-2 focus:outline-none transition-all bg-white dark:bg-[#0B1721] text-[#0F2532] dark:text-slate-200 focus:ring-2 focus:ring-[#4EABBE] hover:border-[#4EABBE]"
       style="border-color:${border}"
-      placeholder="${placeholder} (${min}–${max})"
+      placeholder="${placeholder} (${min}-${max})"
       value="${value}"
     />
   `;
@@ -522,11 +556,11 @@ function togglePill(id, active, label) {
   return `
     <button
       id="${id}"
-      class="px-3 py-2 rounded-xl font-semibold border-2 transition-all hover:scale-105 text-sm dark:text-slate-200 shadow-sm hover:shadow-md"
+      class="px-3 py-2 rounded-xl font-semibold border-2 transition-all hover:scale-105 text-sm shadow-sm hover:shadow-md"
       style="
         border-color:${active ? COLORS.accent : COLORS.soft};
-        background:${active ? "linear-gradient(135deg, rgba(78,171,190,0.18), rgba(139,207,221,0.12))" : "white"};
-        color:${COLORS.ink};
+        background:${active ? "linear-gradient(135deg, rgba(78,171,190,0.18), rgba(139,207,221,0.12))" : "transparent"};
+        color:inherit;
       "
       type="button"
     >${label}</button>
@@ -534,13 +568,13 @@ function togglePill(id, active, label) {
 }
 
 function selectPillBlock(key, value, label) {
-  const opts = [0,1,2,3].map(v => `
+  const opts = [0, 1, 2, 3].map(v => `
     <button data-pill="${key}" data-val="${v}"
-      class="px-4 py-2.5 rounded-xl font-bold border-2 transition-all hover:scale-105 text-sm dark:text-slate-200 shadow-sm"
+      class="px-4 py-2.5 rounded-xl font-bold border-2 transition-all hover:scale-105 text-sm shadow-sm"
       style="
         border-color:${value === v ? COLORS.accent : COLORS.soft};
-        background:${value === v ? `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.brand})` : "white"};
-        color:${value === v ? "#FFF" : COLORS.ink};
+        background:${value === v ? `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.brand})` : "transparent"};
+        color:${value === v ? "#FFF" : "inherit"};
       "
       type="button"
     >${v}</button>
@@ -550,7 +584,7 @@ function selectPillBlock(key, value, label) {
     <div class="p-4 rounded-xl bg-gradient-to-br from-[#F8F7F7] to-white dark:from-[#0B1721] dark:to-[#0E1A25] border-2 border-[#D9D9D9] dark:border-slate-700 shadow-md">
       <div class="flex items-center justify-between mb-3">
         <div class="font-bold text-[#1D5D69] dark:text-white text-sm">${label}</div>
-        <div class="text-xs opacity-70 text-[#0F2532] dark:text-slate-300 bg-[#8BCFDD]/10 px-2 py-1 rounded-lg">0–3</div>
+        <div class="text-xs opacity-70 text-[#0F2532] dark:text-slate-300 bg-[#8BCFDD]/10 px-2 py-1 rounded-lg">0-3</div>
       </div>
       <div class="flex gap-2 flex-wrap">${opts}</div>
     </div>
@@ -563,7 +597,7 @@ function renderToothDetail() {
     if (cont) {
       cont.innerHTML = `
         <div class="xl:col-span-2 p-8 rounded-2xl bg-gradient-to-br from-[#F8F7F7] to-white dark:from-[#0B1721] dark:to-[#0E1A25] border-2 border-dashed border-[#8BCFDD]/50 dark:border-slate-700 text-center">
-          <div class="text-6xl mb-4 opacity-30">🦷</div>
+          <div class="text-6xl mb-4 opacity-30 text-[#8BCFDD]">${ICONS.toothLg}</div>
           <div class="text-xl font-bold text-[#1D5D69] dark:text-white mb-2">Selecciona una pieza dental</div>
           <div class="text-sm opacity-70 text-[#0F2532] dark:text-slate-300">Haz clic en cualquier diente arriba para comenzar el registro periodontal.</div>
         </div>
@@ -573,8 +607,8 @@ function renderToothDetail() {
     if (chartEl) chartEl.innerHTML = `
       <div class="flex items-center justify-center h-48 text-center">
         <div>
-          <div class="text-4xl mb-3 opacity-20">📊</div>
-          <div class="text-sm opacity-60 text-[#0F2532] dark:text-slate-400">La gráfica aparecerá al seleccionar un diente</div>
+          <div class="text-4xl mb-3 opacity-20 text-[#8BCFDD]">${ICONS.chartLg}</div>
+          <div class="text-sm opacity-60 text-[#0F2532] dark:text-slate-400">La grafica aparecera al seleccionar un diente</div>
         </div>
       </div>
     `;
@@ -591,7 +625,7 @@ function renderToothDetail() {
     const sev = psSeverityColor(s.ps);
 
     return `
-      <div class="p-4 rounded-2xl bg-gradient-to-br from-white via-[#FFFEF9] to-[#F8F7F7] dark:from-[#0B1721] dark:via-[#0E1A25] dark:to-[#0E1A25] border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
+      <div class="p-4 rounded-2xl bg-gradient-to-br from-[#F8F7F7] via-white to-[#F8F7F7] dark:from-[#0B1721] dark:via-[#0E1A25] dark:to-[#0E1A25] border-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]" 
            style="border-color:${sev || COLORS.soft}">
         <div class="flex items-center justify-between mb-4 pb-3 border-b-2 border-[#8BCFDD]/30 dark:border-slate-700">
           <div class="flex items-center gap-3">
@@ -609,12 +643,12 @@ function renderToothDetail() {
             <div class="mt-2 p-2 rounded-lg text-xs bg-[#F8F7F7] dark:bg-[#0B1721] border border-[#D9D9D9] dark:border-slate-700">
               <span class="opacity-70">Severidad:</span> 
               <span class="font-bold ml-1" style="color:${sev || COLORS.ink}">
-                ${sev ? (sev === COLORS.ok ? "✓ Saludable (0–3mm)" : (sev === COLORS.warn ? "⚠ Moderado (4–5mm)" : "⚠️ Severo (≥6mm)")) : "Sin datos"}
+                ${severityLabel(sev)}
               </span>
             </div>
           </div>
           <div>
-            <label class="block text-xs font-bold mb-2 uppercase tracking-wider opacity-70 text-[#1D5D69] dark:text-white">Recesión / Margen Gingival</label>
+            <label class="block text-xs font-bold mb-2 uppercase tracking-wider opacity-70 text-[#1D5D69] dark:text-white">Recesion / Margen Gingival</label>
             ${inputNumber(`rec_${site}`, s.rec, "REC/MG", RANGE_REC.min, RANGE_REC.max)}
             <div class="mt-2 p-2 rounded-lg text-xs bg-gradient-to-r from-[#8BCFDD]/10 to-[#4EABBE]/10 border border-[#8BCFDD]/30">
               <span class="opacity-70">CAL estimado:</span> 
@@ -624,9 +658,9 @@ function renderToothDetail() {
         </div>
 
         <div class="flex flex-wrap gap-2 mt-4">
-          ${togglePill(`bop_${site}`, !!s.bop, `${s.bop ? '🩸' : '◯'} BOP`)}
-          ${togglePill(`plq_${site}`, !!s.plaque, `${s.plaque ? '🦠' : '◯'} Placa`)}
-          ${togglePill(`sup_${site}`, !!s.supp, `${s.supp ? '💧' : '◯'} Supuración`)}
+          ${togglePill(`bop_${site}`, !!s.bop, pillLabel("BOP", COLORS.danger, ICONS.drop))}
+          ${togglePill(`plq_${site}`, !!s.plaque, pillLabel("Placa", COLORS.warn, ICONS.plaque))}
+          ${togglePill(`sup_${site}`, !!s.supp, pillLabel("Supuracion", COLORS.accent, ICONS.drop))}
         </div>
       </div>
     `;
@@ -635,7 +669,7 @@ function renderToothDetail() {
   const extra = `
     <div class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
       ${selectPillBlock("mob", clampInt(t.mobility, 0, 3) || 0, "Movilidad Dental")}
-      ${selectPillBlock("fur", clampInt(t.furcation, 0, 3) || 0, "Compromiso de Furcación")}
+      ${selectPillBlock("fur", clampInt(t.furcation, 0, 3) || 0, "Compromiso de Furcacion")}
     </div>
   `;
 
@@ -695,7 +729,7 @@ function refreshAfterEdit(reRenderFull = false) {
 function calcCAL(ps, rec) {
   const p = Number(ps);
   const r = Number(rec);
-  if (!Number.isFinite(p) || !Number.isFinite(r)) return "—";
+  if (!Number.isFinite(p) || !Number.isFinite(r)) return "--";
   return String(p + r) + " mm";
 }
 
@@ -742,19 +776,19 @@ function computeToothStats(num) {
 function renderSummary() {
   if (selectedTooth) {
     const st = computeToothStats(selectedTooth);
-    $("avgPS").textContent = st ? st.avgPS.toFixed(1) + " mm" : "—";
-    $("avgREC").textContent = st ? st.avgREC.toFixed(1) + " mm" : "—";
-    $("avgCAL").textContent = st ? st.avgCAL.toFixed(1) + " mm" : "—";
-    $("pctBOP").textContent = st ? Math.round((st.bop / 6) * 100) + "%" : "—";
-    $("pctPlaca").textContent = st ? Math.round((st.plaque / 6) * 100) + "%" : "—";
-    $("cntSuppTooth").textContent = st ? String(st.supp) : "—";
+    $("avgPS").textContent = st ? st.avgPS.toFixed(1) + " mm" : "--";
+    $("avgREC").textContent = st ? st.avgREC.toFixed(1) + " mm" : "--";
+    $("avgCAL").textContent = st ? st.avgCAL.toFixed(1) + " mm" : "--";
+    $("pctBOP").textContent = st ? Math.round((st.bop / 6) * 100) + "%" : "--";
+    $("pctPlaca").textContent = st ? Math.round((st.plaque / 6) * 100) + "%" : "--";
+    $("cntSuppTooth").textContent = st ? String(st.supp) : "--";
   } else {
-    $("avgPS").textContent = "—";
-    $("avgREC").textContent = "—";
-    $("avgCAL").textContent = "—";
-    $("pctBOP").textContent = "—";
-    $("pctPlaca").textContent = "—";
-    $("cntSuppTooth").textContent = "—";
+    $("avgPS").textContent = "--";
+    $("avgREC").textContent = "--";
+    $("avgCAL").textContent = "--";
+    $("pctBOP").textContent = "--";
+    $("pctPlaca").textContent = "--";
+    $("cntSuppTooth").textContent = "--";
   }
 
   let totalSites = 0, totalBOP = 0, totalPlaca = 0, totalSupp = 0, totalMov = 0, totalFur = 0;
@@ -785,44 +819,44 @@ function miniChartSVGImproved(toothNum) {
   const t = perTooth[toothNum];
   if (!t) return "";
 
-  const w = 58, h = 20, pad = 2;
+  const w = 66, h = 22, pad = 2;
   const ptsPS = [];
   let hasData = false;
   let maxPS = 0;
-  
+
   for (let i = 0; i < SITES.length; i++) {
     const s = t.sites[SITES[i]];
     const p = Number(s.ps);
     if (Number.isFinite(p)) {
       hasData = true;
       maxPS = Math.max(maxPS, p);
-      const x = pad + (i * (w - pad*2) / (SITES.length - 1));
+      const x = pad + (i * (w - pad * 2) / (SITES.length - 1));
       const normalizedPS = Math.min(p / 10, 1); // Normalizar a escala 0-1
-      const y = h - pad - (normalizedPS * (h - pad*2));
+      const y = h - pad - (normalizedPS * (h - pad * 2));
       ptsPS.push([x, y, p]);
     }
   }
-  
+
   if (!hasData || ptsPS.length < 2) return "";
-  
+
   // Crear path suavizado
   let d = `M ${ptsPS[0][0]} ${ptsPS[0][1]}`;
   for (let i = 1; i < ptsPS.length; i++) {
-    const prevX = ptsPS[i-1][0];
-    const prevY = ptsPS[i-1][1];
+    const prevX = ptsPS[i - 1][0];
+    const prevY = ptsPS[i - 1][1];
     const currX = ptsPS[i][0];
     const currY = ptsPS[i][1];
     const cpX = (prevX + currX) / 2;
-    d += ` Q ${cpX} ${prevY}, ${cpX} ${(prevY + currY)/2} Q ${cpX} ${currY}, ${currX} ${currY}`;
+    d += ` Q ${cpX} ${prevY}, ${cpX} ${(prevY + currY) / 2} Q ${cpX} ${currY}, ${currX} ${currY}`;
   }
-  
+
   // Area fill
-  const areaPath = d + ` L ${ptsPS[ptsPS.length-1][0]} ${h-pad} L ${ptsPS[0][0]} ${h-pad} Z`;
-  
+  const areaPath = d + ` L ${ptsPS[ptsPS.length - 1][0]} ${h - pad} L ${ptsPS[0][0]} ${h - pad} Z`;
+
   const severity = maxPS >= 6 ? COLORS.danger : (maxPS >= 4 ? COLORS.warn : COLORS.ok);
-  
+
   return `
-    <g transform="translate(6, 62)">
+    <g transform="translate(7, 74)">
       <svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
         <defs>
           <linearGradient id="miniGrad-${toothNum}" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -831,7 +865,7 @@ function miniChartSVGImproved(toothNum) {
           </linearGradient>
         </defs>
         <!-- Fondo -->
-        <rect x="${pad}" y="${pad}" width="${w - pad*2}" height="${h - pad*2}" 
+        <rect x="${pad}" y="${pad}" width="${w - pad * 2}" height="${h - pad * 2}" 
               fill="rgba(255,255,255,0.95)" rx="3" stroke="rgba(139,207,221,0.3)" stroke-width="0.5"/>
         <!-- Area bajo la curva -->
         <path d="${areaPath}" fill="url(#miniGrad-${toothNum})"/>
@@ -889,7 +923,7 @@ function bigChartSVGImproved(toothNum) {
   const dCAL = smoothPath(ptsCAL.filter(p => p[1] !== null));
 
   // Grid lines
-  const yTicks = [0,3,5,6,10,15].map(mm => {
+  const yTicks = [0, 3, 5, 6, 10, 15].map(mm => {
     const y = bandY(mm);
     const isDanger = mm === 6;
     const isWarn = mm === 5;
@@ -911,12 +945,21 @@ function bigChartSVGImproved(toothNum) {
     const hasBOP = s.bop;
     const hasPlaque = s.plaque;
     const hasSupp = s.supp;
-    
+
+    const markers = [];
+    if (hasBOP) markers.push(COLORS.danger);
+    if (hasPlaque) markers.push(COLORS.warn);
+    if (hasSupp) markers.push(COLORS.accent);
+
+    const markerGap = 8;
+    const startX = x - ((markers.length - 1) * markerGap) / 2;
+    const markerDots = markers.map((color, idx) => `
+      <circle cx="${startX + (idx * markerGap)}" cy="${h - 12}" r="3" fill="${color}"/>
+    `).join("");
+
     return `<g>
       <text x="${x}" y="${h - 28}" text-anchor="middle" font-size="13" font-weight="bold" fill="${COLORS.brand}">${site}</text>
-      <text x="${x}" y="${h - 12}" text-anchor="middle" font-size="10" fill="rgba(15,37,50,0.5)">
-        ${hasBOP ? '🩸' : ''}${hasPlaque ? '🦠' : ''}${hasSupp ? '💧' : ''}
-      </text>
+      ${markerDots}
     </g>`;
   }).join("");
 
@@ -927,7 +970,7 @@ function bigChartSVGImproved(toothNum) {
     return `
       <circle cx="${x}" cy="${y}" r="${r + 2}" fill="white" opacity="0.8"/>
       <circle cx="${x}" cy="${y}" r="${r}" fill="${c}" opacity="0.95" stroke="white" stroke-width="1.5">
-        <animate attributeName="r" values="${r};${r+1};${r}" dur="2s" repeatCount="indefinite"/>
+        <animate attributeName="r" values="${r};${r + 1};${r}" dur="2s" repeatCount="indefinite"/>
       </circle>
       ${bop ? `<circle cx="${x}" cy="${y}" r="2" fill="white"/>` : ''}
     `;
@@ -948,14 +991,14 @@ function bigChartSVGImproved(toothNum) {
     <g>
       <rect x="${padL}" y="${padT}" width="340" height="42" rx="12" fill="rgba(255,255,255,0.95)" stroke="rgba(15,37,50,0.1)" stroke-width="1.5" filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"/>
       
-      <circle cx="${padL+20}" cy="${padT+21}" r="5" fill="${COLORS.accent}" stroke="white" stroke-width="1.5"/>
-      <text x="${padL+32}" y="${padT+25}" font-size="12" font-weight="600" fill="${COLORS.ink}">Profundidad de Sondaje (PS)</text>
+      <circle cx="${padL + 20}" cy="${padT + 21}" r="5" fill="${COLORS.accent}" stroke="white" stroke-width="1.5"/>
+      <text x="${padL + 32}" y="${padT + 25}" font-size="12" font-weight="600" fill="${COLORS.ink}">Profundidad de Sondaje (PS)</text>
 
-      <line x1="${padL+190}" y1="${padT+21}" x2="${padL+215}" y2="${padT+21}" stroke="${COLORS.brand}" stroke-width="3" stroke-linecap="round"/>
-      <text x="${padL+222}" y="${padT+25}" font-size="12" font-weight="600" fill="${COLORS.ink}">REC/MG</text>
+      <line x1="${padL + 190}" y1="${padT + 21}" x2="${padL + 215}" y2="${padT + 21}" stroke="${COLORS.brand}" stroke-width="3" stroke-linecap="round"/>
+      <text x="${padL + 222}" y="${padT + 25}" font-size="12" font-weight="600" fill="${COLORS.ink}">REC/MG</text>
 
-      <line x1="${padL+285}" y1="${padT+21}" x2="${padL+310}" y2="${padT+21}" stroke="${COLORS.warn}" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/>
-      <text x="${padL+317}" y="${padT+25}" font-size="12" font-weight="600" fill="${COLORS.ink}">CAL</text>
+      <line x1="${padL + 285}" y1="${padT + 21}" x2="${padL + 310}" y2="${padT + 21}" stroke="${COLORS.warn}" stroke-width="3" stroke-dasharray="6 4" stroke-linecap="round"/>
+      <text x="${padL + 317}" y="${padT + 25}" font-size="12" font-weight="600" fill="${COLORS.ink}">CAL</text>
     </g>
   `;
 
@@ -995,7 +1038,7 @@ function bigChartSVGImproved(toothNum) {
       
       <rect x="${padL}" y="${padT}" width="${innerW}" height="${y6 - padT}" fill="url(#dangerGrad)" rx="16"/>
       <rect x="${padL}" y="${y5}" width="${innerW}" height="${y3 - y5}" fill="url(#warnGrad)"/>
-      <rect x="${padL}" y="${y3}" width="${innerW}" height="${(padT+innerH) - y3}" fill="url(#okGrad)"/>
+      <rect x="${padL}" y="${y3}" width="${innerW}" height="${(padT + innerH) - y3}" fill="url(#okGrad)"/>
 
       ${yTicks}
       ${legend}
@@ -1018,16 +1061,16 @@ function bigChartSVGImproved(toothNum) {
 function smoothPath(points) {
   if (!points.length) return "";
   if (points.length === 1) return `M ${points[0][0]} ${points[0][1]}`;
-  
+
   let d = `M ${points[0][0]} ${points[0][1]}`;
-  
+
   for (let i = 0; i < points.length - 1; i++) {
     const curr = points[i];
     const next = points[i + 1];
     const cpX = (curr[0] + next[0]) / 2;
-    d += ` Q ${cpX} ${curr[1]}, ${cpX} ${(curr[1] + next[1])/2} Q ${cpX} ${next[1]}, ${next[0]} ${next[1]}`;
+    d += ` Q ${cpX} ${curr[1]}, ${cpX} ${(curr[1] + next[1]) / 2} Q ${cpX} ${next[1]}, ${next[0]} ${next[1]}`;
   }
-  
+
   return d;
 }
 
@@ -1065,21 +1108,21 @@ function printToothBlock(num) {
 
   const rows = SITES.map(site => {
     const s = t?.sites?.[site];
-    const ps = (s?.ps ?? "") === "" ? "—" : s.ps;
-    const rec = (s?.rec ?? "") === "" ? "—" : s.rec;
+    const ps = (s?.ps ?? "") === "" ? "--" : s.ps;
+    const rec = (s?.rec ?? "") === "" ? "--" : s.rec;
     const cal = (s?.ps !== "" && s?.rec !== "" && Number.isFinite(Number(s.ps)) && Number.isFinite(Number(s.rec)))
       ? (Number(s.ps) + Number(s.rec)) : null;
 
-    const bop = s?.bop ? "✓" : "—";
-    const plq = s?.plaque ? "✓" : "—";
-    const sup = s?.supp ? "✓" : "—";
+    const bop = s?.bop ? "X" : "-";
+    const plq = s?.plaque ? "X" : "-";
+    const sup = s?.supp ? "X" : "-";
 
     return `
       <tr class="border-b border-[#D9D9D9]/30">
         <td class="py-2 pr-3 font-bold text-[#1D5D69]">${site}</td>
         <td class="py-2 pr-3 text-center">${ps}</td>
         <td class="py-2 pr-3 text-center">${rec}</td>
-        <td class="py-2 pr-3 text-center font-semibold">${cal === null ? "—" : cal}</td>
+        <td class="py-2 pr-3 text-center font-semibold">${cal === null ? "--" : cal}</td>
         <td class="py-2 pr-3 text-center">${bop}</td>
         <td class="py-2 pr-3 text-center">${plq}</td>
         <td class="py-2 pr-3 text-center">${sup}</td>
@@ -1087,18 +1130,18 @@ function printToothBlock(num) {
     `;
   }).join("");
 
-  const mob = empty ? "—" : (t.mobility ?? 0);
-  const fur = empty ? "—" : (t.furcation ?? 0);
+  const mob = empty ? "--" : (t.mobility ?? 0);
+  const fur = empty ? "--" : (t.furcation ?? 0);
 
   return `
     <div class="p-4 rounded-xl border-2 border-[#8BCFDD]/50 bg-white shadow-sm">
       <div class="flex items-center justify-between mb-3 pb-2 border-b-2 border-[#8BCFDD]">
         <div class="flex items-center gap-2">
-          <span class="text-2xl">🦷</span>
+          <span class="text-[#4EABBE]">${ICONS.tooth}</span>
           <span class="font-bold text-lg text-[#1D5D69]">Pieza ${num}</span>
         </div>
         <div class="text-xs opacity-70 bg-[#F8F7F7] px-3 py-1 rounded-lg">
-          Movilidad: <span class="font-bold">${mob}</span> • Furcación: <span class="font-bold">${fur}</span>
+          Movilidad: <span class="font-bold">${mob}</span> - Furcacion: <span class="font-bold">${fur}</span>
         </div>
       </div>
       <table class="w-full text-xs">
@@ -1122,16 +1165,16 @@ function printToothBlock(num) {
 /* =============== GUARDADO EN BASE DE DATOS =============== */
 async function saveToDB() {
   if (!currentPacienteId || !db) return;
-  
+
   try {
     const payload = getPayload();
     const payloadJSON = JSON.stringify(payload);
-    
+
     const existing = await dbGet(
       "SELECT id FROM tratamientos WHERE paciente_id = ? AND procedimiento = 'Periodontograma'",
       [currentPacienteId]
     );
-    
+
     if (existing) {
       await dbRun(
         `UPDATE tratamientos SET notas = ?, fecha = datetime('now') 
@@ -1145,11 +1188,11 @@ async function saveToDB() {
         [currentPacienteId, payloadJSON]
       );
     }
-    
+
     if (window.parent !== window) {
       window.parent.postMessage({ type: 'periodontograma-guardado' }, '*');
     }
-    
+
     return true;
   } catch (e) {
     console.error('Error guardando periodontograma:', e);
@@ -1160,20 +1203,20 @@ async function saveToDB() {
 
 async function loadFromDB() {
   if (!currentPacienteId || !db) return false;
-  
+
   try {
     const row = await dbGet(
       "SELECT * FROM tratamientos WHERE paciente_id = ? AND procedimiento = 'Periodontograma' ORDER BY fecha DESC LIMIT 1",
       [currentPacienteId]
     );
-    
+
     if (!row || !row.notas) return false;
-    
+
     const payload = JSON.parse(row.notas);
     showAdult = !!payload.showAdult;
     selectedTooth = payload.selectedTooth ?? null;
     perTooth = payload.perTooth || {};
-    
+
     return true;
   } catch (e) {
     console.error('Error cargando periodontograma:', e);
@@ -1244,7 +1287,7 @@ function exportCSV() {
   const all = [...teeth.superior, ...teeth.inferior];
 
   const rows = [];
-  rows.push(["tooth","site","ps","rec","cal","bop","plaque","supp","mobility","furcation"].join(","));
+  rows.push(["tooth", "site", "ps", "rec", "cal", "bop", "plaque", "supp", "mobility", "furcation"].join(","));
 
   for (const num of all) {
     const t = perTooth[num] || null;
@@ -1275,12 +1318,12 @@ function importJSONFile(file) {
   reader.onload = () => {
     try {
       const payload = JSON.parse(String(reader.result || "{}"));
-      if (!payload || !payload.perTooth) throw new Error("JSON inválido");
+      if (!payload || !payload.perTooth) throw new Error("JSON invalido");
       showAdult = !!payload.showAdult;
       selectedTooth = payload.selectedTooth ?? null;
       perTooth = payload.perTooth || {};
       render();
-      alert("Importación exitosa ✓");
+      alert("Importacion exitosa");
     } catch (e) {
       alert("No se pudo importar: " + (e?.message || "error"));
     }
@@ -1300,21 +1343,29 @@ function render() {
 async function init() {
   const pacienteId = getQueryParam('id');
   if (!pacienteId) {
-    console.error('ID de paciente no especificado');
-    return;
+    console.warn('ID de paciente no especificado');
+  } else {
+    currentPacienteId = pacienteId;
   }
-  currentPacienteId = pacienteId;
 
-  try {
-    const paciente = await dbGet('SELECT * FROM pacientes WHERE id = ?', [pacienteId]);
-    if (paciente) {
-      const nombreEl = $("pacienteNombre");
-      const idEl = $("pacienteId");
-      if (nombreEl) nombreEl.textContent = `${paciente.nombre || ''} ${paciente.apellido || ''}`.trim() || 'Paciente';
-      if (idEl) idEl.textContent = paciente.id || pacienteId;
+  let ageDetected = false;
+  if (pacienteId) {
+    try {
+      const paciente = await dbGet('SELECT * FROM pacientes WHERE id = ?', [pacienteId]);
+      if (paciente) {
+        const nombreEl = $("pacienteNombre");
+        const idEl = $("pacienteId");
+        if (nombreEl) nombreEl.textContent = `${paciente.nombre || ''} ${paciente.apellido || ''}`.trim() || 'Paciente';
+        if (idEl) idEl.textContent = paciente.id || pacienteId;
+        const edad = calculateAgeYears(paciente.fecha_nacimiento);
+        if (edad !== null) {
+          showAdult = edad >= PEDIATRIC_MAX_YEARS;
+          ageDetected = true;
+        }
+      }
+    } catch (e) {
+      console.error('Error cargando paciente:', e);
     }
-  } catch (e) {
-    console.error('Error cargando paciente:', e);
   }
 
   const loaded = await loadFromDB();
@@ -1324,9 +1375,31 @@ async function init() {
 
   const radioAdu = $("radioAdulto");
   const radioInf = $("radioInfantil");
-  
+  const labelAdu = $("labelAdulto");
+  const labelInf = $("labelInfantil");
+
+  // Deshabilitar radio buttons si la edad fue detectada automáticamente
+  if (ageDetected) {
+    if (radioAdu) radioAdu.disabled = true;
+    if (radioInf) radioInf.disabled = true;
+    // Deshabilitar también los labels para evitar clics
+    if (labelAdu) {
+      labelAdu.style.pointerEvents = 'none';
+      labelAdu.style.opacity = '0.6';
+    }
+    if (labelInf) {
+      labelInf.style.pointerEvents = 'none';
+      labelInf.style.opacity = '0.6';
+    }
+  }
+
   if (radioAdu) {
     radioAdu.addEventListener("change", () => {
+      // No permitir cambios si la edad fue detectada automáticamente
+      if (ageDetected) {
+        radioAdu.checked = showAdult;
+        return;
+      }
       if (radioAdu.checked) {
         showAdult = true;
         selectedTooth = null;
@@ -1334,9 +1407,14 @@ async function init() {
       }
     });
   }
-  
+
   if (radioInf) {
     radioInf.addEventListener("change", () => {
+      // No permitir cambios si la edad fue detectada automáticamente
+      if (ageDetected) {
+        radioInf.checked = !showAdult;
+        return;
+      }
       if (radioInf.checked) {
         showAdult = false;
         selectedTooth = null;
@@ -1353,7 +1431,7 @@ async function init() {
       const saved = await saveToDB();
       if (saved) {
         saveLocal();
-        btnGuardar.textContent = "✓ Guardado";
+        btnGuardar.textContent = "Guardado";
         setTimeout(() => {
           btnGuardar.textContent = "Guardar";
           btnGuardar.disabled = false;
@@ -1368,31 +1446,12 @@ async function init() {
   const btnReset = $("btnReset");
   if (btnReset) {
     btnReset.addEventListener("click", async () => {
-      if (!confirm("¿Seguro que deseas borrar todo el periodontograma? Esta acción no se puede deshacer.")) return;
+      if (!confirm("Seguro que deseas borrar todo el periodontograma? Esta accion no se puede deshacer.")) return;
       perTooth = {};
       selectedTooth = null;
       await saveToDB();
       render();
-      alert("Periodontograma reiniciado ✓");
-    });
-  }
-
-  const btnImprimir = $("btnImprimir");
-  if (btnImprimir) {
-    btnImprimir.addEventListener("click", () => {
-      const printPaciente = $("printPaciente");
-      const printId = $("printId");
-      const printDenticion = $("printDenticion");
-      const printFecha = $("printFecha");
-      const printTable = $("printTable");
-      
-      if (printPaciente) printPaciente.textContent = ($("pacienteNombre")?.textContent || "").trim();
-      if (printId) printId.textContent = ($("pacienteId")?.textContent || "").trim();
-      if (printDenticion) printDenticion.textContent = showAdult ? "Adulto" : "Infantil";
-      if (printFecha) printFecha.textContent = new Date().toLocaleString();
-      if (printTable) printTable.innerHTML = buildPrintTableHTML();
-
-      window.print();
+      alert("Periodontograma reiniciado");
     });
   }
 

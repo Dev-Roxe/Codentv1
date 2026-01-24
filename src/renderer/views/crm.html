@@ -24,7 +24,7 @@
         <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">CRM - Gestión de Relaciones</h1>
         <p class="text-[#0F2532]/60 dark:text-gray-400 mt-1">Fideliza pacientes y automatiza tu comunicación</p>
       </div>
-      <button
+      <button id="newCampaignBtn"
         class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-sm flex items-center gap-2">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -117,14 +117,14 @@
           <div class="p-6 border-b border-[#D9D9D9] dark:border-gray-700 flex items-center justify-between">
             <h2 class="text-xl font-semibold text-[#1D5D69] dark:text-white">Mis campañas</h2>
             <div class="flex gap-3">
-              <select
+              <select id="campaignStatusFilter"
                 class="px-4 py-2 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
-                <option>Todas las campañas</option>
-                <option>Activas</option>
-                <option>Completadas</option>
-                <option>Programadas</option>
+                <option value="all">Todas las campañas</option>
+                <option value="active">Activas</option>
+                <option value="completed">Completadas</option>
+                <option value="scheduled">Programadas</option>
               </select>
-              <input type="text" placeholder="Buscar campaña..."
+              <input id="campaignSearchInput" type="text" placeholder="Buscar campaña..."
                 class="px-4 py-2 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
             </div>
           </div>
@@ -149,7 +149,7 @@
                   <th class="px-6 py-3"></th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-[#E6E6E6] dark:divide-gray-700">
+              <tbody id="campaignsTableBody" class="divide-y divide-[#E6E6E6] dark:divide-gray-700">
                 <tr class="hover:bg-[#F8F7F7]/60 dark:hover:bg-gray-700/60 transition">
                   <td class="px-6 py-4">
                     <div class="font-semibold text-[#0F2532] dark:text-white">Recordatorio Limpieza Dental</div>
@@ -207,6 +207,9 @@
                   <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Selecciona o crea plantillas
                     personalizadas</p>
                 </div>
+                <button id="newTemplateBtn"
+                  class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                  plantilla</button>
               </div>
               <div id="templateGrid" class="grid grid-cols-2 gap-4">
                 <!-- Templates rendered by JS -->
@@ -227,15 +230,27 @@
                 <div>
                   <label
                     class="flex items-center justify-between text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
-                    <span>👥 Destinatarios</span>
+                    <span class="inline-flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 20h5v-2a3 3 0 00-3-3h-2M9 20H4v-2a3 3 0 013-3h2m4-8a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Destinatarios</span>
+                    </span>
                     <button id="selectRecipientsBtn"
-                      class="text-xs text-[#4EABBE] hover:underline font-medium">Selección avanzada →</button>
+                      class="text-xs text-[#4EABBE] hover:underline font-medium inline-flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span>Seleccion avanzada</span>
+                    </button>
                   </label>
                   <select id="emailRecipients"
                     class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
                     <option value="">-- Selecciona un grupo --</option>
-                    <option value="all">📋 Todos los pacientes</option>
-                    <option value="active">✅ Pacientes activos</option>
+                    <option value="all">Todos los pacientes</option>
+                    <option value="active">Pacientes activos</option>
                     <option value="inactive">⏸️ Pacientes inactivos (6+ meses)</option>
                   </select>
                   <div id="recipientCount" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Selecciona
@@ -243,68 +258,52 @@
                   <div id="selectedPatientsContainer"></div>
                 </div>
 
-                <!-- Subject Section - MEJORADO -->
+                <!-- Subject Section -->
                 <div>
-                  <label
-                    class="flex items-center justify-between text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
-                    <span>📧 Asunto</span>
-                    <span class="text-xs text-[#0F2532]/40 dark:text-gray-500 font-normal">Variables disponibles</span>
+                  <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                    <span class="inline-flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 7h.01M3 11l8-8a2 2 0 012.828 0l7.172 7.172a2 2 0 010 2.828l-8 8a2 2 0 01-2.828 0L3 13.828a2 2 0 010-2.828z" />
+                      </svg>
+                      <span>Asunto del email</span>
+                    </span>
                   </label>
-                  <input id="emailSubject" type="text" placeholder="Ej: Hola {nombre}, te recordamos tu cita"
-                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    disabled />
-                  <div class="flex gap-1.5 mt-2">
-                    <button
-                      class="subject-var-btn px-2 py-1 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 text-[#1D5D69] dark:text-[#8BCFDD] rounded text-xs hover:bg-[#8BCFDD]/40 transition"
-                      data-var="{nombre}">{nombre}</button>
-                    <button
-                      class="subject-var-btn px-2 py-1 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 text-[#1D5D69] dark:text-[#8BCFDD] rounded text-xs hover:bg-[#8BCFDD]/40 transition"
-                      data-var="{fecha_cita}">{fecha}</button>
-                  </div>
+                  <input id="emailSubject" type="text" placeholder="Escribe el asunto de tu email..."
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
                 </div>
-
-                <!-- Message Section - MEJORADO -->
+                <!-- Message Section -->
                 <div>
                   <label
                     class="flex items-center justify-between text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
-                    <span>💬 Mensaje</span>
+                    <span class="inline-flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M7 8h10M7 12h6m-6 8l-4-4H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v7a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                      <span>Mensaje</span>
+                    </span>
                     <span id="charCount" class="text-xs text-[#0F2532]/40 dark:text-gray-500 font-normal">0
                       caracteres</span>
                   </label>
-                  <textarea id="emailMessage" rows="6"
-                    placeholder="Escribe tu mensaje aquí... Usa variables como {nombre} para personalizar."
-                    class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
-                    disabled></textarea>
-
-                  <div class="flex flex-wrap gap-1.5 mt-2">
-                    <button
-                      class="variable-btn px-2.5 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200 rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6] dark:border-gray-600"
-                      data-var="{nombre}">
-                      <span class="opacity-60">+</span> nombre
-                    </button>
-                    <button
-                      class="variable-btn px-2.5 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200 rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6] dark:border-gray-600"
-                      data-var="{fecha_cita}">
-                      <span class="opacity-60">+</span> fecha_cita
-                    </button>
-                    <button
-                      class="variable-btn px-2.5 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200 rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6] dark:border-gray-600"
-                      data-var="{doctor}">
-                      <span class="opacity-60">+</span> doctor
-                    </button>
-                    <button
-                      class="variable-btn px-2.5 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200 rounded text-xs hover:bg-[#8BCFDD]/30 hover:text-[#1D5D69] transition border border-[#E6E6E6] dark:border-gray-600"
-                      data-var="{telefono}">
-                      <span class="opacity-60">+</span> teléfono
-                    </button>
-                  </div>
+                  <textarea id="emailMessage" rows="6" placeholder="Escribe el contenido de tu email aquí..."
+                    class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
                 </div>
 
                 <!-- Live Preview -->
                 <div
                   class="bg-gradient-to-br from-[#F8F7F7] to-[#E8ECEE]/50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 border border-[#E6E6E6] dark:border-gray-600">
                   <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-[#1D5D69] dark:text-[#4EABBE]">👁️ Vista previa</span>
+                    <span
+                      class="text-xs font-semibold text-[#1D5D69] dark:text-[#4EABBE] inline-flex items-center gap-2">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span>Vista previa</span>
+                    </span>
                     <span class="text-xs text-[#0F2532]/40 dark:text-gray-400">Ejemplo con primer paciente</span>
                   </div>
                   <div
@@ -332,9 +331,8 @@
                 <!-- Action Buttons -->
                 <div class="flex gap-2">
                   <button id="previewEmailBtn"
-                    class="flex-1 py-3 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-[#E8ECEE] dark:hover:bg-gray-600 font-semibold text-sm border border-[#D9D9D9] dark:border-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled>
-                    Vista completa
+                    class="flex-1 py-3 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-[#E8ECEE] dark:hover:bg-gray-600 font-semibold text-sm border border-[#D9D9D9] dark:border-gray-600 transition">
+                    Vista previa
                   </button>
                   <button id="sendBulkEmailBtn"
                     class="flex-1 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold text-sm transition opacity-60 cursor-not-allowed"
@@ -369,7 +367,14 @@
           <div class="absolute inset-0 flex items-center justify-center">
             <div
               class="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 rounded-xl border border-dashed border-[#4EABBE] px-6 py-4 text-center shadow-md">
-              <p class="text-sm font-semibold text-[#1D5D69] dark:text-white">📱 SMS masivos disponible próximamente</p>
+              <p class="text-sm font-semibold text-[#1D5D69] dark:text-white inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16h2" />
+                </svg>
+                <span>SMS masivos disponible proximamente</span>
+              </p>
             </div>
           </div>
         </div>
@@ -413,11 +418,58 @@
       </div>
 
       <div id="recordatorios-tab" class="tab-content hidden">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
-          <h2 class="text-2xl font-bold text-[#1D5D69] dark:text-white mb-4">Sistema de recordatorios</h2>
-          <button id="sendReminderEmailsBtn"
-            class="px-6 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold">Enviar recordatorios
-            ahora</button>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white">Plantillas de recordatorio</h2>
+                <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea y gestiona plantillas para
+                  recordatorios</p>
+              </div>
+              <button id="newReminderTemplateBtn"
+                class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                plantilla</button>
+            </div>
+            <div id="reminderTemplatesList" class="space-y-3">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
+            <h2 class="text-2xl font-bold text-[#1D5D69] dark:text-white mb-2">Sistema de recordatorios</h2>
+            <p id="reminderWindowInfo" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mb-4">Sin configurar</p>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Plantilla</label>
+                <select id="reminderTemplateSelect"
+                  class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+                  <option value="">-- Selecciona una plantilla --</option>
+                </select>
+              </div>
+
+              <div class="bg-[#F8F7F7] dark:bg-gray-700 rounded-lg p-4 border border-[#E6E6E6] dark:border-gray-600">
+                <p class="text-xs uppercase tracking-wide text-[#0F2532]/40 dark:text-gray-400 font-semibold">Vista
+                  previa</p>
+                <p id="reminderPreview" class="text-sm text-[#0F2532]/70 dark:text-gray-300 mt-2">
+                  Selecciona una plantilla para ver el contenido.
+                </p>
+              </div>
+
+              <button id="sendReminderEmailsBtn"
+                class="w-full px-6 py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold">Enviar
+                recordatorios ahora</button>
+
+              <div id="reminderStatus" class="hidden">
+                <p id="reminderStatusText" class="text-xs text-[#0F2532] dark:text-gray-300 mb-2"></p>
+                <div class="w-full bg-[#E6E6E6] dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                  <div id="reminderProgress"
+                    class="bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] h-full transition-all duration-300"
+                    style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -430,8 +482,13 @@
           <div class="absolute inset-0 flex items-center justify-center">
             <div
               class="backdrop-blur-md bg-white/80 dark:bg-gray-800/80 rounded-xl border border-dashed border-[#4EABBE] px-6 py-4 text-center shadow-md">
-              <p class="text-sm font-semibold text-[#1D5D69] dark:text-white">⚙️ Automatizaciones disponible
-                próximamente</p>
+              <p class="text-sm font-semibold text-[#1D5D69] dark:text-white inline-flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 12h8m-8 6h16M14 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+                <span>Automatizaciones disponible próximamente</span>
+              </p>
             </div>
           </div>
         </div>
@@ -502,8 +559,9 @@
     class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
       <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
-        <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla</h3>
-        <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una plantilla personalizada para tus emails
+        <h3 id="templateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla</h3>
+        <p id="templateModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una plantilla
+          personalizada para tus emails
         </p>
       </div>
 
@@ -516,8 +574,14 @@
         </div>
 
         <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Asunto (opcional)</label>
+          <input id="templateSubjectInput" type="text" placeholder="Ej: Recordatorio de cita"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+        </div>
+
+        <div>
           <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Imagen (opcional)</label>
-          <div
+          <div id="templateImageDropzone"
             class="border-2 border-dashed border-[#D9D9D9] dark:border-gray-600 rounded-lg p-4 text-center hover:border-[#4EABBE] transition cursor-pointer">
             <input id="templateImageInput" type="file" accept="image/*" class="hidden" />
             <label for="templateImageInput" class="cursor-pointer">
@@ -530,21 +594,15 @@
               <p class="text-xs text-[#0F2532]/40 dark:text-gray-500 mt-1">PNG, JPG hasta 2MB</p>
             </label>
           </div>
+          <img id="templateImagePreview"
+            class="hidden mt-3 w-full h-32 object-cover rounded-lg border border-[#E6E6E6] dark:border-gray-600"
+            alt="Vista previa" />
         </div>
 
         <div>
           <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Contenido del email</label>
-          <textarea id="templateTextInput" rows="6"
-            placeholder="Escribe el contenido de tu plantilla...&#10;&#10;Usa variables: {nombre}, {fecha_cita}, {doctor}"
+          <textarea id="templateTextInput" rows="6" placeholder="Escribe el contenido de tu plantilla aquí..."
             class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
-          <div class="flex gap-1.5 mt-2">
-            <span
-              class="px-2 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532]/60 dark:text-gray-300 rounded text-xs">{nombre}</span>
-            <span
-              class="px-2 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532]/60 dark:text-gray-300 rounded text-xs">{fecha_cita}</span>
-            <span
-              class="px-2 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532]/60 dark:text-gray-300 rounded text-xs">{doctor}</span>
-          </div>
         </div>
       </div>
 
@@ -580,6 +638,101 @@
         <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')"
           class="w-full py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Cerrar vista
           previa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campaign Editor Modal -->
+  <div id="campaignEditorModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
+        <h3 id="campaignModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva campaña</h3>
+        <p id="campaignModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Define el alcance y
+          contenido de la campaña</p>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Nombre</label>
+          <input id="campaignNameInput" type="text" placeholder="Ej: Recordatorio de limpieza"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Descripcion</label>
+          <textarea id="campaignDescInput" rows="3" placeholder="Describe el objetivo de la campaña"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Tipo</label>
+            <select id="campaignTypeSelect"
+              class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Estado</label>
+            <select id="campaignStatusSelect"
+              class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+              <option value="draft">Borrador</option>
+              <option value="scheduled">Programada</option>
+              <option value="active">Activa</option>
+              <option value="completed">Completada</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Audiencia</label>
+            <select id="campaignAudienceSelect"
+              class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+              <option value="all">Todos</option>
+              <option value="active">Activos</option>
+              <option value="inactive">Inactivos</option>
+              <option value="custom">Seleccion manual</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Programada para</label>
+            <input id="campaignScheduleInput" type="datetime-local"
+              class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Plantilla (email)</label>
+          <select id="campaignTemplateSelect"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+            <option value="">-- Sin plantilla --</option>
+          </select>
+          <p class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Si eliges una plantilla, se usara como base para
+            el mensaje.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Asunto (opcional)</label>
+          <input id="campaignSubjectInput" type="text" placeholder="Ej: Tu proxima cita"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Mensaje (opcional)</label>
+          <textarea id="campaignBodyInput" rows="4" placeholder="Contenido adicional para la campaña"
+            class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
+        </div>
+      </div>
+
+      <div
+        class="p-4 border-t border-[#E6E6E6] dark:border-gray-700 flex justify-end gap-3 bg-[#F8F7F7] dark:bg-gray-900 rounded-b-2xl">
+        <button id="cancelCampaignBtn"
+          class="px-5 py-2.5 bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium border border-[#D9D9D9] dark:border-gray-600">Cancelar</button>
+        <button id="saveCampaignBtn"
+          class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar campaña</button>
       </div>
     </div>
   </div>

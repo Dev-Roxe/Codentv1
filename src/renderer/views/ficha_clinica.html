@@ -33,28 +33,25 @@
           </button>
           <h1 class="text-xl font-bold text-[#1D5D69] dark:text-white" id="header-nombre">Información del Paciente</h1>
         </div>
-        <div class="flex items-center gap-2">
-          <button class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[#0F2532] dark:text-slate-100 bg-white dark:bg-[#101F2E] border border-[#8BCFDD] dark:border-slate-700 rounded-xl hover:bg-[#8BCFDD]/15 transition">
-            <span>📧</span>
-            <span>Enviar encuesta</span>
-          </button>
-          <button class="inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold text-[#0F2532] dark:text-slate-100 bg-white dark:bg-[#101F2E] border border-[#8BCFDD] dark:border-slate-700 rounded-xl hover:bg-[#8BCFDD]/15 transition">
-            <span>🖨️</span>
-            <span>Recaudación</span>
-          </button>
-        </div>
       </div>
     </header>
 
     <!-- Contenedor principal con layout vertical: sidebar izquierdo + contenido central -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Sidebar izquierdo -->
-      <aside class="w-64 border-r border-[#8BCFDD]/50 dark:border-slate-800 bg-white/95 dark:bg-[#0E1A25]/95 overflow-y-auto">
+      <aside
+        class="w-64 border-r border-[#8BCFDD]/50 dark:border-slate-800 bg-white/95 dark:bg-[#0E1A25]/95 overflow-y-auto">
         <!-- Información del paciente -->
         <div class="p-4 border-b border-[#8BCFDD]/30 dark:border-slate-800">
           <div class="flex flex-col items-center gap-2 mb-4">
             <div class="w-16 h-16 rounded-full bg-[#8BCFDD]/20 dark:bg-slate-700 flex items-center justify-center">
-              <span class="text-2xl">👤</span>
+              <span class="inline-flex items-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="8" r="4" stroke-width="2" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" />
+                </svg>
+              </span>
             </div>
             <div class="text-center">
               <p class="font-semibold text-[#0F2532] dark:text-slate-100" id="sidebar-nombre">Paciente</p>
@@ -66,45 +63,121 @@
 
         <!-- Menú de navegación vertical -->
         <nav class="p-2 space-y-1">
-          <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">Paciente</p>
+          <p class="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">
+            Paciente</p>
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
             data-tab="datos">
-            <span>👤</span>
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4" stroke-width="2" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" />
+              </svg>
+            </span>
             <span>Datos Personales</span>
           </button>
-          <p class="px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">Clínico</p>
+
+          <p class="px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">
+            Clínico</p>
+
+
+
+          <!-- 1. Historial de Tratamientos -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-            data-tab="recetas">
-            <span>💊</span>
-            <span>Prescripciones Médicas</span>
+            data-tab="historial">
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <span>Historial de Tratamientos</span>
           </button>
+
+          <!-- 2. Antecedentes Médicos -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
             data-tab="antecedentes">
-            <span>📋</span>
-            <span>Historial & Alertas Clínicas</span>
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5a2 2 0 002 2h2a2 2 0 002-2" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6" />
+              </svg>
+            </span>
+            <span>Antecedentes Médicos</span>
           </button>
-          
-          <button
-            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-            data-tab="tratamientos">
-            <span>❤️</span>
-            <span>Planes de Tratamiento</span>
-          </button>
-          
+
+          <!-- 2. Odontograma -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
             data-tab="odontograma">
-            <span>🦷</span>
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 3c-3 0-5.5 2.2-5.5 5 0 1.6.7 3 1.8 4 .7.6 1.1 1.5 1.3 2.5.3 1.6 1 3.5 2.4 3.5 1.2 0 1.9-1.1 2-2.6.1 1.5.8 2.6 2 2.6 1.4 0 2.1-1.9 2.4-3.5.2-1 .6-1.9 1.3-2.5 1.1-1 1.8-2.4 1.8-4 0-2.8-2.5-5-5.5-5-.9 0-1.7.3-2.4.8-.4.3-.9.3-1.3 0C13.7 3.3 12.9 3 12 3z" />
+              </svg>
+            </span>
             <span>Odontograma</span>
           </button>
+
+          <!-- 3. Periodontograma -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
             data-tab="periodontograma">
-            <span>🦷</span>
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 17v-5" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 17V7" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 17V11" />
+              </svg>
+            </span>
             <span>Periodontograma</span>
+          </button>
+
+          <!-- 4. Planes de Tratamiento -->
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="tratamientos">
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 20.364 4.318 12.682a4.5 4.5 0 010-6.364z" />
+              </svg>
+            </span>
+            <span>Planes de Tratamiento</span>
+          </button>
+
+          <!-- 5. Prescripciones Médicas -->
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="recetas">
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 4H7a2 2 0 01-2-2V6a2 2 0 012-2h5l4 4v10a2 2 0 01-2 2z" />
+              </svg>
+            </span>
+            <span>Prescripciones Médicas</span>
+          </button>
+
+          <p class="px-3 py-2 mt-4 text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-400">
+            Financiero</p>
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="pagos">
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+            <span>Pagos y Recaudación</span>
           </button>
         </nav>
       </aside>
@@ -115,35 +188,20 @@
         <div class="flex-1 overflow-hidden">
           <div class="relative w-full h-full">
             <iframe id="frame-datos" class="tab-frame absolute inset-0 w-full h-full border-0"></iframe>
+            <iframe id="frame-historial" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-antecedentes" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-tratamientos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-recetas" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-odontograma" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
-            <iframe id="frame-periodontograma" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-periodontograma"
+              class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-pagos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-galeria" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-contactos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-diagnostico" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-documentos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-agenda" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
           </div>
-        </div>
-
-        <!-- Tabla de historial en la parte inferior -->
-        <div class="border-t border-[#8BCFDD]/50 dark:border-slate-800 bg-white dark:bg-[#0E1A25] p-4 max-h-48 overflow-y-auto">
-          <h3 class="text-sm font-semibold text-[#1D5D69] dark:text-slate-300 mb-2">Historial de Servicios</h3>
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="border-b border-[#8BCFDD]/30 dark:border-slate-700">
-                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Fecha</th>
-                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Servicio</th>
-                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Pieza</th>
-                <th class="text-left py-2 px-3 text-[#1D5D69] dark:text-slate-400">Caras</th>
-              </tr>
-            </thead>
-            <tbody id="historial-servicios">
-              <!-- El historial se cargará dinámicamente -->
-            </tbody>
-          </table>
         </div>
       </main>
     </div>
@@ -153,4 +211,3 @@
 </body>
 
 </html>
- 

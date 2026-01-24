@@ -18,21 +18,29 @@ const State = {
     fieldConfig: {}
 };
 
+const ICONS = {
+    user: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" stroke-width="2" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20c1.5-4 6-6 8-6s6.5 2 8 6" /></svg>',
+    mail: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>',
+    calendar: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>',
+    location: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a3 3 0 100-6 3 3 0 000 6z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11c0 5-7 9-7 9s-7-4-7-9a7 7 0 1114 0z" /></svg>',
+    phone: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3a2 2 0 012 1.5l1 3a2 2 0 01-.5 2L9 11a11 11 0 005 5l1.5-1.5a2 2 0 012-.5l3 1A2 2 0 0121 17v3a2 2 0 01-2 2h-1C9.82 22 2 14.18 2 4V3a2 2 0 012-2h-1z" /></svg>'
+};
+
 const masterFields = [
-    { key: 'nombre', label: 'Nombre', type: 'text', mapTo: 'nombre', icon: '👤' },
+    { key: 'nombre', label: 'Nombre', type: 'text', mapTo: 'nombre', icon: ICONS.user },
     { key: 'nombre_social', label: 'Nombre social', type: 'text', mapTo: 'meta' },
     { key: 'apellido', label: 'Apellidos', type: 'text', mapTo: 'apellido' },
     { key: 'curp', label: 'CURP/RFC', type: 'text', mapTo: 'meta' },
-    { key: 'email', label: 'Email', type: 'email', mapTo: 'email', icon: '✉️' },
+    { key: 'email', label: 'Email', type: 'email', mapTo: 'email', icon: ICONS.mail },
     { key: 'convenio', label: 'Convenio', type: 'text', mapTo: 'meta' },
     { key: 'numero_interno', label: 'Número Interno', type: 'text', mapTo: 'meta' },
     { key: 'sexo', label: 'Sexo', type: 'select', options: ['', 'Masculino', 'Femenino', 'Otro'], mapTo: 'meta' },
     { key: 'genero', label: 'Género', type: 'text', mapTo: 'meta' },
-    { key: 'fecha_nacimiento', label: 'Fecha de Nacimiento', type: 'date', mapTo: 'fecha_nacimiento', icon: '📅' },
+    { key: 'fecha_nacimiento', label: 'Fecha de Nacimiento', type: 'date', mapTo: 'fecha_nacimiento', icon: ICONS.calendar },
     { key: 'ciudad', label: 'Ciudad', type: 'text', mapTo: 'meta' },
     { key: 'delegacion', label: 'Delegación', type: 'text', mapTo: 'meta' },
-    { key: 'direccion', label: 'Dirección', type: 'text', mapTo: 'direccion', icon: '📍' },
-    { key: 'telefono', label: 'Teléfono', type: 'tel', mapTo: 'telefono', icon: '📱' },
+    { key: 'direccion', label: 'Dirección', type: 'text', mapTo: 'direccion', icon: ICONS.location },
+    { key: 'telefono', label: 'Teléfono', type: 'tel', mapTo: 'telefono', icon: ICONS.phone },
     { key: 'actividad', label: 'Actividad', type: 'text', mapTo: 'meta' },
     { key: 'profesion', label: 'Profesión', type: 'text', mapTo: 'meta' },
     { key: 'empleador', label: 'Empleador', type: 'text', mapTo: 'meta' },

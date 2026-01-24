@@ -30,6 +30,7 @@
     }
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
 
@@ -154,6 +155,98 @@
       </div>
     </div>
 
+    <!-- Análisis Predictivo -->
+    <div class="mb-8 animate-slide-up" style="animation-delay: 0.15s;">
+      <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-4">📈 Análisis Predictivo</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Proyección de Ingresos -->
+        <div
+          class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">Proyección de Ingresos</h3>
+            <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm opacity-90">Próximo Mes (Proyección)</p>
+              <p id="proyeccionMes" class="text-3xl font-bold">$0</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="bg-white/20 rounded-lg p-2">
+                <p class="opacity-80">Optimista</p>
+                <p id="escenarioOptimista" class="font-bold">$0</p>
+              </div>
+              <div class="bg-white/20 rounded-lg p-2">
+                <p class="opacity-80">Pesimista</p>
+                <p id="escenarioPesimista" class="font-bold">$0</p>
+              </div>
+            </div>
+            <p class="text-xs opacity-75">Basado en tendencia de últimos 6 meses</p>
+          </div>
+        </div>
+
+        <!-- Retención de Pacientes -->
+        <div
+          class="bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">Retención de Pacientes</h3>
+            <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm opacity-90">Tasa de Retención</p>
+              <p id="tasaRetencion" class="text-3xl font-bold">0%</p>
+            </div>
+            <div class="bg-white/20 rounded-lg p-2">
+              <p class="text-sm opacity-90">Pacientes en Riesgo</p>
+              <p id="pacientesRiesgo" class="text-2xl font-bold">0</p>
+              <p class="text-xs opacity-75">Sin cita en +6 meses</p>
+            </div>
+            <button class="w-full bg-white/20 hover:bg-white/30 rounded-lg py-2 text-sm font-medium transition">
+              Ver Detalles
+            </button>
+          </div>
+        </div>
+
+        <!-- Predicción de Demanda -->
+        <div
+          class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl p-6 text-white shadow-lg hover:shadow-xl transition">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold">Predicción de Demanda</h3>
+            <svg class="w-8 h-8 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <p class="text-sm opacity-90">Día Más Ocupado</p>
+              <p id="diaMasOcupado" class="text-2xl font-bold">Miércoles</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="bg-white/20 rounded-lg p-2">
+                <p class="opacity-80">Hora Pico</p>
+                <p id="horaPico" class="font-bold">10:00 AM</p>
+              </div>
+              <div class="bg-white/20 rounded-lg p-2">
+                <p class="opacity-80">Promedio/Día</p>
+                <p id="promedioDia" class="font-bold">12</p>
+              </div>
+            </div>
+            <p class="text-xs opacity-75">Optimiza tu agenda con estos insights</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- Gráficos -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.2s;">
       <!-- Ingresos por Mes -->
@@ -178,28 +271,117 @@
       class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-8 animate-slide-up"
       style="animation-delay: 0.3s;">
       <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-        <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Top Tratamientos</h3>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Los tratamientos más solicitados</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Top Tratamientos</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Los tratamientos más solicitados</p>
+          </div>
+
+          <!-- Controles de Tabla -->
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Búsqueda -->
+            <div class="relative">
+              <input type="text" id="searchTable" placeholder="Buscar..."
+                class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] outline-none transition text-sm" />
+              <svg class="w-4 h-4 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            <!-- Selector de registros por página -->
+            <select id="itemsPerPage"
+              class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition text-sm">
+              <option value="5">5 por página</option>
+              <option value="10" selected>10 por página</option>
+              <option value="25">25 por página</option>
+              <option value="50">50 por página</option>
+            </select>
+
+            <!-- Botones de exportación -->
+            <div class="flex gap-2">
+              <button id="btnExportCSV"
+                class="px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition text-sm font-medium flex items-center gap-1"
+                title="Exportar a CSV">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                CSV
+              </button>
+              <button id="btnExportExcel"
+                class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition text-sm font-medium flex items-center gap-1"
+                title="Exportar a Excel">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Excel
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="bg-gray-50 dark:bg-gray-700/50">
             <tr>
               <th
-                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                #</th>
+                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                data-sort="index">
+                <div class="flex items-center gap-1">
+                  #
+                  <svg class="w-3 h-3 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+              </th>
               <th
-                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Tratamiento</th>
+                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                data-sort="nombre">
+                <div class="flex items-center gap-1">
+                  Tratamiento
+                  <svg class="w-3 h-3 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+              </th>
               <th
-                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Cantidad</th>
+                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                data-sort="cantidad">
+                <div class="flex items-center gap-1">
+                  Cantidad
+                  <svg class="w-3 h-3 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+              </th>
               <th
-                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Ingresos</th>
+                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                data-sort="ingresos">
+                <div class="flex items-center gap-1">
+                  Ingresos
+                  <svg class="w-3 h-3 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+              </th>
               <th
-                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Promedio</th>
+                class="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition"
+                data-sort="promedio">
+                <div class="flex items-center gap-1">
+                  Promedio
+                  <svg class="w-3 h-3 sort-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody id="tratamientosTable" class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -210,10 +392,21 @@
                   </div>
                   <p>Cargando datos...</p>
                 </div>
-              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Paginación -->
+      <div
+        class="p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-sm text-slate-600 dark:text-slate-400">
+          Mostrando <span id="showingFrom">1</span> a <span id="showingTo">10</span> de <span id="totalRecords">0</span>
+          registros
+        </div>
+        <div class="flex items-center gap-2" id="paginationControls">
+          <!-- Se genera dinámicamente -->
+        </div>
       </div>
     </div>
 

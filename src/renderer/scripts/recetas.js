@@ -2,6 +2,9 @@
 // Gestión de recetas del paciente.
 
 let db = (window.api && window.api.db) ? window.api.db : null;
+if (!db && window.parent && window.parent !== window && window.parent.api && window.parent.api.db) {
+  db = window.parent.api.db;
+}
 
 function dbAll(sql, params = []) {
   return new Promise((resolve, reject) => {
@@ -15,6 +18,7 @@ function dbAll(sql, params = []) {
     } catch (e) { reject(e); }
   });
 }
+
 function dbRun(sql, params = []) {
   return new Promise((resolve, reject) => {
     try {
@@ -27,19 +31,79 @@ function dbRun(sql, params = []) {
     } catch (e) { reject(e); }
   });
 }
+
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
-  return params.get(name);
+  const value = params.get(name);
+  if (value !== null && value !== '') return value;
+  if (window.parent && window.parent !== window) {
+    const parentParams = new URLSearchParams(window.parent.location.search);
+    const parentValue = parentParams.get(name);
+    if (parentValue !== null && parentValue !== '') return parentValue;
+  }
+  return null;
 }
+
+function getSessionUser() {
+  try {
+    return JSON.parse(localStorage.getItem('sesionActual')) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function getCurrentUserId() {
+  const session = getSessionUser();
+  return session.id || null;
+}
+
+async function getCajaAbiertaId() {
+  const rows = await dbAll("SELECT id FROM cajas WHERE estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1");
+  return rows[0]?.id || null;
+}
+
 let currentPacienteId = null;
+let selectedMedicamentos = [];
+
+async function computeRecetaCosto() {
+  if (!selectedMedicamentos.length) return 0;
+  const counts = new Map();
+  selectedMedicamentos.forEach(med => {
+    const id = Number(med.medicamento_id);
+    if (!Number.isFinite(id)) return;
+    const qty = Number(med.cantidad || 1);
+    if (!Number.isFinite(qty) || qty <= 0) return;
+    counts.set(id, (counts.get(id) || 0) + qty);
+  });
+  const ids = [...counts.keys()];
+  if (!ids.length) return 0;
+  try {
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = await dbAll(`SELECT id, precio FROM medicamentos WHERE id IN (${placeholders})`, ids);
+    const priceById = new Map(rows.map(r => [Number(r.id), Number(r.precio || 0)]));
+    let total = 0;
+    counts.forEach((qty, id) => {
+      const price = priceById.get(id) || 0;
+      total += price * qty;
+    });
+    return total;
+  } catch (e) {
+    console.error('Error calculando costo de receta:', e);
+    return 0;
+  }
+}
+
 async function init() {
   currentPacienteId = getQueryParam('id');
   if (!currentPacienteId) return;
   setupRecetas();
   await loadRecetasList();
 }
+
 function setupRecetas() {
   const btnNuevaReceta = document.getElementById('btn-nueva-receta');
+  const btnRecetaRapida = document.getElementById('btn-receta-rapida');
+  const btnListaRecetas = document.getElementById('btn-lista-recetas');
   const modal = document.getElementById('modal-receta');
   const closeBtn = document.getElementById('closeRecetaModal');
   const cancelBtn = document.getElementById('cancelReceta');
@@ -47,59 +111,186 @@ function setupRecetas() {
   const select = document.getElementById('select-medicamento-receta');
   const btnAdd = document.getElementById('btn-add-med-receta');
   const textarea = document.getElementById('receta-contenido');
-  if (!btnNuevaReceta || !modal || !closeBtn || !cancelBtn || !saveBtn || !select || !btnAdd || !textarea) {
+
+  if (!btnNuevaReceta) {
     console.warn('Elementos de recetas no encontrados en el DOM.');
     return;
   }
-  btnNuevaReceta.addEventListener('click', openRecetaModal);
+
+  // Abrir receta rápida con modal
+  if (btnRecetaRapida) {
+    btnRecetaRapida.addEventListener('click', async () => {
+      await openRecetaModal();
+    });
+  }
+
+  // Abrir nueva receta médica en ventana nueva
+  if (btnNuevaReceta) {
+    btnNuevaReceta.addEventListener('click', () => {
+      const pacienteId = currentPacienteId;
+      if (!pacienteId) {
+        alert('No se pudo obtener el ID del paciente');
+        return;
+      }
+      window.open(`receta_medica.html?paciente_id=${pacienteId}`, '_blank', 'width=1200,height=800');
+    });
+  }
+
+  // Mostrar/ocultar lista de recetas
+  if (btnListaRecetas) {
+    btnListaRecetas.addEventListener('click', () => {
+      const lista = document.getElementById('lista-recetas');
+      if (lista) {
+        lista.parentElement.classList.toggle('hidden');
+      }
+    });
+  }
+
+  if (!modal || !closeBtn || !cancelBtn || !saveBtn || !select || !btnAdd || !textarea) {
+    console.warn('Algunos elementos del modal no fueron encontrados');
+    return;
+  }
+
   const closeModal = () => {
     modal.classList.add('hidden');
     textarea.value = '';
     select.value = '';
+    selectedMedicamentos = [];
   };
+
   closeBtn.addEventListener('click', closeModal);
   cancelBtn.addEventListener('click', closeModal);
+
   btnAdd.addEventListener('click', () => {
     const id = select.value;
-    if (!id) return;
-    const name = select.options[select.selectedIndex].dataset.nombre;
-    textarea.value += `• ${name}: \n`;
+    if (!id) {
+      alert('Por favor selecciona un medicamento');
+      return;
+    }
+    const selectedOption = select.options[select.selectedIndex];
+    const name = selectedOption.dataset.nombre;
+    const stock = selectedOption.dataset.stock || 0;
+    const descripcion = selectedOption.dataset.descripcion || '';
+
+    // Verificar stock
+    if (parseInt(stock) <= 0) {
+      alert('Este medicamento no tiene stock disponible');
+      return;
+    }
+
+    // Agregar al textarea con formato mejorado
+    let medText = `• ${name}`;
+    if (descripcion) {
+      medText += ` (${descripcion})`;
+    }
+    medText += '\n  Indicaciones: \n  Dosis: \n\n';
+
+    textarea.value += medText;
     select.value = '';
     textarea.focus();
+    selectedMedicamentos.push({ medicamento_id: Number(id) });
   });
+
   saveBtn.addEventListener('click', async () => {
     const contenido = textarea.value.trim();
-    if (!contenido) return alert('La receta no puede estar vacía');
+    if (!contenido) {
+      alert('La receta no puede estar vacía');
+      return;
+    }
     try {
+      const cajaId = await getCajaAbiertaId();
+      if (!cajaId) {
+        alert('Debe abrir una caja para guardar la receta');
+        return;
+      }
+      const costoReceta = await computeRecetaCosto();
       await dbRun('INSERT INTO tratamientos (paciente_id, diente, procedimiento, costo, notas) VALUES (?, ?, ?, ?, ?)',
-        [currentPacienteId, null, 'Receta: General', 0, contenido]);
-      alert('Receta guardada');
+        [currentPacienteId, null, 'Receta: General', costoReceta, contenido]);
+      if (costoReceta > 0) {
+        const usuarioId = getCurrentUserId();
+        await dbRun(
+          'INSERT INTO movimientos_caja (caja_id, tipo, monto, concepto, usuario_id) VALUES (?, ?, ?, ?, ?)',
+          [cajaId, 'ingreso', costoReceta, 'Receta rapida', usuarioId]
+        );
+      }
+      alert('Receta guardada exitosamente');
       closeModal();
       await loadRecetasList();
     } catch (e) {
-      console.error(e);
-      alert('Error guardando receta');
+      console.error('Error guardando receta:', e);
+      alert('Error guardando receta: ' + e.message);
     }
   });
+
+  // Función para abrir el modal de receta rápida
   async function openRecetaModal() {
+    selectedMedicamentos = [];
     // Cargar inventario
     select.innerHTML = '<option value="">Seleccionar medicamento...</option>';
-    const meds = await dbAll('SELECT * FROM medicamentos WHERE stock > 0 ORDER BY nombre ASC');
-    meds.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = `${m.nombre} - Stock: ${m.stock}`;
-      opt.dataset.nombre = m.nombre;
-      select.appendChild(opt);
-    });
+    try {
+      const meds = await dbAll('SELECT * FROM medicamentos ORDER BY nombre ASC');
+      console.log('Medicamentos cargados:', meds.length);
+
+      if (meds.length === 0) {
+        select.innerHTML = '<option value="">No hay medicamentos en inventario</option>';
+        modal.classList.remove('hidden');
+        return;
+      }
+
+      meds.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        const stock = m.stock || 0;
+        const stockStatus = stock > 0 ? `Stock: ${stock}` : 'Sin stock';
+        const stockColor = stock > 0 ? '' : ' ⚠️';
+        opt.textContent = `${m.nombre} - ${stockStatus}${stockColor}`;
+        opt.dataset.nombre = m.nombre;
+        opt.dataset.stock = stock;
+        opt.dataset.precio = m.precio || 0;
+        opt.dataset.descripcion = m.descripcion || '';
+
+        // Deshabilitar si no hay stock
+        if (stock <= 0) {
+          opt.disabled = true;
+          opt.style.color = '#999';
+        }
+
+        select.appendChild(opt);
+      });
+
+      console.log('Opciones agregadas al select:', select.options.length);
+    } catch (e) {
+      console.error('Error cargando medicamentos:', e);
+      select.innerHTML = '<option value="">Error cargando medicamentos</option>';
+    }
     modal.classList.remove('hidden');
   }
 }
+
+function formatRecetaNotas(notas) {
+  if (!notas) return '';
+  const raw = String(notas).trim();
+  if (!raw.startsWith('{')) return notas;
+  try {
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.medicamentos)) return notas;
+    if (data.medicamentos.length === 0) return 'Receta sin medicamentos';
+    return data.medicamentos.map((m) => {
+      const nombre = (m && m.nombre) ? m.nombre : 'Medicamento';
+      const presentacion = (m && m.presentacion) ? ` (${m.presentacion})` : '';
+      const indicaciones = (m && m.indicaciones) ? `: ${m.indicaciones}` : '';
+      return `- ${nombre}${presentacion}${indicaciones}`;
+    }).join('\n');
+  } catch (e) {
+    return notas;
+  }
+}
+
 async function loadRecetasList() {
   const list = document.getElementById('lista-recetas');
   if (!list) return;
   try {
-    const recetas = await dbAll('SELECT * FROM tratamientos WHERE paciente_id = ? AND procedimiento LIKE "Receta:%" ORDER BY fecha DESC', [currentPacienteId]);
+    const recetas = await dbAll('SELECT * FROM tratamientos WHERE paciente_id = ? AND (procedimiento LIKE "Receta:%" OR procedimiento LIKE "Receta M%") ORDER BY fecha DESC', [currentPacienteId]);
     if (recetas.length === 0) {
       list.innerHTML = '<div class="text-center py-12 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-dashed border-gray-300 dark:border-gray-600"><p class="text-gray-500 dark:text-gray-400">No hay recetas registradas</p></div>';
       return;
@@ -111,15 +302,26 @@ async function loadRecetasList() {
             <span class="font-bold text-[#1D5D69] dark:text-[#4EABBE]">${r.procedimiento.replace('Receta: ', '')}</span>
             <span class="text-xs text-gray-400">• ${new Date(r.fecha).toLocaleDateString()}</span>
           </div>
-          <p class="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line">${r.notas || ''}</p>
+          <p class="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-line">${formatRecetaNotas(r.notas || '')}</p>
         </div>
       </div>
     `).join('');
   } catch (e) {
-    console.error(e);
+    console.error('Error cargando recetas:', e);
     list.innerHTML = '<p class="text-red-500">Error cargando recetas</p>';
   }
 }
+
+window.addEventListener('message', (event) => {
+  const data = event && event.data;
+  if (!data || data.type !== 'receta-guardada') return;
+  if (!currentPacienteId) {
+    currentPacienteId = getQueryParam('id');
+  }
+  if (data.pacienteId && currentPacienteId && String(data.pacienteId) !== String(currentPacienteId)) return;
+  loadRecetasList();
+});
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {

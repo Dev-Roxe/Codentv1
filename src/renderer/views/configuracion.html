@@ -33,6 +33,14 @@
       }
     };
   </script>
+  <style>
+    /* Toggle Switch Styles */
+    input[type="checkbox"].toggle-switch {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+  </style>
   <script src="../scripts/init.js" type="module"></script>
 </head>
 
@@ -149,7 +157,7 @@
                   <p class="text-xs text-gray-600 dark:text-gray-400">Reduce espacios en tablas y listados</p>
                 </div>
                 <input id="compact-mode" type="checkbox"
-                  class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
               </label>
             </div>
           </div>
@@ -177,7 +185,7 @@
                 <p class="text-xs text-gray-600 dark:text-gray-400">Recordatorios de próximas citas</p>
               </div>
               <input id="notif-citas" type="checkbox"
-                class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
             </label>
             <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
               <label class="flex items-center justify-between cursor-pointer">
@@ -186,7 +194,7 @@
                   <p class="text-xs text-gray-600 dark:text-gray-400">Resúmenes y alertas por correo</p>
                 </div>
                 <input id="notif-email" type="checkbox"
-                  class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
               </label>
             </div>
             <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
@@ -196,7 +204,7 @@
                   <p class="text-xs text-gray-600 dark:text-gray-400">Reproducir sonido al recibir alertas</p>
                 </div>
                 <input id="notif-sound" type="checkbox"
-                  class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
               </label>
             </div>
             <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
@@ -257,6 +265,87 @@
                 <option value="60">1 hora</option>
               </select>
             </div>
+
+            <!-- Días laborales -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Días laborales
+              </label>
+              <div class="grid grid-cols-7 gap-2">
+                <!-- Domingo -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="0" class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">D</span>
+                  </div>
+                </label>
+                <!-- Lunes -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="1" checked class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">L</span>
+                  </div>
+                </label>
+                <!-- Martes -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="2" checked class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">M</span>
+                  </div>
+                </label>
+                <!-- Miércoles -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="3" checked class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">M</span>
+                  </div>
+                </label>
+                <!-- Jueves -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="4" checked class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">J</span>
+                  </div>
+                </label>
+                <!-- Viernes -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="5" checked class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">V</span>
+                  </div>
+                </label>
+                <!-- Sábado -->
+                <label class="relative cursor-pointer">
+                  <input type="checkbox" name="work-days" value="6" class="peer sr-only" />
+                  <div
+                    class="h-10 border-2 border-gray-200 dark:border-gray-600 peer-checked:border-primary-dark peer-checked:bg-primary-light/10 dark:peer-checked:bg-primary-dark/20 rounded-lg transition-all flex items-center justify-center">
+                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">S</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Intervalo entre citas -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Intervalo mínimo entre citas
+              </label>
+              <select id="appointment-interval"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/50">
+                <option value="0">Sin intervalo</option>
+                <option value="5">5 minutos</option>
+                <option value="10" selected>10 minutos</option>
+                <option value="15">15 minutos</option>
+                <option value="30">30 minutos</option>
+              </select>
+            </div>
+
             <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
               <label class="flex items-center justify-between cursor-pointer">
                 <div class="space-y-1">
@@ -264,11 +353,164 @@
                   <p class="text-xs text-gray-600 dark:text-gray-400">Abrir agenda en vista semanal</p>
                 </div>
                 <input id="weekly-view" type="checkbox"
-                  class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+              </label>
+            </div>
+
+            <!-- Confirmación automática -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
+              <label class="flex items-center justify-between cursor-pointer">
+                <div class="space-y-1">
+                  <p class="font-medium text-sm text-primary-dark dark:text-white">Confirmación automática</p>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Confirmar citas al crearlas</p>
+                </div>
+                <input id="auto-confirm" type="checkbox"
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
               </label>
             </div>
           </div>
         </section>
+
+        <!-- Tarjeta: Seguridad -->
+        <section
+          class="bg-white dark:bg-gray-800/70 rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-[#E5EEF1]/70 dark:border-gray-700 flex flex-col">
+          <div class="px-6 py-5 border-b border-[#E5EEF1]/70 dark:border-gray-700 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-dark to-primary-light flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-primary-dark dark:text-white">Seguridad</h2>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Protege tu cuenta</p>
+            </div>
+          </div>
+          <div class="p-6 space-y-6 flex-1">
+            <!-- Cambiar contraseña -->
+            <div>
+              <button type="button" id="change-password-btn"
+                class="w-full inline-flex items-center justify-between px-4 py-3 text-sm font-medium border border-gray-200 dark:border-gray-600 text-primary-dark dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-dark/50 transition">
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-primary-dark dark:text-primary-light" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  </svg>
+                  <span>Cambiar contraseña</span>
+                </div>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- 2FA -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
+              <label class="flex items-center justify-between cursor-pointer">
+                <div class="space-y-1">
+                  <p class="font-medium text-sm text-primary-dark dark:text-white">Autenticación de dos factores</p>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Mayor seguridad para tu cuenta</p>
+                </div>
+                <input id="two-factor" type="checkbox"
+                  class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+              </label>
+            </div>
+
+            <!-- Auto-cierre -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Cerrar sesión automáticamente
+              </label>
+              <select id="auto-lock"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/50">
+                <option value="never">Nunca</option>
+                <option value="5">5 minutos de inactividad</option>
+                <option value="15" selected>15 minutos de inactividad</option>
+                <option value="30">30 minutos de inactividad</option>
+                <option value="60">1 hora de inactividad</option>
+              </select>
+            </div>
+
+            <!-- Sesiones activas -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700">
+              <button type="button" id="view-sessions-btn"
+                class="w-full inline-flex items-center justify-between px-4 py-3 text-sm font-medium border border-gray-200 dark:border-gray-600 text-primary-dark dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-dark/50 transition">
+                <div class="flex items-center gap-3">
+                  <svg class="w-5 h-5 text-primary-dark dark:text-primary-light" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  <span>Ver sesiones activas</span>
+                </div>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tarjeta: Región e Idioma -->
+        <section
+          class="bg-white dark:bg-gray-800/70 rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-[#E5EEF1]/70 dark:border-gray-700 flex flex-col">
+          <div class="px-6 py-5 border-b border-[#E5EEF1]/70 dark:border-gray-700 flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-dark to-primary-light flex items-center justify-center">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-primary-dark dark:text-white">Región e Idioma</h2>
+              <p class="text-xs text-gray-600 dark:text-gray-400">Formatos y localización</p>
+            </div>
+          </div>
+          <div class="p-6 space-y-6 flex-1">
+            <!-- Moneda -->
+            <div class="space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Moneda predeterminada
+              </label>
+              <select id="currency"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/50">
+                <option value="MXN" selected>MXN - Peso Mexicano</option>
+                <option value="USD">USD - Dólar Americano</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="COP">COP - Peso Colombiano</option>
+              </select>
+            </div>
+
+            <!-- Formato de hora -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Formato de hora
+              </label>
+              <select id="time-format"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/50">
+                <option value="12h">12 horas (AM/PM)</option>
+                <option value="24h" selected>24 horas</option>
+              </select>
+            </div>
+
+            <!-- Primer día de la semana -->
+            <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Primer día de la semana
+              </label>
+              <select id="first-day-week"
+                class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-dark/50">
+                <option value="0">Domingo</option>
+                <option value="1" selected>Lunes</option>
+                <option value="6">Sábado</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
         <!-- Tarjeta: Sistema -->
         <section
           class="bg-white dark:bg-gray-800/70 rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-[#E5EEF1]/70 dark:border-gray-700 flex flex-col">
@@ -294,7 +536,7 @@
                 <p class="text-xs text-gray-600 dark:text-gray-400">Guardar automáticamente al editar</p>
               </div>
               <input id="auto-save" type="checkbox"
-                class="relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
+                class="toggle-switch relative w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-dark cursor-pointer" />
             </label>
             <div class="pt-4 border-t border-[#E5EEF1]/70 dark:border-gray-700 space-y-3">
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
