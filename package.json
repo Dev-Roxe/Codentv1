@@ -6,20 +6,51 @@
   "scripts": {
     "dev:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css --watch",
     "dev": "electron .",
-    "start": "concurrently \"npm run dev:css\" \"npm run dev\""
+    "start": "concurrently \"npm run dev:css\" \"npm run dev\"",
+    "build:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css",
+    "clean:db": "node scripts/clean-db.js",
+    "pack": "npm run build:css && electron-builder --dir",
+    "dist": "npm run build:css && electron-builder",
+    "dist:clean": "npm run clean:db && npm run dist"
   },
   "author": "Nerick Roxe",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
-    "electron": "^37.3.1",
+    "dotenv": "^17.2.3",
+    "googleapis": "^166.0.0",
+    "nodemailer": "^7.0.10",
     "sqlite3": "^5.1.7",
     "tailwindcss": "^3.4.17"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",
+    "electron": "^33.4.11",
+    "electron-builder": "^24.13.3",
     "electron-reload": "^2.0.0-alpha.1",
     "postcss": "^8.5.6"
+  },
+  "build": {
+    "appId": "com.nerick.codent",
+    "productName": "Codent",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+    }
   }
 }

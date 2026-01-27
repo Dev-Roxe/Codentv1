@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const nombreInput = document.getElementById('nombre');
   const apellidoInput = document.getElementById('apellido');
   const emailInput = document.getElementById('email');
+  const rolSelect = document.getElementById('rol');
   const telefonoInput = document.getElementById('telefono');
   const nacimientoInput = document.getElementById('nacimiento');
   const direccionInput = document.getElementById('direccion');
@@ -121,6 +122,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const photoInput = document.getElementById('photoInput');
 
   // ---------- Funciones UI ----------
+  const ROLE_OPTIONS = [
+    { value: 'admin', label: 'Administrador' },
+    { value: 'administrador', label: 'Administrador' },
+    { value: 'recepcionista', label: 'Recepcionista' },
+    { value: 'dentista', label: 'Dentista' },
+    { value: 'especialista', label: 'Especialista' },
+    { value: 'doctor', label: 'Doctor' },
+    { value: 'doctora', label: 'Doctora' }
+  ];
+
+  const setRoleOptions = (currentRole = '') => {
+    if (!rolSelect) return;
+    const normalized = String(currentRole || '').trim();
+    const options = new Map();
+
+    ROLE_OPTIONS.forEach((role) => {
+      if (!options.has(role.value)) {
+        options.set(role.value, role.label);
+      }
+    });
+
+    if (normalized && !options.has(normalized)) {
+      options.set(normalized, normalized);
+    }
+
+    const html = ['<option value="">Selecciona un rol</option>'];
+    options.forEach((label, value) => {
+      html.push(`<option value="${value}">${label}</option>`);
+    });
+    rolSelect.innerHTML = html.join('');
+  };
+
   const setFormDisabled = (disabled) => {
     inputs.forEach((el) => {
       el.disabled = disabled;
@@ -136,6 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
     nombreInput && (nombreInput.value = perfil.nombre || '');
     apellidoInput && (apellidoInput.value = perfil.apellido || '');
     emailInput && (emailInput.value = perfil.email || '');
+    const currentRole = perfil.rol || sesion.rol || '';
+    setRoleOptions(currentRole);
+    if (rolSelect) rolSelect.value = currentRole;
     telefonoInput && (telefonoInput.value = perfil.telefono || '');
     nacimientoInput && (nacimientoInput.value = perfil.nacimiento || '');
     direccionInput && (direccionInput.value = perfil.direccion || '');
@@ -296,6 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
       nombre: nombreInput?.value?.trim() || '',
       apellido: apellidoInput?.value?.trim() || '',
       email: emailInput?.value?.trim() || '',
+      rol: rolSelect?.value?.trim() || sesion.rol || '',
       telefono: telefonoInput?.value?.trim() || '',
       nacimiento: nacimientoInput?.value || null,
       direccion: direccionInput?.value?.trim() || '',
