@@ -1,20 +1,18 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { resolveDbPath } = require('../db/db-path');
 
-const dbPath = path.join(__dirname, '..', 'db', 'consultorio.db');
-console.log('Conectando a:', dbPath);
-
+const dbPath = resolveDbPath();
 const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) {
-        console.error('Error conectando a la BD:', err);
-        process.exit(1);
-    }
-    console.log('Conectado a consultorio.db');
+  if (err) {
+    console.error('Error al conectar con la DB', err.message);
+    process.exit(1);
+  }
+  console.log('Conectado a consultorio.db:', dbPath);
 });
 
-db.serialize(() => {
-    // Crear tabla
-    db.run(`CREATE TABLE IF NOT EXISTS crm_encuestas_plantillas (
+// Crear tabla de encuestas (si no existe)
+const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS crm_encuestas_plantillas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT NOT NULL,
     titulo TEXT NOT NULL,
@@ -23,32 +21,22 @@ db.serialize(() => {
     activo INTEGER DEFAULT 1,
     fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion DATETIME
-  )`, (err) => {
-        if (err) {
-            console.error('Error creando tabla:', err);
-        } else {
-            console.log('✓ Tabla crm_encuestas_plantillas creada exitosamente');
-        }
-    });
+  )
+`;
 
-    // Crear índice
-    db.run(`CREATE INDEX IF NOT EXISTS idx_crm_encuestas_plantillas_activo ON crm_encuestas_plantillas(activo)`, (err) => {
-        if (err) {
-            console.error('Error creando índice:', err);
-        } else {
-            console.log('✓ Índice creado exitosamente');
-        }
-    });
+db.run(createTableQuery, (err) => {
+  if (err) {
+    console.error('Error creando tabla:', err.message);
+    db.close();
+    return;
+  }
 
-    // Verificar que la tabla existe
-    db.all(`SELECT name FROM sqlite_master WHERE type='table' AND name='crm_encuestas_plantillas'`, (err, rows) => {
-        if (err) {
-            console.error('Error verificando tabla:', err);
-        } else if (rows.length > 0) {
-            console.log('✓ Tabla verificada en la base de datos');
-        } else {
-            console.error('✗ Tabla no encontrada después de crearla');
-        }
-        db.close();
-    });
+  db.all(`SELECT name FROM sqlite_master WHERE type='table' AND name='crm_encuestas_plantillas'`, (err, rows) => {
+    if (err) {
+      console.error('Error verificando tabla:', err.message);
+    } else {
+      console.log('Tabla crm_encuestas_plantillas verificada:', rows.length > 0 ? 'OK' : 'NO EXISTE');
+    }
+    db.close();
+  });
 });
