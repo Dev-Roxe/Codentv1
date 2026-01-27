@@ -1,19 +1,1047 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonalia - Pacientes</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administración - Sonalía</title>
+  <link href="../styles/output.css" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#4EABBE',
+              dark: '#1D5D69',
+              light: '#8BCFDD'
+            }
+          }
+        }
+      }
+    }
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="../components/navbar-component.js" type="module"></script>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
-<body class="bg-gray-200 font-sans">
 
-  <!-- Navbar -->
-  <app-navbar current="administracion" user-name="Nerick"></app-navbar>
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <!-- Navbar Component -->
+  <app-navbar current="administracion"></app-navbar>
 
-  <!-- Contenedor principal -->
-  <main class="max-w-7xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">
+  <!-- Contenedor Principal -->
+  <div class="min-h-screen p-6 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-6">
+      <!-- Encabezado -->
+      <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#1D5D69] dark:text-[#8BCFDD]">
+            Sistema
+          </p>
+          <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">
+            Administración
+          </h1>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Gestiona tratamientos e inventario de tu consultorio
+          </p>
+        </div>
+      </header>
 
-   
+      <!-- Navegación por Pestañas -->
+      <div
+        class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-md border border-[#8BCFDD]/30 dark:border-slate-800 p-2">
+        <div class="flex gap-2 flex-wrap">
+          <button id="tab-tratamientos"
+            class="tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-[#4EABBE] text-white">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              <span>Tratamientos</span>
+            </div>
+          </button>
+          <button id="tab-inventario"
+            class="tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span>Inventario</span>
+            </div>
+          </button>
+          <button id="tab-miscelanea"
+            class="tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span>Miscelánea</span>
+            </div>
+          </button>
+          <button id="tab-especialistas"
+            class="tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Especialistas</span>
+            </div>
+          </button>
+        </div>
+      </div>
 
-  
+      <!-- Contenido de Tratamientos -->
+      <div id="content-tratamientos" class="tab-content space-y-6">
+
+        <!-- Header con Botón de Nuevo -->
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-[#1D5D69] dark:text-slate-400 font-semibold mb-2">Catálogo
+            </p>
+            <h2 class="text-2xl font-bold text-[#0F2532] dark:text-white">Tratamientos Disponibles</h2>
+          </div>
+          <button type="button" id="add-tratamiento-btn"
+            class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] focus:outline-none focus:ring-4 focus:ring-[#8BCFDD]/50 transition shadow-lg shadow-[#4EABBE]/30">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Nuevo Tratamiento</span>
+          </button>
+        </div>
+
+        <!-- Filtros por Categoría -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-md border border-[#8BCFDD]/30 dark:border-slate-800 p-4">
+          <div class="flex flex-wrap gap-2">
+            <button data-categoria="all"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-[#4EABBE] text-white">
+              Todos
+            </button>
+            <button data-categoria="Odontología General"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Odontología General
+            </button>
+            <button data-categoria="Endodoncia"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Endodoncia
+            </button>
+            <button data-categoria="Periodoncia"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Periodoncia
+            </button>
+            <button data-categoria="Prótesis"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Prótesis
+            </button>
+            <button data-categoria="Ortodoncia"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Ortodoncia
+            </button>
+            <button data-categoria="Estética"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Estética
+            </button>
+            <button data-categoria="Cirugía"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Cirugía
+            </button>
+            <button data-categoria="Diagnóstico"
+              class="categoria-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Diagnóstico
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Tratamientos</p>
+                <p id="stat-total-tratamientos" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Costo Total Promedio</p>
+                <p id="stat-costo-promedio" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">$0</p>
+              </div>
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Activos</p>
+                <p id="stat-activos" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Tratamientos -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-lg border border-[#8BCFDD]/30 dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 dark:bg-slate-800/50 border-b border-gray-200 dark:border-slate-700">
+                <tr>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Tratamiento
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Categoría
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Costo Base
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Duración
+                  </th>
+                  <th
+                    class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Estado
+                  </th>
+                  <th
+                    class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-[#1D5D69] dark:text-slate-300">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tratamientos-list" class="divide-y divide-gray-100 dark:divide-slate-700">
+                <!-- Los tratamientos se cargarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido de Inventario -->
+      <div id="content-inventario" class="tab-content hidden space-y-6">
+
+        <!-- Header con Búsqueda y Botones -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-[#1D5D69] dark:text-slate-400 font-semibold mb-2">Gestión
+            </p>
+            <h2 class="text-2xl font-bold text-[#0F2532] dark:text-white">Medicamentos e Insumos</h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <div class="relative">
+              <input type="text" id="searchMedicamentos" placeholder="Buscar medicamento..."
+                class="pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] w-64">
+              <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+              </svg>
+            </div>
+
+            <button id="filterLowStockBtn"
+              class="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300 font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Bajo Stock
+            </button>
+
+            <button id="newMedicamentoBtn"
+              class="flex items-center gap-2 px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-md">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo Ítem
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Ítems</p>
+                <p id="statTotalMedicamentos" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Bajo Stock</p>
+                <p id="statLowStockMedicamentos" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Valor Total</p>
+                <p id="statValueMedicamentos" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">$0.00</p>
+              </div>
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Medicamentos -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-sm border border-[#D9D9D9] dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white">
+                <tr>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Nombre</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Descripción</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Stock</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Precio</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Vencimiento</th>
+                  <th class="py-4 px-6 text-center font-semibold text-sm">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="medicamentos-list" class="divide-y divide-[#E6E6E6] dark:divide-slate-700">
+                <!-- Los medicamentos se cargarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido de Miscelánea -->
+      <div id="content-miscelanea" class="tab-content hidden space-y-6">
+
+        <!-- Header con Búsqueda y Botones -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-[#1D5D69] dark:text-slate-400 font-semibold mb-2">Gestión
+            </p>
+            <h2 class="text-2xl font-bold text-[#0F2532] dark:text-white">Material del Consultorio</h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <div class="relative">
+              <input type="text" id="searchMiscelanea" placeholder="Buscar material..."
+                class="pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] w-64">
+              <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+              </svg>
+            </div>
+
+            <button id="filterLowStockMiscelaneaBtn"
+              class="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-800 transition text-gray-700 dark:text-gray-300 font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              Bajo Stock
+            </button>
+
+            <button id="newMiscelaneaBtn"
+              class="flex items-center gap-2 px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-md">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo Ítem
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtros por Categoría -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-md border border-[#8BCFDD]/30 dark:border-slate-800 p-4">
+          <div class="flex flex-wrap gap-2">
+            <button data-categoria-misc="all"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-[#4EABBE] text-white">
+              Todos
+            </button>
+            <button data-categoria-misc="Instrumental"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Instrumental
+            </button>
+            <button data-categoria-misc="Consumibles"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Consumibles
+            </button>
+            <button data-categoria-misc="Equipo"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Equipo
+            </button>
+            <button data-categoria-misc="Equipo de Protección"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Equipo de Protección
+            </button>
+            <button data-categoria-misc="Mobiliario"
+              class="categoria-misc-btn px-4 py-2 rounded-lg text-sm font-medium transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+              Mobiliario
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Ítems</p>
+                <p id="statTotalMiscelanea" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Bajo Stock</p>
+                <p id="statLowStockMiscelanea" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Valor Total</p>
+                <p id="statValueMiscelanea" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">$0.00</p>
+              </div>
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Miscelánea -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-sm border border-[#D9D9D9] dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white">
+                <tr>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Nombre</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Categoría</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Stock</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Precio</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Proveedor</th>
+                  <th class="py-4 px-6 text-center font-semibold text-sm">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="miscelanea-list" class="divide-y divide-[#E6E6E6] dark:divide-slate-700">
+                <!-- Los ítems se cargarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido de Especialistas -->
+      <div id="content-especialistas" class="tab-content hidden space-y-6">
+
+        <!-- Header con Búsqueda y Botones -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-[#1D5D69] dark:text-slate-400 font-semibold mb-2">Gestión
+            </p>
+            <h2 class="text-2xl font-bold text-[#0F2532] dark:text-white">Especialistas</h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <div class="relative">
+              <input type="text" id="searchEspecialistas" placeholder="Buscar especialista..."
+                class="pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] w-64">
+              <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+              </svg>
+            </div>
+
+            <button id="newEspecialistaBtn"
+              class="flex items-center gap-2 px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-md">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo Especialista
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Especialistas</p>
+                <p id="statTotalEspecialistas" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Activos</p>
+                <p id="statActivosEspecialistas" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Especialidades</p>
+                <p id="statEspecialidades" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Especialistas -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-sm border border-[#D9D9D9] dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white">
+                <tr>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Nombre</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Especialidad</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Teléfono</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Email</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Estado</th>
+                  <th class="py-4 px-6 text-center font-semibold text-sm">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="especialistas-list" class="divide-y divide-[#E6E6E6] dark:divide-slate-700">
+                <!-- Los especialistas se cargarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Tratamiento -->
+  <div id="modal-tratamiento"
+    class="fixed inset-0 bg-[#0F2532]/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/60 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl shadow-[#8BCFDD]/30 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start mb-6">
+        <div>
+          <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400" id="modal-subtitle">Nuevo</p>
+          <h3 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Tratamiento</h3>
+        </div>
+        <button id="close-modal-tratamiento"
+          class="text-slate-400 hover:text-[#0F2532] dark:hover:text-slate-100 text-2xl leading-none transition">
+          &times;
+        </button>
+      </div>
+
+      <form id="form-tratamiento" class="space-y-5">
+        <input type="hidden" id="tratamiento-id" name="id">
+
+        <!-- Nombre -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Nombre del Tratamiento *
+          </label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+        </div>
+
+        <!-- Descripción -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Descripción
+          </label>
+          <textarea name="descripcion" rows="3"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"></textarea>
+        </div>
+
+        <!-- Categoría y Costo Base -->
+        <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Categoría *
+            </label>
+            <select name="categoria" required
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+              <option value="">Seleccionar...</option>
+              <option value="Odontología General">Odontología General</option>
+              <option value="Endodoncia">Endodoncia</option>
+              <option value="Periodoncia">Periodoncia</option>
+              <option value="Prótesis">Prótesis</option>
+              <option value="Ortodoncia">Ortodoncia</option>
+              <option value="Estética">Estética</option>
+              <option value="Cirugía">Cirugía</option>
+              <option value="Diagnóstico">Diagnóstico</option>
+            </select>
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Costo Base ($)
+            </label>
+            <input type="number" step="0.01" name="costo_base" min="0"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+          </div>
+        </div>
+
+        <!-- Duración y Estado -->
+        <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Duración Estimada (minutos)
+            </label>
+            <input type="number" name="duracion_estimada" min="5" step="5" value="30"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" name="activo" checked
+                class="w-5 h-5 rounded border-[#8BCFDD] dark:border-slate-700 text-[#4EABBE] focus:ring-2 focus:ring-[#4EABBE] focus:ring-offset-0 transition" />
+              <span class="text-sm font-medium text-[#0F2532] dark:text-slate-300">Tratamiento activo</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Costo Estándar de Medicinas y Miscelánea -->
+        <div class="border-t border-[#8BCFDD]/30 dark:border-slate-700 pt-5 mt-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400 mb-4">Costos
+            Adicionales Estándar</p>
+          <div class="grid gap-5 md:grid-cols-2">
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Costo Estándar de Medicinas ($)
+              </label>
+              <input type="number" step="0.01" name="costo_medicina_estandar" min="0" value="0"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Costo promedio de medicinas usadas en este
+                tratamiento</p>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Costo Estándar de Miscelánea ($)
+              </label>
+              <input type="number" step="0.01" name="costo_miscelanea_estandar" min="0" value="0"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Materiales, equipo especial o suministros
+                diversos</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notas del Tratamiento -->
+        <div>
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Notas Adicionales (para especialistas)
+          </label>
+          <textarea name="notas_especiales" rows="2"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+            placeholder="Instrucciones especiales o consideraciones importantes..."></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-[#8BCFDD]/30 dark:border-slate-700">
+          <button type="button" id="cancel-tratamiento"
+            class="px-5 py-2.5 rounded-xl border border-[#8BCFDD] dark:border-slate-700 text-[#0F2532] dark:text-slate-100 hover:border-[#4EABBE] hover:text-[#1D5D69] dark:hover:border-[#4EABBE] dark:hover:text-white transition">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-6 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Medicamento -->
+  <div id="modal-medicamento"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-gray-300 dark:border-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modal-medicamento-title" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Medicamento
+        </h2>
+        <button id="close-modal-medicamento"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
+          ×
+        </button>
+      </div>
+
+      <form id="form-medicamento" class="space-y-5">
+        <input type="hidden" id="medicamento-id-input" />
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Nombre del Medicamento *
+          </label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Descripción
+          </label>
+          <textarea name="descripcion" rows="3"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Stock *
+            </label>
+            <input type="number" name="stock" required min="0"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Stock Mínimo
+            </label>
+            <input type="number" name="stock_minimo" min="0" value="5"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Precio Unitario ($) *
+            </label>
+            <input type="number" name="precio" required min="0" step="0.01"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Fecha de Vencimiento
+            </label>
+            <input type="date" name="fecha_vencimiento"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+          <button type="button" id="cancel-medicamento"
+            class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-6 py-2 rounded-lg bg-[#4EABBE] text-white font-semibold hover:bg-[#1D5D69] transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Miscelánea -->
+  <div id="modal-miscelanea"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-gray-300 dark:border-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modal-miscelanea-title" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Material
+        </h2>
+        <button id="close-modal-miscelanea"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
+          ×
+        </button>
+      </div>
+
+      <form id="form-miscelanea" class="space-y-5">
+        <input type="hidden" id="miscelanea-id-input" />
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Nombre del Material *
+          </label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Descripción
+          </label>
+          <textarea name="descripcion" rows="3"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Categoría *
+            </label>
+            <select name="categoria" required
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent">
+              <option value="">Seleccionar...</option>
+              <option value="Instrumental">Instrumental</option>
+              <option value="Consumibles">Consumibles</option>
+              <option value="Equipo">Equipo</option>
+              <option value="Equipo de Protección">Equipo de Protección</option>
+              <option value="Mobiliario">Mobiliario</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Proveedor
+            </label>
+            <input type="text" name="proveedor"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Stock *
+            </label>
+            <input type="number" name="stock" required min="0"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Stock Mínimo
+            </label>
+            <input type="number" name="stock_minimo" min="0" value="5"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Precio Unitario ($) *
+            </label>
+            <input type="number" name="precio" required min="0" step="0.01"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Fecha de Compra
+            </label>
+            <input type="date" name="fecha_compra"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Notas
+          </label>
+          <textarea name="notas" rows="2"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+          <button type="button" id="cancel-miscelanea"
+            class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-6 py-2 rounded-lg bg-[#4EABBE] text-white font-semibold hover:bg-[#1D5D69] transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Especialista -->
+  <div id="modal-especialista"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-gray-300 dark:border-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modal-especialista-title" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Especialista
+        </h2>
+        <button id="close-modal-especialista"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
+          ×
+        </button>
+      </div>
+
+      <form id="form-especialista" class="space-y-5">
+        <input type="hidden" id="especialista-id-input" />
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Nombre Completo *
+          </label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Especialidad *
+          </label>
+          <input type="text" name="especialidad" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"
+            placeholder="Ej: Endodoncia, Ortodoncia, Periodoncia" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Teléfono
+            </label>
+            <input type="tel" name="telefono"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Email
+            </label>
+            <input type="email" name="email"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input type="checkbox" name="activo" checked id="especialista-activo"
+            class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#4EABBE] focus:ring-2 focus:ring-[#4EABBE]" />
+          <label for="especialista-activo" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Especialista activo
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+          <button type="button" id="cancel-especialista"
+            class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-6 py-2 rounded-lg bg-[#4EABBE] text-white font-semibold hover:bg-[#1D5D69] transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+  <script src="../scripts/administracion.js"></script>
+</body>
+
+</html>
