@@ -1,19 +1,503 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonalia - Pacientes</title>
+  <title>CRM - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <link rel="stylesheet" href="../styles/toast.css">
+  <script src="../scripts/init.js" type="module"></script>
 </head>
-<body class="bg-gray-200 font-sans">
 
-  <!-- Navbar -->
-  <app-navbar current="crm" user-name="Nerick"></app-navbar>
+<body class="bg-[#F8F7F7] dark:bg-gray-900 text-[#0F2532] dark:text-gray-100 font-sans transition-colors duration-200">
+  <app-navbar current="crm"></app-navbar>
 
-  <!-- Contenedor principal -->
-  <main class="max-w-7xl mx-auto bg-white mt-6 shadow rounded overflow-hidden">
+  <div class="min-h-screen p-6 max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">CRM - Comunicación con pacientes</h1>
+        <p class="text-[#0F2532]/60 dark:text-gray-400 mt-1">Correos, recordatorios y encuestas en un solo lugar</p>
+      </div>
+    </div>
 
-   
+    <!-- Tabs -->
+    <div class="border-b border-[#D9D9D9] dark:border-gray-700 mb-6">
+      <div class="flex gap-6 overflow-x-auto">
+        <button
+          class="tab-btn active pb-4 px-2 border-b-4 border-[#4EABBE] text-[#1D5D69] dark:text-white font-semibold"
+          data-tab="email">Correos</button>
+        <button
+          class="tab-btn pb-4 px-2 text-[#0F2532]/60 dark:text-gray-400 font-medium hover:text-[#1D5D69] dark:hover:text-white transition"
+          data-tab="encuestas">Encuestas</button>
+      </div>
+    </div>
 
-  
+    <div id="tab-content">
+      <!-- TAB: CORREOS -->
+      <div id="email-tab" class="tab-content">
+        <div class="grid grid-cols-3 gap-6">
+          <!-- Templates Section -->
+          <div class="col-span-2 space-y-6">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white">Plantillas de correo</h2>
+                  <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Selecciona o crea plantillas
+                    personalizadas</p>
+                </div>
+                <button id="newTemplateBtn"
+                  class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                  plantilla</button>
+              </div>
+              <div id="templateGrid" class="grid grid-cols-2 gap-4">
+                <!-- Templates rendered by JS -->
+              </div>
+            </div>
+
+
+          </div>
+
+          <!-- Email Composer -->
+          <div class="col-span-1">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 sticky top-6">
+              <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Envío masivo</h2>
+
+              <!-- Gmail Connection -->
+              <div
+                class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div class="flex items-center gap-2 mb-2">
+                  <button id="getGmailCode"
+                    onclick="(async()=>{const r=await window.electronAPI.invoke('gmail-get-auth-url');if(!r?.success){alert('Error: '+r?.error);return;}await window.electronAPI.invoke('open-external',r.url);document.getElementById('gmailCodeInput').focus();})();"
+                    class="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                    1. Obtener código
+                  </button>
+                  <input type="text" id="gmailCodeInput" placeholder="2. Pega aquí el código de Google"
+                    class="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                  <button id="saveGmailCode"
+                    onclick="(async()=>{const c=document.getElementById('gmailCodeInput').value.trim();if(!c){alert('Pega el código primero');return;}const s=await window.electronAPI.invoke('gmail-save-token',c);alert(s?.success?'✅ Gmail conectado!':'Error: '+s?.error);if(s?.success)location.reload();})();"
+                    class="px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                    3. Guardar
+                  </button>
+                </div>
+                <p class="text-xs text-blue-700 dark:text-blue-300">Haz clic en "Obtener código", autoriza en Google,
+                  copia el código y pégalo arriba</p>
+              </div>
+
+              <div class="space-y-5">
+
+                <!-- Recipients Section -->
+                <div>
+                  <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                    Destinatarios
+                  </label>
+                  <div class="relative">
+                    <div class="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg id="recipientIcon" class="w-5 h-5 text-[#4EABBE]" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M17 20h5v-2a3 3 0 00-3-3h-2M9 20H4v-2a3 3 0 013-3h2m4-8a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <select id="emailRecipients"
+                      class="w-full pl-11 pr-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition appearance-none">
+                      <option value="">Selecciona un grupo...</option>
+                      <option value="all">Todos los pacientes</option>
+                      <option value="active">Pacientes activos</option>
+                      <option value="inactive">Pacientes inactivos (6+ meses)</option>
+                      <option value="upcoming">Próximas citas (7 días)</option>
+                      <option value="custom">Selección manual</option>
+                    </select>
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between mt-2">
+                    <div id="recipientCount" class="text-xs text-[#0F2532]/60 dark:text-gray-400">
+                      Selecciona destinatarios
+                    </div>
+                    <button id="selectRecipientsBtn" data-recipient-target="email"
+                      class="text-xs text-[#4EABBE] hover:text-[#1D5D69] font-medium transition">
+                      Selección avanzada →
+                    </button>
+                  </div>
+                  <div id="selectedPatientsContainer" class="mt-2"></div>
+                </div>
+
+                <!-- Subject -->
+                <div>
+                  <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                    Asunto
+                  </label>
+                  <input id="emailSubject" type="text" placeholder="Ej: Recordatorio de cita dental"
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition" />
+                </div>
+
+                <!-- Message -->
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="text-sm font-semibold text-[#0F2532] dark:text-gray-200">
+                      Mensaje
+                    </label>
+                    <span id="charCount" class="text-xs text-[#0F2532]/40 dark:text-gray-500">0 caracteres</span>
+                  </div>
+                  <textarea id="emailMessage" rows="5" placeholder="Escribe tu mensaje aquí..."
+                    class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition"></textarea>
+                </div>
+
+
+
+
+
+                <!-- Action Buttons -->
+                <div class="space-y-2 pt-2">
+                  <button id="sendBulkEmailBtn"
+                    class="w-full py-3 bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] text-white rounded-lg hover:shadow-lg font-semibold text-sm transition-all duration-200 opacity-60 cursor-not-allowed"
+                    disabled>
+                    📧 Enviar a todos
+                  </button>
+                  <button id="previewEmailBtn"
+                    class="w-full py-2 bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm border border-[#D9D9D9] dark:border-gray-600 transition">
+                    👁️ Vista previa completa
+                  </button>
+                </div>
+
+                <!-- Progress -->
+                <div id="emailStatus" class="hidden">
+                  <p id="emailStatusText" class="text-xs text-[#0F2532] dark:text-gray-300 mb-2"></p>
+                  <div class="w-full bg-[#E6E6E6] dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div id="emailProgress"
+                      class="bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] h-full transition-all duration-300"
+                      style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- TAB: ENCUESTAS -->
+      <div id="encuestas-tab" class="tab-content hidden">
+        <div class="grid grid-cols-3 gap-6">
+          <!-- Survey Templates Section -->
+          <div class="col-span-2 space-y-6">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white">Plantillas de encuestas</h2>
+                  <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea y gestiona plantillas reutilizables
+                  </p>
+                </div>
+                <button id="newSurveyTemplateBtn"
+                  class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                  plantilla</button>
+              </div>
+              <div id="surveyTemplateGrid" class="grid grid-cols-2 gap-4">
+                <!-- Templates rendered by JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Survey Send Form -->
+          <div class="col-span-1">
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 sticky top-6">
+              <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Enviar encuesta</h2>
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-1">Título</label>
+                  <input id="surveyTitleInput" type="text" placeholder="Ej: Encuesta de satisfacción"
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-1">Link de la
+                    encuesta</label>
+                  <input id="surveyLinkInput" type="text" placeholder="https://..."
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+                </div>
+                <div>
+                  <label
+                    class="flex items-center justify-between text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                    <span>Destinatarios</span>
+                    <button id="selectSurveyRecipientsBtn" data-recipient-target="survey"
+                      class="text-xs text-[#4EABBE] hover:underline font-medium inline-flex items-center gap-1">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span>Selección avanzada</span>
+                    </button>
+                  </label>
+                  <select id="surveyRecipients"
+                    class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+                    <option value="">Selecciona...</option>
+                    <option value="all">Todos los pacientes</option>
+                    <option value="active">Pacientes activos</option>
+                    <option value="inactive">Pacientes inactivos (6+ meses)</option>
+                    <option value="upcoming">Próximas citas (7 días)</option>
+                    <option value="custom">Selección manual</option>
+                  </select>
+                  <div id="surveyRecipientCount" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Selecciona
+                    destinatarios</div>
+                  <div id="surveySelectedPatientsContainer"></div>
+                </div>
+                <button id="sendSurveyEmailsBtn"
+                  class="w-full py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold transition opacity-60 cursor-not-allowed"
+                  disabled>
+                  📊 Enviar encuesta
+                </button>
+
+                <div id="surveyStatus" class="hidden">
+                  <p id="surveyStatusText" class="text-xs text-[#0F2532] dark:text-gray-300 mb-2"></p>
+                  <div class="w-full bg-[#E6E6E6] dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div id="surveyProgress"
+                      class="bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] h-full transition-all duration-300"
+                      style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Survey History -->
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 mt-6">
+              <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Envíos recientes</h2>
+              <div id="surveyHistoryList" class="space-y-3 text-sm text-[#0F2532]/70 dark:text-gray-300">
+                <div class="text-center py-8 text-[#0F2532]/50 dark:text-gray-400">Sin encuestas enviadas aún</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+
+      <!-- MODALS -->
+      <!-- Gmail Auth Modal -->
+      <div id="gmailAuthModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+          <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-3">Conectar Gmail</h2>
+          <p class="text-sm text-[#0F2532]/70 dark:text-gray-300 mb-4">Pega el código de autorización de Google:</p>
+          <input id="gmailAuthCodeInput" type="text"
+            class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg mb-4 focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"
+            placeholder="Pega tu código aquí..." />
+          <div class="flex gap-3">
+            <button id="cancelGmailAuthBtn"
+              class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">Cancelar</button>
+            <button id="saveGmailAuthBtn"
+              class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar
+              Token</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recipients Modal -->
+      <div id="recipientsModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+          <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Seleccionar pacientes</h3>
+                <p id="modalRecipientCount" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">0 seleccionados
+                </p>
+              </div>
+              <button id="selectAllRecipients"
+                class="px-4 py-2 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-[#E8ECEE] dark:hover:bg-gray-600 text-sm font-medium border border-[#D9D9D9] dark:border-gray-600">
+                Seleccionar todo
+              </button>
+            </div>
+            <div class="relative">
+              <svg class="w-5 h-5 text-[#0F2532]/40 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input id="recipientSearch" type="text" placeholder="Buscar por nombre o email..."
+                class="w-full pl-10 pr-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+          </div>
+
+          <div id="recipientsList" class="flex-1 overflow-y-auto p-4 space-y-1 min-h-[300px] max-h-[400px]">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div
+            class="p-4 border-t border-[#E6E6E6] dark:border-gray-700 flex justify-end gap-3 bg-[#F8F7F7] dark:bg-gray-900 rounded-b-2xl">
+            <button id="cancelRecipientsBtn"
+              class="px-5 py-2.5 bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium border border-[#D9D9D9] dark:border-gray-600">Cancelar</button>
+            <button id="applyRecipientsBtn"
+              class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Aplicar
+              selección</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template Editor Modal -->
+      <div id="templateEditorModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+          <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
+            <h3 id="templateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla</h3>
+            <p id="templateModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una plantilla
+              personalizada para tus emails
+            </p>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Nombre de la
+                plantilla</label>
+              <input id="templateNameInput" type="text" placeholder="Ej: Promoción de verano"
+                class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Asunto
+                (opcional)</label>
+              <input id="templateSubjectInput" type="text" placeholder="Ej: Recordatorio de cita"
+                class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Imagen
+                (opcional)</label>
+              <div id="templateImageDropzone"
+                class="border-2 border-dashed border-[#D9D9D9] dark:border-gray-600 rounded-lg p-4 text-center hover:border-[#4EABBE] transition cursor-pointer">
+                <input id="templateImageInput" type="file" accept="image/*" class="hidden" />
+                <label for="templateImageInput" class="cursor-pointer">
+                  <svg class="w-8 h-8 text-[#0F2532]/30 dark:text-gray-500 mx-auto mb-2" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-sm text-[#0F2532]/60 dark:text-gray-400">Click para subir imagen</p>
+                  <p class="text-xs text-[#0F2532]/40 dark:text-gray-500 mt-1">PNG, JPG hasta 2MB</p>
+                </label>
+              </div>
+              <img id="templateImagePreview"
+                class="hidden mt-3 w-full h-32 object-cover rounded-lg border border-[#E6E6E6] dark:border-gray-600"
+                alt="Vista previa" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Contenido del
+                email</label>
+              <textarea id="templateTextInput" rows="6" placeholder="Escribe el contenido de tu plantilla aquí..."
+                class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
+            </div>
+          </div>
+
+          <div
+            class="p-4 border-t border-[#E6E6E6] dark:border-gray-700 flex justify-end gap-3 bg-[#F8F7F7] dark:bg-gray-900 rounded-b-2xl">
+            <button id="cancelTemplateBtn"
+              class="px-5 py-2.5 bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium border border-[#D9D9D9] dark:border-gray-600">Cancelar</button>
+            <button id="saveTemplateBtn"
+              class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar
+              plantilla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email Full Preview Modal -->
+      <div id="emailPreviewModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl mx-4">
+          <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Vista previa del email</h3>
+            <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')"
+              class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              <svg class="w-5 h-5 text-[#0F2532]/60 dark:text-gray-400" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div id="fullPreviewContent" class="p-6 max-h-[60vh] overflow-y-auto">
+            <!-- Content rendered by JS -->
+          </div>
+          <div class="p-4 border-t border-[#E6E6E6] dark:border-gray-700 bg-[#F8F7F7] dark:bg-gray-900 rounded-b-2xl">
+            <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')"
+              class="w-full py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Cerrar vista
+              previa</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Survey Template Editor Modal -->
+      <div id="surveyTemplateEditorModal"
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+          <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
+            <h3 id="surveyTemplateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla
+              de encuesta</h3>
+            <p id="surveyTemplateModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una
+              plantilla
+              reutilizable para tus encuestas
+            </p>
+          </div>
+
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Nombre de la
+                plantilla</label>
+              <input id="surveyTemplateNameInput" type="text" placeholder="Ej: Encuesta de satisfacción mensual"
+                class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Título de la
+                encuesta</label>
+              <input id="surveyTemplateTitleInput" type="text" placeholder="Ej: ¿Cómo fue tu experiencia?"
+                class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Link de la
+                encuesta</label>
+              <input id="surveyTemplateLinkInput" type="text" placeholder="https://forms.google.com/..."
+                class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white" />
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">Descripción
+                (opcional)</label>
+              <textarea id="surveyTemplateDescInput" rows="3" placeholder="Describe el propósito de esta encuesta..."
+                class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"></textarea>
+            </div>
+          </div>
+
+          <div
+            class="p-4 border-t border-[#E6E6E6] dark:border-gray-700 flex justify-end gap-3 bg-[#F8F7F7] dark:bg-gray-900 rounded-b-2xl">
+            <button id="cancelSurveyTemplateBtn"
+              class="px-5 py-2.5 bg-white dark:bg-gray-800 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium border border-[#D9D9D9] dark:border-gray-600">Cancelar</button>
+            <button id="saveSurveyTemplateBtn"
+              class="px-5 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar
+              plantilla</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Notifications Container -->
+      <div id="toast-container" class="toast-container"></div>
+
+      <script type="module" src="../scripts/crm.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Inventario - Sonalía</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
+    <script src="../scripts/init.js" type="module"></script>
+</head>
+
+<body class="bg-[#F8F7F7] dark:bg-gray-900 font-sans text-[#0F2532] dark:text-gray-100">
+
+    <!-- Navbar (mostrar solo si es standalone, no en iframe) -->
+    <div id="navbar-wrapper"></div>
+    
+    <script>
+        // Solo cargar navbar si está en página standalone
+        if (window.self === window.top) {
+            const wrapper = document.getElementById('navbar-wrapper');
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.src = '../components/navbar-component.js';
+            document.head.appendChild(script);
+            
+            const nav = document.createElement('app-navbar');
+            nav.setAttribute('current', 'inventario');
+            wrapper.appendChild(nav);
+        }
+    </script>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- Header Section -->
+        <div class="mb-8">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">Medicamentos e Insumos</h1>
+                    <p class="text-[#0F2532]/60 dark:text-gray-400 mt-1">Gestiona tu inventario de medicamentos</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Buscar medicamento..."
+                            class="pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-[#4EABBE] w-64">
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+                        </svg>
+                    </div>
+
+                    <button id="filterLowStockBtn"
+                        class="flex items-center gap-2 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300 font-medium">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Bajo Stock
+                    </button>
+
+                <button id="newItemBtn"
+                    class="flex items-center gap-2 px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nuevo Ítem
+                </button>
+            </div>
+        </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+            <div
+                class="bg-white dark:bg-gray-800 rounded-xl border border-[#D9D9D9] dark:border-gray-700 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Ítems</p>
+                        <p id="statTotal" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="bg-white dark:bg-gray-800 rounded-xl border border-[#D9D9D9] dark:border-gray-700 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Bajo Stock</p>
+                        <p id="statLowStock" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                class="bg-white dark:bg-gray-800 rounded-xl border border-[#D9D9D9] dark:border-gray-700 p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Valor Total</p>
+                        <p id="statValue" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">$0.00</p>
+                    </div>
+                    <div
+                        class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory List -->
+        <div
+            class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 overflow-hidden">
+            <table class="w-full">
+                <thead class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white">
+                    <tr>
+                        <th class="py-4 px-6 text-left font-semibold text-sm">Nombre</th>
+                        <th class="py-4 px-6 text-left font-semibold text-sm">Descripción</th>
+                        <th class="py-4 px-6 text-left font-semibold text-sm">Stock</th>
+                        <th class="py-4 px-6 text-left font-semibold text-sm">Precio</th>
+                        <th class="py-4 px-6 text-left font-semibold text-sm">Vencimiento</th>
+                        <th class="py-4 px-6 text-center font-semibold text-sm">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="inventory-list-body" class="divide-y divide-[#E6E6E6] dark:divide-gray-700">
+                    <!-- Rendered by JS -->
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Modal para Agregar/Editar Medicamento -->
+    <div id="modal-medicamento"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+        <div
+            class="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-2xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="modal-title" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Medicamento</h2>
+                <button id="close-modal-medicamento"
+                    class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
+                    ×
+                </button>
+            </div>
+
+            <form id="form-medicamento" class="space-y-5">
+                <input type="hidden" id="medicamento-id" />
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Nombre del Medicamento *
+                    </label>
+                    <input type="text" name="nombre" required
+                        class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Descripción
+                    </label>
+                    <textarea name="descripcion" rows="3"
+                        class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Stock *
+                        </label>
+                        <input type="number" name="stock" required min="0"
+                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Stock Mínimo
+                        </label>
+                        <input type="number" name="stock_minimo" min="0"
+                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Precio Unitario ($) *
+                        </label>
+                        <input type="number" name="precio" required min="0" step="0.01"
+                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            Fecha de Vencimiento
+                        </label>
+                        <input type="date" name="fecha_vencimiento"
+                            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="cancel-medicamento"
+                        class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="px-6 py-2 rounded-lg bg-[#4EABBE] text-white font-semibold hover:bg-[#1D5D69] transition">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
