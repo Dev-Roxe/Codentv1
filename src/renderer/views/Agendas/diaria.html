@@ -72,25 +72,45 @@
       </div>
     </div>
 
-    <!-- Selector de Dentista -->
+    <!-- Selector de Profesional -->
     <div class="p-5 border-b border-gray-200 dark:border-gray-700">
       <label class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Filtrar por
-        Dentista</label>
-      <div class="relative">
-        <select id="dentistSelect"
-          class="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] focus:bg-white dark:focus:bg-gray-600 transition-all appearance-none cursor-pointer font-medium text-sm">
-          <option value="">Todos los dentistas</option>
-        </select>
-        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-          </svg>
+        Profesional</label>
+      <!-- Select oculto: lo dejamos como respaldo/estado -->
+      <select id="dentistSelect" class="sr-only" aria-hidden="true" tabindex="-1">
+        <option value="">Todos los profesionales</option>
+      </select>
+
+      <!-- Único control visible: resumen + desplegable -->
+      <button id="dentistToggleBtn" type="button"
+        class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-[#4EABBE]/40 hover:bg-white dark:hover:bg-gray-600 transition-all text-left"
+        aria-expanded="false" aria-controls="dentistListSection">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="text-gray-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <p id="dentistToggleLabel" class="text-sm font-semibold text-[#0F2532] dark:text-white truncate">
+              Todos los profesionales
+            </p>
+            <p id="dentistToggleCount" class="text-xs text-gray-500 dark:text-gray-400">
+              0 citas
+            </p>
+          </div>
         </div>
-        <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div id="dentistToggleIcon" class="text-gray-400 transition-transform">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
+        </div>
+      </button>
+
+      <div id="dentistListSection" class="mt-3 hidden">
+        <div id="dentistList" class="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
+          <!-- Lista de profesionales generada por JS -->
         </div>
       </div>
     </div>

@@ -26,6 +26,33 @@ export async function initDiaria(container, dateStr) {
     let dentists = [];
     let selectedDentist = '';
     let autoReloadInterval = null;
+    let dentistListOpen = false;
+    const UNASSIGNED_DENTIST = '__UNASSIGNED__';
+    const IGNORED_ROLES = new Set(['recepcionista', 'administrador', 'admin', 'asistente', 'caja', 'cajero']);
+    const CLINICAL_ROLE_KEYWORDS = [
+        'dentista',
+        'especialista',
+        'medico',
+        'médico',
+        'doctor',
+        'doctora',
+        'odont',
+        'ortod',
+        'endod',
+        'ciruj',
+        'implant',
+        'higien'
+    ];
+
+    const safeParseJSON = (value, fallback = {}) => {
+        if (!value) return fallback;
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            console.warn('[agenda_diaria] JSON inválido en app_settings:', err);
+            return fallback;
+        }
+    };
 
     function getSessionUser() {
         try {
@@ -39,6 +66,45 @@ export async function initDiaria(container, dateStr) {
         const session = getSessionUser();
         return session.id || null;
     }
+
+    const normalizeRole = (role) => String(role || '').trim().toLowerCase();
+    const isIgnoredRole = (role) => IGNORED_ROLES.has(normalizeRole(role));
+    const isClinicalRole = (role) => {
+        const normalized = normalizeRole(role);
+        if (!normalized || IGNORED_ROLES.has(normalized)) return false;
+        return CLINICAL_ROLE_KEYWORDS.some(keyword => normalized.includes(keyword));
+    };
+    const getDisplayName = (user) =>
+        [user?.nombre, user?.apellido].filter(Boolean).join(' ').trim() ||
+        (user?.id ? `Usuario ${user.id}` : 'Profesional');
+    const getDentistLabel = (user) => {
+        if (!user) return 'Profesional';
+        const roleLower = normalizeRole(user.rol);
+        const prefix = roleLower.includes('especialista') ? 'Esp.' : 'Dr(a).';
+        return `${prefix} ${getDisplayName(user)}`.trim();
+    };
+    const getDentistById = (id) => dentists.find(d => String(d.id) === String(id));
+    const parseDentistSelection = (value) => {
+        if (!value || value === UNASSIGNED_DENTIST) return null;
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : value;
+    };
+    const buildDentistOptionsHtml = (selectedValue = '') => {
+        const selectedStr = selectedValue ? String(selectedValue) : '';
+        const options = ['<option value="">Sin asignar</option>'];
+
+        dentists.forEach(d => {
+            const value = String(d.id);
+            const selected = value === selectedStr ? 'selected' : '';
+            options.push(`<option value="${value}" ${selected}>${getDentistLabel(d)}</option>`);
+        });
+
+        if (selectedStr && !dentists.some(d => String(d.id) === selectedStr)) {
+            options.push(`<option value="${selectedStr}" selected>Profesional ${selectedStr}</option>`);
+        }
+
+        return options.join('');
+    };
 
     function dbGet(sql, params = []) {
         return new Promise((resolve, reject) => {
@@ -84,6 +150,12 @@ export async function initDiaria(container, dateStr) {
     const filtersDiv = $('#filtersDiv');
     const markAllBtn = $('#markAllBtn');
     const dentistSelect = $('#dentistSelect');
+    const dentistList = $('#dentistList');
+    const dentistListSection = $('#dentistListSection');
+    const dentistToggleBtn = $('#dentistToggleBtn');
+    const dentistToggleLabel = $('#dentistToggleLabel');
+    const dentistToggleCount = $('#dentistToggleCount');
+    const dentistToggleIcon = $('#dentistToggleIcon');
     const createAptBtn = $('#createAptBtn');
     const autoReloadCheckbox = $('#autoReloadCheckbox');
 
@@ -108,6 +180,19 @@ export async function initDiaria(container, dateStr) {
         const minutes = clamped % 60;
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     };
+    const formatDisplayTime = (hours, minutes, timeFormat) => {
+        if (timeFormat === '12h') {
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const hour12 = hours % 12 || 12;
+            return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`;
+        }
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    };
+    const formatDisplayTimeFromString = (timeStr, timeFormat) => {
+        const [h, m] = (timeStr || '00:00').split(':').map(Number);
+        if (!Number.isFinite(h) || !Number.isFinite(m)) return timeStr;
+        return formatDisplayTime(h, m, timeFormat);
+    };
     const getWorkBoundsMinutes = () => {
         normalizeWorkHours();
         return {
@@ -122,12 +207,15 @@ export async function initDiaria(container, dateStr) {
 
     // Cargar configuración del localStorage
     function loadConfig() {
+        const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {});
         return {
             workStart: parseInt(localStorage.getItem('work-start')?.split(':')[0] || '8'),
             workEnd: parseInt(localStorage.getItem('work-end')?.split(':')[0] || '18'),
             defaultDuration: parseInt(localStorage.getItem('default-duration') || '30'),
             appointmentInterval: parseInt(localStorage.getItem('appointment-interval') || '10'),
-            timeFormat: localStorage.getItem('time-format') || '24h'
+            timeFormat: localStorage.getItem('time-format') || savedSettings.timeFormat || '24h',
+            compactMode: savedSettings.compactMode ?? false,
+            autoConfirm: savedSettings.autoConfirm ?? false
         };
     }
 
@@ -143,7 +231,7 @@ export async function initDiaria(container, dateStr) {
     let timelineHeight = 0;
     let currentTimeIntervalId = null;
     let searchQuery = '';
-    let isCompactView = false;
+    let isCompactView = config.compactMode ?? false;
     let draggedAppointment = null;
 
     function clampInterval(value) {
@@ -187,26 +275,206 @@ export async function initDiaria(container, dateStr) {
 
     // Cargar dentistas
     async function loadDentists() {
-        if (!dentistSelect) return;
+        if (!dentistSelect || !window.api?.db?.all) return;
         try {
-            dentists = await window.api.db.all('SELECT id, nombre, apellido FROM usuarios WHERE rol = "dentista" ORDER BY nombre');
-            dentistSelect.innerHTML = '<option value="">Todos los dentistas</option>' +
-                dentists.map(d => `<option value="${d.id}">Dr(a). ${d.nombre} ${d.apellido}</option>`).join('');
+            const allUsers = await window.api.db.all(
+                'SELECT id, nombre, apellido, rol FROM usuarios ORDER BY nombre, apellido'
+            );
+            const referencedRows = await window.api.db.all(
+                'SELECT DISTINCT dentista_id as id FROM citas WHERE dentista_id IS NOT NULL'
+            );
+            const referencedIds = new Set((referencedRows || []).map(r => String(r.id)));
+            const session = getSessionUser();
+            const sessionId = session?.id ? String(session.id) : null;
+
+            dentists = (allUsers || []).filter(user => {
+                const roleLower = normalizeRole(user.rol);
+                const ignored = IGNORED_ROLES.has(roleLower);
+                const clinical = isClinicalRole(roleLower);
+                const referenced = referencedIds.has(String(user.id));
+                const isSessionUser = !!sessionId && String(user.id) === sessionId && !ignored;
+                return clinical || referenced || isSessionUser;
+            });
+
+            if (!dentists.length) {
+                dentists = (allUsers || []).filter(user => !isIgnoredRole(user.rol));
+            }
+            if (!dentists.length) {
+                dentists = allUsers || [];
+            }
+
+            const byId = new Map();
+            dentists.forEach(d => {
+                const key = String(d.id);
+                if (!byId.has(key)) byId.set(key, d);
+            });
+            dentists = [...byId.values()].sort((a, b) =>
+                getDisplayName(a).localeCompare(getDisplayName(b), 'es')
+            );
+
+            renderDentistOptions();
+            renderDentistList(appointments);
         } catch (err) {
-            console.error('Error cargando dentistas:', err);
+            console.error('Error cargando profesionales:', err);
         }
+    }
+
+    function computeDentistCounts(baseAppointments) {
+        const countsById = new Map();
+        let unassigned = 0;
+        let total = 0;
+
+        (baseAppointments || []).forEach(apt => {
+            total += 1;
+            const dentistId = apt.dentista_id;
+            if (dentistId === null || dentistId === undefined || dentistId === '') {
+                unassigned += 1;
+                return;
+            }
+            const key = String(dentistId);
+            countsById.set(key, (countsById.get(key) || 0) + 1);
+        });
+
+        return { total, unassigned, countsById };
+    }
+
+    function renderDentistOptions() {
+        if (!dentistSelect) return;
+
+        const availableValues = new Set(['', UNASSIGNED_DENTIST]);
+        dentists.forEach(d => availableValues.add(String(d.id)));
+
+        if (selectedDentist && !availableValues.has(String(selectedDentist))) {
+            selectedDentist = '';
+        }
+
+        const options = [
+            '<option value="">Todos los profesionales</option>',
+            `<option value="${UNASSIGNED_DENTIST}">Sin asignar</option>`,
+            ...dentists.map(d => `<option value="${d.id}">${getDentistLabel(d)}</option>`)
+        ];
+
+        dentistSelect.innerHTML = options.join('');
+        dentistSelect.value = selectedDentist || '';
+    }
+
+    function setDentistListOpen(open) {
+        dentistListOpen = !!open;
+        if (dentistListSection) {
+            dentistListSection.classList.toggle('hidden', !dentistListOpen);
+        }
+        if (dentistToggleBtn) {
+            dentistToggleBtn.setAttribute('aria-expanded', dentistListOpen ? 'true' : 'false');
+        }
+        if (dentistToggleIcon) {
+            dentistToggleIcon.style.transform = dentistListOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+        }
+    }
+
+    function updateDentistToggle(counts) {
+        const total = counts?.total || 0;
+        const unassigned = counts?.unassigned || 0;
+        const selectedKey = selectedDentist ? String(selectedDentist) : '';
+        const selectedCount =
+            !selectedKey
+                ? total
+                : selectedKey === UNASSIGNED_DENTIST
+                    ? unassigned
+                    : counts?.countsById?.get(selectedKey) || 0;
+
+        let label = 'Todos los profesionales';
+        if (selectedKey === UNASSIGNED_DENTIST) {
+            label = 'Sin asignar';
+        } else if (selectedKey) {
+            const dentist = getDentistById(selectedKey);
+            label = dentist ? getDentistLabel(dentist) : `Profesional ${selectedKey}`;
+        }
+
+        if (dentistToggleLabel) {
+            dentistToggleLabel.textContent = label;
+        }
+        if (dentistToggleCount) {
+            const suffix = selectedCount === 1 ? 'cita' : 'citas';
+            dentistToggleCount.textContent = `${selectedCount} ${suffix}`;
+        }
+        setDentistListOpen(dentistListOpen);
+    }
+
+    function renderDentistList(baseAppointments) {
+        if (!dentistList) return;
+
+        const counts = computeDentistCounts(baseAppointments);
+        updateDentistToggle(counts);
+
+        const buildItem = (value, label, count, active) => {
+            const base =
+                'w-full flex items-center justify-between px-3 py-2 rounded-xl border text-sm font-medium transition-all';
+            const activeCls =
+                'border-[#4EABBE] bg-[#4EABBE]/10 text-[#1D5D69] dark:text-white shadow-sm';
+            const inactiveCls =
+                'border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:border-[#4EABBE]/40 hover:bg-gray-50 dark:hover:bg-gray-700';
+            const badgeBase =
+                'ml-3 min-w-[1.75rem] px-2 py-0.5 rounded-full text-xs font-bold text-center';
+            const badgeCls = active
+                ? 'bg-[#4EABBE] text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
+
+            return `
+                <button type="button"
+                        class="${base} ${active ? activeCls : inactiveCls}"
+                        data-dentist-value="${value}">
+                    <span class="truncate text-left">${label}</span>
+                    <span class="${badgeBase} ${badgeCls}">${count}</span>
+                </button>
+            `;
+        };
+
+        const selectedKey = selectedDentist ? String(selectedDentist) : '';
+        const items = [
+            buildItem('', 'Todos', counts.total, !selectedKey),
+            buildItem(UNASSIGNED_DENTIST, 'Sin asignar', counts.unassigned, selectedKey === UNASSIGNED_DENTIST),
+            ...dentists.map(d => {
+                const key = String(d.id);
+                const count = counts.countsById.get(key) || 0;
+                const active = key === selectedKey;
+                return buildItem(key, getDentistLabel(d), count, active);
+            })
+        ];
+
+        dentistList.innerHTML = items.join('');
+
+        dentistList.querySelectorAll('[data-dentist-value]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setSelectedDentist(btn.getAttribute('data-dentist-value') || '');
+            });
+        });
+    }
+
+    function setSelectedDentist(value) {
+        if (value === UNASSIGNED_DENTIST) {
+            selectedDentist = UNASSIGNED_DENTIST;
+        } else {
+            selectedDentist = value ? String(value) : '';
+        }
+        if (dentistSelect) {
+            dentistSelect.value = selectedDentist || '';
+        }
+        setDentistListOpen(false);
+        renderAppointments();
     }
 
     async function loadAppointments() {
         const dateSQL = toSQLDate(currentDate);
         try {
             let sql = `
-                SELECT c.id, c.paciente_id, c.fecha_hora, c.duracion_minutos, c.motivo, c.estado, c.dentista_id, c.monto,
+                SELECT c.id, c.paciente_id, c.fecha_hora, c.duracion_minutos, c.motivo, c.estado, c.dentista_id, c.monto, c.especialista_id,
                        p.nombre, p.apellido, p.telefono,
-                       u.nombre as dentista_nombre, u.apellido as dentista_apellido
+                       u.nombre as dentista_nombre, u.apellido as dentista_apellido,
+                       e.nombre as especialista_nombre, e.especialidad as especialista_especialidad
                 FROM citas c
                 JOIN pacientes p ON p.id = c.paciente_id
                 LEFT JOIN usuarios u ON u.id = c.dentista_id
+                LEFT JOIN especialistas e ON e.id = c.especialista_id
                 WHERE date(c.fecha_hora) = ?
                 ORDER BY c.fecha_hora
             `;
@@ -274,13 +542,14 @@ export async function initDiaria(container, dateStr) {
         slots.forEach(slot => {
             const topPos = slot.minutesFromStart * minuteHeight;
             const timeStr = `${String(slot.hour).padStart(2, '0')}:${String(slot.minute).padStart(2, '0')}`;
+            const timeLabel = formatDisplayTime(slot.hour, slot.minute, config.timeFormat);
             const labelClass = slot.minute === 0 ? hourLabelClass : slotLabelClass;
             const lineClass = slot.minute === 0 ? hourLineClass : slotLineClass;
 
             hoursHTML += `
                 <div class="${lineClass}" style="top: ${topPos}px"></div>
                 <div class="absolute left-0 right-0 pr-2 text-right leading-none ${labelClass}" style="top: ${topPos}px;">
-                    ${timeStr}
+                    ${timeLabel}
                 </div>
             `;
 
@@ -318,7 +587,7 @@ export async function initDiaria(container, dateStr) {
             currentTimeLine.classList.remove('hidden');
 
             if (currentTimeLabel) {
-                currentTimeLabel.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                currentTimeLabel.textContent = formatDisplayTime(hours, minutes, config.timeFormat);
             }
         } else {
             currentTimeLine.classList.add('hidden');
@@ -330,8 +599,27 @@ export async function initDiaria(container, dateStr) {
         const container = $('#appointmentsContainer');
         if (!container) return;
 
-        // Filtrar por búsqueda
-        let filtered = appointments.filter(apt => {
+        // Filtrar por estado (base)
+        const statusFiltered = appointments.filter(apt => {
+            const filter = statusFilters.find(f => f.id === (apt.estado || 'pendiente'));
+            return filter ? filter.checked : true;
+        });
+
+        // Actualizar UI de profesionales con el contexto del dia/estados
+        renderDentistOptions();
+        renderDentistList(statusFiltered);
+
+        // Filtrar por profesional
+        let filtered = statusFiltered;
+        if (selectedDentist === UNASSIGNED_DENTIST) {
+            filtered = filtered.filter(apt => apt.dentista_id === null || apt.dentista_id === undefined || apt.dentista_id === '');
+        } else if (selectedDentist) {
+            const selectedKey = String(selectedDentist);
+            filtered = filtered.filter(apt => String(apt.dentista_id || '') === selectedKey);
+        }
+
+        // Filtrar por busqueda
+        filtered = filtered.filter(apt => {
             if (searchQuery) {
                 const query = searchQuery.toLowerCase();
                 const nombre = `${apt.nombre} ${apt.apellido}`.toLowerCase();
@@ -341,13 +629,18 @@ export async function initDiaria(container, dateStr) {
             return true;
         });
 
-        // Filtrar por estado
-        filtered = filtered.filter(apt => {
-            const filter = statusFilters.find(f => f.id === (apt.estado || 'pendiente'));
-            return filter ? filter.checked : true;
-        });
-
         if (filtered.length === 0) {
+            const dentistFilterActive = selectedDentist === UNASSIGNED_DENTIST || !!selectedDentist;
+            let emptyDetail = 'No hay citas para este dia';
+            if (searchQuery) {
+                emptyDetail = 'No se encontraron resultados';
+            } else if (selectedDentist === UNASSIGNED_DENTIST) {
+                emptyDetail = 'No hay citas sin asignar para este dia';
+            } else if (dentistFilterActive) {
+                const dentist = getDentistById(selectedDentist);
+                const label = dentist ? getDentistLabel(dentist) : 'el profesional seleccionado';
+                emptyDetail = `No hay citas para ${label}`;
+            }
             container.innerHTML = `
                 <div class="flex flex-col items-center justify-center h-full text-center py-20">
                     <svg class="w-16 h-16 mb-4 opacity-50 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -355,7 +648,7 @@ export async function initDiaria(container, dateStr) {
                     </svg>
                     <p class="text-lg font-medium text-gray-700 dark:text-gray-200">No hay citas</p>
                     <p class="text-sm mt-1 text-gray-400 dark:text-gray-500">
-                        ${searchQuery ? 'No se encontraron resultados' : 'No hay citas para este día'}
+                        ${emptyDetail}
                     </p>
                 </div>
             `;
@@ -378,6 +671,8 @@ export async function initDiaria(container, dateStr) {
             endTime.setMinutes(endTime.getMinutes() + duration);
             const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
+            const displayTimeStr = formatDisplayTimeFromString(timeStr, config.timeFormat);
+            const displayEndTimeStr = formatDisplayTimeFromString(endTimeStr, config.timeFormat);
 
             const statusStyles = {
                 'pendiente': 'border-l-4 border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20',
@@ -414,7 +709,7 @@ export async function initDiaria(container, dateStr) {
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
-                                    ${timeStr} - ${endTimeStr}
+                                    ${displayTimeStr} - ${displayEndTimeStr}
                                 </div>
                             </div>
                             <span class="text-xs px-2 py-0.5 rounded-full font-medium ${badgeClass} whitespace-nowrap">
@@ -430,6 +725,14 @@ export async function initDiaria(container, dateStr) {
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
                                         Dr(a). ${apt.dentista_nombre} ${apt.dentista_apellido || ''}
+                                    </div>
+                                ` : ''}
+                                ${apt.especialista_nombre ? `
+                                    <div class="flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        ${apt.especialista_nombre} - ${apt.especialista_especialidad || ''}
                                     </div>
                                 ` : ''}
                                 ${apt.telefono ? `
@@ -667,16 +970,20 @@ export async function initDiaria(container, dateStr) {
     // Toggle de vista
     const viewToggle = $('#viewToggle');
     const viewModeText = $('#viewModeText');
+    const syncViewModeText = () => {
+        if (viewModeText) {
+            viewModeText.textContent = isCompactView ? 'Compacta' : 'Expandida';
+        }
+    };
 
     if (viewToggle) {
         viewToggle.addEventListener('click', () => {
             isCompactView = !isCompactView;
-            if (viewModeText) {
-                viewModeText.textContent = isCompactView ? 'Compacta' : 'Expandida';
-            }
+            syncViewModeText();
             renderAppointments();
         });
     }
+    syncViewModeText();
 
     // Funciones globales
     window.updateStatus = async (id, status) => {
@@ -726,10 +1033,12 @@ export async function initDiaria(container, dateStr) {
         }
 
         let patients = [];
+        let especialistas = [];
         try {
             patients = await window.api.db.all('SELECT id, nombre, apellido FROM pacientes ORDER BY nombre');
+            especialistas = await window.api.db.all('SELECT id, nombre, especialidad FROM especialistas WHERE activo = 1 ORDER BY nombre');
         } catch (err) {
-            return alert('Error cargando pacientes');
+            return alert('Error cargando datos');
         }
 
         const aptDateObj = new Date(apt.fecha_hora);
@@ -738,10 +1047,19 @@ export async function initDiaria(container, dateStr) {
         const durationMinutes = Number(apt.duracion_minutos || config.defaultDuration || 30);
         const startMinutes = timeToMinutes(aptTime) ?? 0;
         const aptEndTime = minutesToTime(startMinutes + durationMinutes);
+        const displayAptTime = formatDisplayTimeFromString(aptTime, config.timeFormat);
+        const displayAptEndTime = formatDisplayTimeFromString(aptEndTime, config.timeFormat);
         const statusOptions = statusFilters.map(f => {
             const selected = (apt.estado || 'pendiente') == f.id ? 'selected' : '';
             return `<option value="${f.id}" ${selected}>${f.label}</option>`;
         }).join('');
+        if (!dentists.length) {
+            await loadDentists();
+        }
+        const dentistSelectedValue = apt.dentista_id
+            ? String(apt.dentista_id)
+            : (selectedDentist && selectedDentist !== UNASSIGNED_DENTIST ? String(selectedDentist) : '');
+        const dentistOptionsHtml = buildDentistOptionsHtml(dentistSelectedValue);
 
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
@@ -749,7 +1067,7 @@ export async function initDiaria(container, dateStr) {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-100 dark:border-gray-700" style="animation: slideUp 0.3s ease">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">Editar Cita</h3>
-                    <p class="text-white/70 text-sm mt-1">${aptDate} ${aptTime} - ${aptEndTime}</p>
+                    <p class="text-white/70 text-sm mt-1">${aptDate} ${displayAptTime} - ${displayAptEndTime}</p>
                 </div>
                 <form id="editAptForm" class="p-8 space-y-6">
                     <div>
@@ -759,10 +1077,16 @@ export async function initDiaria(container, dateStr) {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Dentista</label>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Profesional</label>
                         <select id="aptDentistEdit" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
+                            ${dentistOptionsHtml}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Especialista</label>
+                        <select id="aptEspecialistaEdit" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
                             <option value="">Sin asignar</option>
-                            ${dentists.map(d => `<option value="${d.id}" ${String(d.id) === String(apt.dentista_id) ? 'selected' : ''}>Dr(a). ${d.nombre} ${d.apellido}</option>`).join('')}
+                            ${especialistas.map(e => `<option value="${e.id}" ${String(e.id) === String(apt.especialista_id) ? 'selected' : ''}>${e.nombre} - ${e.especialidad}</option>`).join('')}
                         </select>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -813,7 +1137,9 @@ export async function initDiaria(container, dateStr) {
         overlay.querySelector('#editAptForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pacienteId = overlay.querySelector('#aptPatientEdit').value;
-            const dentistaId = overlay.querySelector('#aptDentistEdit').value || null;
+            const dentistIdRaw = overlay.querySelector('#aptDentistEdit')?.value || '';
+            const dentistId = parseDentistSelection(dentistIdRaw);
+            const especialistaId = overlay.querySelector('#aptEspecialistaEdit').value || null;
             const fecha = overlay.querySelector('#aptDateEdit').value;
             const hora = overlay.querySelector('#aptTimeEdit').value;
             const horaFin = overlay.querySelector('#aptEndTimeEdit').value;
@@ -839,8 +1165,8 @@ export async function initDiaria(container, dateStr) {
 
             try {
                 await window.api.db.run(
-                    'UPDATE citas SET paciente_id = ?, dentista_id = ?, fecha_hora = ?, duracion_minutos = ?, motivo = ?, estado = ? WHERE id = ?',
-                    [pacienteId, dentistaId, `${fecha} ${hora}:00`, duracion, motivo, estado, apt.id]
+                    'UPDATE citas SET paciente_id = ?, dentista_id = ?, especialista_id = ?, fecha_hora = ?, duracion_minutos = ?, motivo = ?, estado = ? WHERE id = ?',
+                    [pacienteId, dentistId, especialistaId, `${fecha} ${hora}:00`, duracion, motivo, estado, apt.id]
                 );
                 overlay.remove();
                 loadAppointments();
@@ -854,11 +1180,20 @@ export async function initDiaria(container, dateStr) {
     // Modal crear cita
     async function openCreateModal() {
         let patients = [];
+        let especialistas = [];
         try {
             patients = await window.api.db.all('SELECT id, nombre, apellido FROM pacientes ORDER BY nombre');
+            especialistas = await window.api.db.all('SELECT id, nombre, especialidad FROM especialistas WHERE activo = 1 ORDER BY nombre');
         } catch (err) {
-            return alert('Error cargando pacientes');
+            return alert('Error cargando datos');
         }
+
+        if (!dentists.length) {
+            await loadDentists();
+        }
+        const defaultDentistValue =
+            selectedDentist && selectedDentist !== UNASSIGNED_DENTIST ? String(selectedDentist) : '';
+        const dentistOptionsHtml = buildDentistOptionsHtml(defaultDentistValue);
 
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
@@ -877,10 +1212,16 @@ export async function initDiaria(container, dateStr) {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Dentista</label>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Profesional</label>
                         <select id="aptDentist" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
+                            ${dentistOptionsHtml}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Especialista</label>
+                        <select id="aptEspecialista" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
                             <option value="">Sin asignar</option>
-                            ${dentists.map(d => `<option value="${d.id}">Dr(a). ${d.nombre} ${d.apellido}</option>`).join('')}
+                            ${especialistas.map(e => `<option value="${e.id}">${e.nombre} - ${e.especialidad}</option>`).join('')}
                         </select>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -927,7 +1268,9 @@ export async function initDiaria(container, dateStr) {
         overlay.querySelector('#createAptForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pacienteId = overlay.querySelector('#aptPatient').value;
-            const dentistaId = overlay.querySelector('#aptDentist').value || null;
+            const dentistIdRaw = overlay.querySelector('#aptDentist')?.value || '';
+            const dentistId = parseDentistSelection(dentistIdRaw);
+            const especialistaId = overlay.querySelector('#aptEspecialista').value || null;
             const fecha = overlay.querySelector('#aptDate').value;
             const hora = overlay.querySelector('#aptTime').value;
             const horaFin = overlay.querySelector('#aptEndTime').value;
@@ -950,10 +1293,70 @@ export async function initDiaria(container, dateStr) {
             }
 
             try {
+                const estado = config.autoConfirm ? 'confirmado' : 'pendiente';
                 await window.api.db.run(
-                    'INSERT INTO citas (paciente_id, dentista_id, fecha_hora, duracion_minutos, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                    [pacienteId, dentistaId, `${fecha} ${hora}:00`, duracion, motivo, 'pendiente', 0]
+                    'INSERT INTO citas (paciente_id, dentista_id, especialista_id, fecha_hora, duracion_minutos, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                    [pacienteId, dentistId, especialistaId, `${fecha} ${hora}:00`, duracion, motivo, estado, 0]
                 );
+
+                // Enviar notificación por email
+                try {
+                    // Obtener datos del paciente
+                    const patient = await window.api.db.get(
+                        'SELECT nombre, apellido, email FROM pacientes WHERE id = ?',
+                        [pacienteId]
+                    );
+
+                    // DEBUG: Ver qué datos del paciente se obtuvieron
+                    console.log('📧 Datos del paciente:', patient);
+                    console.log('📧 Email del paciente:', patient?.email);
+
+                    // Solo enviar si el paciente tiene email
+                    if (patient && patient.email) {
+                        // Obtener nombre del profesional si esta asignado
+                        let dentistName = null;
+                        if (dentistId) {
+                            const dentistRow = await window.api.db.get(
+                                'SELECT id, nombre, apellido, rol FROM usuarios WHERE id = ?',
+                                [dentistId]
+                            );
+                            if (dentistRow) {
+                                dentistName = getDentistLabel(dentistRow);
+                            }
+                        }
+
+                        // Obtener nombre del especialista si esta asignado
+                        let specialistName = null;
+                        if (especialistaId) {
+                            const specialist = await window.api.db.get(
+                                'SELECT nombre, especialidad FROM especialistas WHERE id = ?',
+                                [especialistaId]
+                            );
+                            if (specialist) {
+                                specialistName = `${specialist.nombre} - ${specialist.especialidad}`.trim();
+                            }
+                        }
+
+                        // Enviar notificación
+                        const notificationResult = await window.api.sendAppointmentNotification({
+                            patientEmail: patient.email,
+                            patientName: `${patient.nombre} ${patient.apellido}`.trim(),
+                            appointmentDate: fecha,
+                            appointmentTime: hora,
+                            reason: motivo || null,
+                            dentistName: dentistName || specialistName,
+                            duration: duracion
+                        });
+
+                        if (notificationResult.success) {
+                            console.log('✓ Notificación enviada a', patient.email);
+                        }
+                    }
+                } catch (notifError) {
+                    // No bloquear si falla el envío de notificación
+                    console.warn('No se pudo enviar notificación:', notifError);
+                }
+
                 overlay.remove();
                 if (fecha === toSQLDate(currentDate)) loadAppointments();
             } catch (err) {
@@ -967,7 +1370,17 @@ export async function initDiaria(container, dateStr) {
     nextDayBtn?.addEventListener('click', () => { currentDate.setDate(currentDate.getDate() + 1); renderDate(); loadAppointments(); });
     markAllBtn?.addEventListener('click', () => { filtersDiv.querySelectorAll('input').forEach(cb => cb.checked = true); statusFilters.forEach(f => f.checked = true); renderAppointments(); });
     createAptBtn?.addEventListener('click', openCreateModal);
-    dentistSelect?.addEventListener('change', (e) => { selectedDentist = e.target.value; renderAppointments(); });
+    dentistToggleBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setDentistListOpen(!dentistListOpen);
+    });
+    dentistSelect?.addEventListener('change', (e) => { setSelectedDentist(e.target.value); });
+    document.addEventListener('click', (e) => {
+        if (!dentistListOpen) return;
+        const target = e.target;
+        if (dentistToggleBtn?.contains(target) || dentistListSection?.contains(target)) return;
+        setDentistListOpen(false);
+    });
 
     // Escuchar cambios en la configuración (mismo window)
     window.addEventListener('configurationChanged', (e) => {
@@ -975,17 +1388,23 @@ export async function initDiaria(container, dateStr) {
         config = loadConfig();
         START_HOUR = config.workStart;
         END_HOUR = config.workEnd;
+        isCompactView = config.compactMode ?? false;
+        syncViewModeText();
+        renderDate();
         generateTimelineSlots();
         loadAppointments();
     });
 
     // Escuchar cambios en la configuración (otras pestañas)
     window.addEventListener('storage', (e) => {
-        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval') {
+        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval' || e.key === 'time-format' || e.key === 'app_settings') {
             console.log('Configuración actualizada (otra pestaña), recargando timeline...');
             config = loadConfig();
             START_HOUR = config.workStart;
             END_HOUR = config.workEnd;
+            isCompactView = config.compactMode ?? false;
+            syncViewModeText();
+            renderDate();
             generateTimelineSlots();
             loadAppointments();
         }
@@ -997,6 +1416,211 @@ export async function initDiaria(container, dateStr) {
         } else {
             clearInterval(autoReloadInterval);
         }
+    });
+
+    // ============================================================================
+    // SISTEMA DE RECORDATORIOS DE CITAS
+    // ============================================================================
+
+    let reminderInterval = null;
+    const notifiedAppointments = new Set(
+        JSON.parse(sessionStorage.getItem('notifiedAppointments') || '[]')
+    );
+
+    // Verificar citas próximas
+    async function checkUpcomingAppointments() {
+        try {
+            const now = new Date();
+            const in5Minutes = new Date(now.getTime() + 5 * 60000);
+
+            // Formatear fechas para SQL
+            const nowSQL = `${toSQLDate(now)} ${formatTime(now)}`;
+            const in5MinSQL = `${toSQLDate(in5Minutes)} ${formatTime(in5Minutes)}`;
+
+            // Buscar citas próximas que no estén canceladas ni atendidas
+            const upcomingAppointments = await window.api.db.all(`
+                SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado,
+                       p.nombre, p.apellido,
+                       e.nombre as especialista_nombre, e.especialidad as especialista_especialidad
+                FROM citas c
+                JOIN pacientes p ON p.id = c.paciente_id
+                LEFT JOIN especialistas e ON e.id = c.especialista_id
+                WHERE c.fecha_hora BETWEEN ? AND ?
+                  AND c.estado IN ('pendiente', 'confirmado')
+                ORDER BY c.fecha_hora
+            `, [nowSQL, in5MinSQL]);
+
+            // Mostrar toast para citas no notificadas
+            upcomingAppointments.forEach(apt => {
+                if (!notifiedAppointments.has(apt.id)) {
+                    showAppointmentReminderToast(apt);
+                    notifiedAppointments.add(apt.id);
+                    sessionStorage.setItem('notifiedAppointments', JSON.stringify([...notifiedAppointments]));
+                }
+            });
+        } catch (err) {
+            console.error('Error verificando citas próximas:', err);
+        }
+    }
+
+
+
+    // Mostrar modal de recordatorio (diseño simple consistente con la app)
+    function showAppointmentReminderToast(apt) {
+        const appointmentTime = new Date(apt.fecha_hora);
+        const timeStr = formatDisplayTimeFromString(formatTime(appointmentTime), config.timeFormat);
+
+        const especialistaInfo = apt.especialista_nombre
+            ? `${apt.especialista_nombre} - ${apt.especialista_especialidad}`
+            : 'Sin especialista asignado';
+
+        // Crear overlay modal
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] animate-fadeIn';
+        overlay.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-200 dark:border-gray-700 animate-scaleIn">
+                <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold">¡Cita Próxima!</h3>
+                            <p class="text-white/80 text-sm">La cita está por comenzar</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 space-y-4">
+                    <div class="bg-[#F8F7F7] dark:bg-gray-700 rounded-xl p-4">
+                        <h4 class="text-lg font-bold text-[#0F2532] dark:text-white mb-2">
+                            ${apt.nombre} ${apt.apellido}
+                        </h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                <span>🕐</span>
+                                <span class="font-semibold">${timeStr}</span>
+                            </div>
+                            ${apt.motivo ? `
+                                <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                    <span>📋</span>
+                                    <span>${apt.motivo}</span>
+                                </div>
+                            ` : ''}
+                            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
+                                <span>👨‍⚕️</span>
+                                <span>${especialistaInfo}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 font-medium">
+                            Actualizar estado de la cita:
+                        </p>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="handleAppointmentAction(${apt.id}, 'confirmado', this)" 
+                                    class="px-4 py-3 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                                ✓ Confirmar
+                            </button>
+                            <button onclick="handleAppointmentAction(${apt.id}, 'atendido', this)" 
+                                    class="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                                ✓ Atendido
+                            </button>
+                            <button onclick="handleAppointmentAction(${apt.id}, 'cancelado', this)" 
+                                    class="px-4 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                                ✗ Cancelar
+                            </button>
+                            <button onclick="this.closest('.animate-fadeIn').remove()" 
+                                    class="px-4 py-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-white text-sm font-semibold rounded-lg transition-colors">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Auto-remover después de 60 segundos si no se interactúa
+        setTimeout(() => {
+            if (overlay.parentElement) {
+                overlay.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => overlay.remove(), 300);
+            }
+        }, 60000);
+    }
+
+
+
+
+    // Manejar acción de confirmación/cancelación
+    window.handleAppointmentAction = async (appointmentId, newStatus, button) => {
+        try {
+            await window.api.db.run(
+                'UPDATE citas SET estado = ? WHERE id = ?',
+                [newStatus, appointmentId]
+            );
+
+            // Cerrar modal overlay
+            const overlay = button.closest('.animate-fadeIn');
+            if (overlay) {
+                overlay.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => overlay.remove(), 300);
+            }
+
+            // Mostrar confirmación
+            const statusText = newStatus === 'confirmado' ? 'confirmada' : 'cancelada';
+            showToast(`Cita ${statusText} exitosamente`, 'success');
+
+            // Recargar citas si estamos en la vista actual
+            await loadAppointments();
+        } catch (err) {
+            showToast('Error al actualizar la cita: ' + err.message, 'error');
+        }
+    };
+
+
+
+    // Agregar estilos de animación
+    if (!document.getElementById('reminder-animations')) {
+        const style = document.createElement('style');
+        style.id = 'reminder-animations';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+            @keyframes scaleIn {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            .animate-fadeIn {
+                animation: fadeIn 0.3s ease;
+            }
+            .animate-scaleIn {
+                animation: scaleIn 0.3s ease;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+
+    // Iniciar verificación de citas cada minuto
+    reminderInterval = setInterval(checkUpcomingAppointments, 60000);
+    // Verificar inmediatamente al cargar
+    checkUpcomingAppointments();
+
+    // Limpiar intervalo al salir
+    window.addEventListener('beforeunload', () => {
+        if (reminderInterval) clearInterval(reminderInterval);
     });
 
     // Inicializar

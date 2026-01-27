@@ -5,12 +5,43 @@ export class NavbarComponent extends HTMLElement {
     super();
     this.menuOpen = false;
     this.adminDropdownOpen = false;
+    this.boundRefreshUser = this.refreshUser.bind(this);
+    this.handleStorageEvent = this.handleStorageEvent.bind(this);
+  }
+
+  resolveUserFromSession() {
+    const attrName = this.getAttribute('user-name');
+    const attrRole = this.getAttribute('user-role');
+
+    // Load persisted session data for fallbacks.
+    let session = {};
+    try {
+      session = JSON.parse(localStorage.getItem('sesionActual') || '{}') || {};
+    } catch (e) {
+      session = {};
+    }
+
+    const sessionName = [session.nombre, session.apellido].filter(Boolean).join(' ').trim();
+    const storedName = localStorage.getItem('userName') || '';
+
+    return {
+      userName: attrName || sessionName || storedName || 'Usuario',
+      userRole: attrRole || session.rol || 'Administrador'
+    };
+  }
+
+  refreshUser() {
+    const { userName, userRole } = this.resolveUserFromSession();
+    this.updateUser(userName, userRole);
+  }
+
+  handleStorageEvent(e) {
+    if (!e || (e.key !== 'sesionActual' && e.key !== 'userName')) return;
+    this.refreshUser();
   }
 
   async connectedCallback() {
     const currentPage = this.getAttribute('current') || '';
-    const userName = this.getAttribute('user-name') || 'Usuario';
-    const userRole = this.getAttribute('user-role') || 'Administrador';
 
     try {
       const response = await fetch('../components/navbar-component.html');
@@ -18,15 +49,23 @@ export class NavbarComponent extends HTMLElement {
       this.innerHTML = html;
 
       requestAnimationFrame(() => {
-        this.updateUser(userName, userRole);
+        this.refreshUser();
         this.renderNavigation(currentPage);
         this.renderAdminDropdown();
         this.attachEventListeners();
       });
 
+      // Keep navbar in sync if session data changes.
+      window.addEventListener('session-updated', this.boundRefreshUser);
+      window.addEventListener('storage', this.handleStorageEvent);
     } catch (error) {
       console.error('Error cargando navbar:', error);
     }
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('session-updated', this.boundRefreshUser);
+    window.removeEventListener('storage', this.handleStorageEvent);
   }
 
   escapeHtml(text) {

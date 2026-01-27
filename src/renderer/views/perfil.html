@@ -25,16 +25,26 @@
 
       <!-- Header -->
       <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
-            Cuenta
-          </p>
-          <h1 class="text-2xl md:text-3xl font-bold text-[#1D5D69] dark:text-white">
-            Mi perfil
-          </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Administra tus datos personales, foto de perfil y preferencias de la cuenta.
-          </p>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <img id="profile-avatar-header" alt="Foto de perfil"
+              class="w-14 h-14 rounded-full object-cover border-2 border-[#4EABBE] shadow-sm hidden" />
+            <div id="profile-avatar-header-fallback"
+              class="w-14 h-14 rounded-full bg-gradient-to-br from-[#4EABBE] to-[#8BCFDD] flex items-center justify-center text-white text-lg font-semibold shadow-sm">
+              <span id="profile-avatar-header-initials">ND</span>
+            </div>
+          </div>
+          <div>
+            <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
+              Cuenta
+            </p>
+            <h1 class="text-2xl md:text-3xl font-bold text-[#1D5D69] dark:text-white">
+              Mi perfil
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Administra tus datos personales y foto de perfil.
+            </p>
+          </div>
         </div>
 
         <div class="flex flex-wrap gap-3">
@@ -158,7 +168,7 @@
 
         </section>
 
-        <!-- Columna derecha: Avatar + Stats + Preferencias -->
+        <!-- Columna derecha: Avatar + Stats -->
         <aside class="space-y-6">
 
           <!-- Card: Resumen + foto de perfil -->
@@ -212,45 +222,6 @@
                 <dd id="last-login-text" class="font-medium text-[#0F2532] dark:text-white">—</dd>
               </div>
             </dl>
-          </div>
-
-          <!-- Card: Preferencias -->
-          <div
-            class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-[#E5EEF1] dark:border-gray-700 p-6 space-y-4">
-            <div>
-              <p class="text-xs font-semibold tracking-[0.14em] uppercase text-[#8BCFDD] dark:text-blue-300">
-                Preferencias
-              </p>
-              <h2 class="text-lg font-semibold text-[#1D5D69] dark:text-white">Experiencia de uso</h2>
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Estas opciones se guardan localmente en este equipo.
-              </p>
-            </div>
-
-            <div class="space-y-3 text-sm">
-              <label class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="font-medium text-[#0F2532] dark:text-white">Notificaciones por correo</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Recibir resúmenes de agenda y recordatorios importantes.
-                  </p>
-                </div>
-                <input id="pref-email-notifications" type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#4EABBE] focus:ring-[#4EABBE]" />
-              </label>
-
-              <label
-                class="flex items-center justify-between gap-3 pt-2 border-t border-[#E5EEF1] dark:border-gray-700">
-                <div>
-                  <p class="font-medium text-[#0F2532] dark:text-white">Modo compacto</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    Reduce el espaciado en tablas y listados.
-                  </p>
-                </div>
-                <input id="pref-compact-mode" type="checkbox"
-                  class="h-4 w-4 rounded border-gray-300 text-[#4EABBE] focus:ring-[#4EABBE]" />
-              </label>
-            </div>
           </div>
 
         </aside>

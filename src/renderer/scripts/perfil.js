@@ -39,6 +39,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  const buildDisplayName = (nombre = '', apellido = '') =>
+    [nombre, apellido].filter(Boolean).join(' ').trim();
+
+  const syncSessionFromProfile = (perfil = {}) => {
+    let session = {};
+    try {
+      session = JSON.parse(localStorage.getItem('sesionActual') || '{}') || {};
+    } catch (e) {
+      session = {};
+    }
+
+    session.nombre = perfil.nombre || session.nombre || '';
+    session.apellido = perfil.apellido || session.apellido || '';
+    session.email = perfil.email || session.email || '';
+    session.rol = perfil.rol || session.rol || '';
+
+    const displayName =
+      buildDisplayName(session.nombre, session.apellido) ||
+      session.nombre ||
+      'Usuario';
+
+    try {
+      localStorage.setItem('sesionActual', JSON.stringify(session));
+      localStorage.setItem('userName', displayName);
+    } catch (e) { }
+
+    sesion.nombre = session.nombre;
+    sesion.apellido = session.apellido;
+    sesion.email = session.email;
+    sesion.rol = session.rol;
+
+    window.dispatchEvent(
+      new CustomEvent('session-updated', { detail: { session } })
+    );
+  };
+
   // ---------- Estado ----------
   const sesion = safeParseJSON(localStorage.getItem('sesionActual')) || {};
   let userId = sesion.id || null;
@@ -79,10 +115,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const avatarImg = document.getElementById('profile-avatar');
   const avatarFallback = document.getElementById('profile-avatar-fallback');
   const avatarInitialsEl = document.getElementById('profile-avatar-initials');
+  const avatarHeaderImg = document.getElementById('profile-avatar-header');
+  const avatarHeaderFallback = document.getElementById('profile-avatar-header-fallback');
+  const avatarHeaderInitials = document.getElementById('profile-avatar-header-initials');
   const photoInput = document.getElementById('photoInput');
-
-  const prefEmail = document.getElementById('pref-email-notifications');
-  const prefCompact = document.getElementById('pref-compact-mode');
 
   // ---------- Funciones UI ----------
   const setFormDisabled = (disabled) => {
@@ -137,6 +173,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (avatarInitialsEl) {
       avatarInitialsEl.textContent = initials;
     }
+    if (avatarHeaderInitials) {
+      avatarHeaderInitials.textContent = initials;
+    }
 
     const foto = perfil.foto_perfil || null;
 
@@ -144,27 +183,18 @@ document.addEventListener('DOMContentLoaded', () => {
       avatarImg.src = foto;
       avatarImg.classList.remove('hidden');
       avatarFallback.classList.add('hidden');
+      if (avatarHeaderImg && avatarHeaderFallback) {
+        avatarHeaderImg.src = foto;
+        avatarHeaderImg.classList.remove('hidden');
+        avatarHeaderFallback.classList.add('hidden');
+      }
     } else if (avatarImg && avatarFallback) {
       avatarImg.classList.add('hidden');
       avatarFallback.classList.remove('hidden');
-    }
-  };
-
-  const loadPreferences = () => {
-    if (prefEmail) {
-      prefEmail.checked = localStorage.getItem('perfil_pref_email_notif') === '1';
-    }
-    if (prefCompact) {
-      prefCompact.checked = localStorage.getItem('perfil_pref_compact_mode') === '1';
-    }
-  };
-
-  const savePreferences = () => {
-    if (prefEmail) {
-      localStorage.setItem('perfil_pref_email_notif', prefEmail.checked ? '1' : '0');
-    }
-    if (prefCompact) {
-      localStorage.setItem('perfil_pref_compact_mode', prefCompact.checked ? '1' : '0');
+      if (avatarHeaderImg && avatarHeaderFallback) {
+        avatarHeaderImg.classList.add('hidden');
+        avatarHeaderFallback.classList.remove('hidden');
+      }
     }
   };
 
@@ -212,10 +242,10 @@ document.addEventListener('DOMContentLoaded', () => {
       state.perfil = perfil;
       state.pendingPhotoData = null;
 
+      syncSessionFromProfile(perfil);
       fillForm(perfil);
       updateHeader(perfil);
       updateAvatar(perfil);
-      loadPreferences();
       setFormDisabled(true);
       if (actionsBar) actionsBar.classList.add('hidden');
       if (editBtn) editBtn.style.display = 'inline-flex';
@@ -322,13 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (photoInput) {
     photoInput.addEventListener('change', handlePhotoChange);
-  }
-
-  if (prefEmail) {
-    prefEmail.addEventListener('change', savePreferences);
-  }
-  if (prefCompact) {
-    prefCompact.addEventListener('change', savePreferences);
   }
 
   if (refreshBtn) {

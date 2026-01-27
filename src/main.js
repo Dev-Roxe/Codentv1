@@ -38,7 +38,7 @@ const createWindow = () => {
 // USER REGISTRATION
 // -------------------------------------------------------------
 ipcMain.handle('register-user', async (event, userData) => {
-  const hashedPassword = bcrypt.hashSync(userData.password, 10);
+  const hashedPassword = userData.password ? bcrypt.hashSync(userData.password, 10) : '';
 
   return new Promise((resolve, reject) => {
     db.run(
@@ -60,18 +60,139 @@ ipcMain.handle('login-user', async (event, userData) => {
     const lookup = userData.email;
 
     db.get(
-      `SELECT * FROM usuarios WHERE email = ? OR nombre = ?`,
+      `SELECT \n          id,\n          nombre,\n          COALESCE(apellido, apellidos, '') AS apellido,\n          rol,\n          password,\n          auth_provider,\n          email\n        FROM usuarios\n        WHERE email = ? OR nombre = ?`,
       [lookup, lookup],
       (err, row) => {
         if (err) return reject(err);
         if (!row) return reject(new Error('Usuario no encontrado'));
 
+        // For OAuth users, password is not required
+        if (row.auth_provider === 'google') {
+          return resolve({ id: row.id, nombre: row.nombre, apellido: row.apellido, rol: row.rol, email: row.email });
+        }
+
+        // For local users, verify password
         const match = bcrypt.compareSync(userData.password, row.password);
-        if (match) resolve({ id: row.id, nombre: row.nombre, rol: row.rol });
+        if (match) resolve({ id: row.id, nombre: row.nombre, apellido: row.apellido, rol: row.rol, email: row.email });
         else reject(new Error('Contraseña incorrecta'));
       }
     );
   });
+});
+
+// -------------------------------------------------------------
+// GOOGLE OAUTH
+// -------------------------------------------------------------
+const { authenticateWithGoogle } = require('./main/google/google-oauth-service');
+
+ipcMain.handle('google-oauth-authenticate', async () => {
+  try {
+    const userInfo = await authenticateWithGoogle();
+
+    // Check if user exists
+    return new Promise((resolve, reject) => {
+      db.get(
+        'SELECT * FROM usuarios WHERE email = ? OR google_id = ?',
+        [userInfo.email, userInfo.googleId],
+        (err, existingUser) => {
+          if (err) return reject(err);
+
+          if (existingUser) {
+            // Update Google ID if not set
+            if (!existingUser.google_id) {
+              db.run(
+                'UPDATE usuarios SET google_id = ?, auth_provider = ?, email_verified = ? WHERE id = ?',
+                [userInfo.googleId, 'google', userInfo.emailVerified ? 1 : 0, existingUser.id],
+                (err) => {
+                  if (err) console.error('Error updating user with Google ID:', err);
+                }
+              );
+            }
+
+            return resolve({
+              success: true,
+              isNewUser: false,
+              user: { id: existingUser.id, nombre: existingUser.nombre, apellido: (existingUser.apellido || existingUser.apellidos || ''), rol: existingUser.rol, email: existingUser.email }
+            });
+          }
+
+          // New user - needs to select role
+          return resolve({
+            success: true,
+            isNewUser: true,
+            needsRole: true,
+            userInfo: userInfo // Return user info to use after role selection
+          });
+        }
+      );
+    });
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+// Complete OAuth registration with selected role
+ipcMain.handle('complete-oauth-registration', async (event, { userInfo, role }) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO usuarios (nombre, apellido, email, password, rol, google_id, auth_provider, email_verified, foto_perfil) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userInfo.nombre,
+        userInfo.apellido,
+        userInfo.email,
+        '',
+        role,
+        userInfo.googleId,
+        'google',
+        userInfo.emailVerified ? 1 : 0,
+        userInfo.fotoPerfil
+      ],
+      function (err) {
+        if (err) return reject(err);
+        resolve({
+          success: true,
+          user: { id: this.lastID, nombre: userInfo.nombre, apellido: userInfo.apellido || '', rol: role, email: userInfo.email }
+        });
+      }
+    );
+  });
+});
+
+// -------------------------------------------------------------
+// PASSWORD RECOVERY
+// -------------------------------------------------------------
+const {
+  requestPasswordReset,
+  validateResetToken,
+  resetPassword
+} = require('./main/password-recovery-service');
+
+ipcMain.handle('request-password-reset', async (event, email) => {
+  try {
+    const result = await requestPasswordReset(email);
+    return result;
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('validate-reset-token', async (event, token) => {
+  try {
+    const result = await validateResetToken(token);
+    return result;
+  } catch (e) {
+    return { valid: false, error: e.message };
+  }
+});
+
+ipcMain.handle('reset-password', async (event, { token, newPassword }) => {
+  try {
+    const result = await resetPassword(token, newPassword);
+    return result;
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 });
 
 // -------------------------------------------------------------
@@ -299,6 +420,8 @@ ipcMain.handle('send-bulk-email', async (event, payload = {}) => {
   const subject = payload.subject || '';
   const body = payload.body || '';
   const attachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+  const throttleMs = Number(payload.throttleMs || 0);
+  const delayMs = Number.isFinite(throttleMs) ? Math.max(0, throttleMs) : 0;
 
   if (!recipients.length) {
     return { success: false, sent: 0, failed: 0, error: 'No recipients provided' };
@@ -332,6 +455,10 @@ ipcMain.handle('send-bulk-email', async (event, payload = {}) => {
         total: recipients.length,
       });
     }
+
+    if (delayMs && i < recipients.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
   }
 
   return {
@@ -352,9 +479,25 @@ ipcMain.handle('gmail-send', async (event, { to, subject, html, attachments }) =
   }
 });
 
+// -------------------------------------------------------------
+// APPOINTMENT NOTIFICATIONS
+// -------------------------------------------------------------
+const { sendAppointmentNotification } = require('./main/appointment-notification');
+
+ipcMain.handle('send-appointment-notification', async (event, appointmentData) => {
+  try {
+    const success = await sendAppointmentNotification(appointmentData);
+    return { success };
+  } catch (e) {
+    console.error('[IPC] Error sending appointment notification:', e);
+    return { success: false, error: e.message };
+  }
+});
+
 ipcMain.handle("open-external", async (event, url) => {
   const { shell } = require("electron");
   await shell.openExternal(url);
   return true;
 });
+
 
