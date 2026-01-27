@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { resolveDbPath } = require('../src/db/db-path');
 
 let sqlite3 = null;
 try {
@@ -8,22 +9,32 @@ try {
   console.warn('[clean-db] sqlite3 no disponible, se eliminara el archivo DB directamente.');
 }
 
-const dbPath = path.join(__dirname, '..', 'src', 'db', 'consultorio.db');
+const dbPath = resolveDbPath();
+const localDbPath = path.join(__dirname, '..', 'src', 'db', 'consultorio.db');
+
+const deleteFile = (target) => {
+  if (!target || !fs.existsSync(target)) return;
+  try {
+    fs.unlinkSync(target);
+    console.log(`[clean-db] DB eliminada: ${target}`);
+  } catch (err) {
+    console.warn(`[clean-db] No se pudo eliminar ${target}:`, err.message);
+  }
+};
 
 if (!fs.existsSync(dbPath)) {
-  console.log('[clean-db] No se encontro consultorio.db, nada que limpiar.');
-  process.exit(0);
+  console.log('[clean-db] No se encontro consultorio.db en userData, nada que limpiar.');
+} else if (!sqlite3) {
+  deleteFile(dbPath);
+}
+
+// Siempre eliminar la DB local del repo si existe
+if (localDbPath !== dbPath) {
+  deleteFile(localDbPath);
 }
 
 if (!sqlite3) {
-  try {
-    fs.unlinkSync(dbPath);
-    console.log('[clean-db] DB eliminada para limpieza completa.');
-    process.exit(0);
-  } catch (err) {
-    console.error('[clean-db] No se pudo eliminar la DB:', err.message);
-    process.exit(1);
-  }
+  process.exit(0);
 }
 
 const db = new sqlite3.Database(dbPath, (err) => {

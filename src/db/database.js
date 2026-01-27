@@ -1,7 +1,14 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
+const { resolveDbPath } = require('./db-path');
 
-const dbPath = path.join(__dirname, 'consultorio.db');
+const dbPath = resolveDbPath();
+try {
+    fs.mkdirSync(path.dirname(dbPath), { recursive: true });
+} catch (e) {
+    console.warn('No se pudo crear el directorio de la DB:', e && e.message);
+}
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) return console.error('Error al conectar a la DB', err);
     console.log('Conectado a SQLite');
