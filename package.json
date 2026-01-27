@@ -34,6 +34,7 @@
   "build": {
     "appId": "com.nerick.codent",
     "productName": "Codent",
+    "icon": "src/renderer/assets/icons/app.ico",
     "directories": {
       "output": "dist"
     },
@@ -43,6 +44,7 @@
     ],
     "asar": true,
     "win": {
+      "icon": "src/renderer/assets/icons/app.ico",
       "target": [
         "nsis"
       ]
