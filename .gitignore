@@ -2,8 +2,15 @@
 node_modules/
 
 # Database files (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+*.db-journal
 src/db/*.db
 src/db/consultorio.db
+/codent.db
 
 # Tailwind output CSS
 src/renderer/styles/output.css
@@ -23,6 +30,12 @@ Thumbs.db
 *.asar
 *.asar.pack
 electron-bin/
+
+# Secrets / local config
+.env
+.env.*
+src/main/google/credentials.json
+src/main/google/token.json
 
 # Configuración local de IDE
 .vscode/
