@@ -40,6 +40,7 @@ async function generateAuthUrl() {
         access_type: "offline",
         prompt: "consent",
         scope: SCOPES,
+        redirect_uri: "urn:ietf:wg:oauth:2.0:oob"
     });
 }
 

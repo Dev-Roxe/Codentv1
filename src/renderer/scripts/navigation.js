@@ -122,8 +122,15 @@ export function setUserName(name) {
  * Cierra sesión del usuario
  */
 export function logout() {
+  localStorage.removeItem('sesionActual');
   localStorage.removeItem('userName');
   localStorage.removeItem('userToken');
+  localStorage.removeItem('sesionLastLogin');
+  try {
+    sessionStorage.removeItem('notified_appointments');
+    sessionStorage.removeItem('notifiedAppointments');
+    sessionStorage.removeItem('openAdminMenu');
+  } catch (e) { }
   navigateTo('login');
 }
 

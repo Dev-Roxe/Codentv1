@@ -37,6 +37,10 @@ db.serialize(() => {
         if (!cols.includes('fecha_nacimiento')) toAdd.push("fecha_nacimiento DATE");
         if (!cols.includes('direccion')) toAdd.push("direccion TEXT");
         if (!cols.includes('foto_perfil')) toAdd.push("foto_perfil TEXT");
+        // OAuth columns (UNIQUE constraint cannot be added via ALTER TABLE in SQLite)
+        if (!cols.includes('google_id')) toAdd.push("google_id TEXT");
+        if (!cols.includes('auth_provider')) toAdd.push("auth_provider TEXT DEFAULT 'local'");
+        if (!cols.includes('email_verified')) toAdd.push("email_verified INTEGER DEFAULT 0");
 
         toAdd.forEach(colDef => {
             try {
@@ -48,6 +52,17 @@ db.serialize(() => {
             }
         });
     });
+
+    // Password reset tokens table
+    db.run(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at DATETIME NOT NULL,
+        used INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(user_id) REFERENCES usuarios(id) ON DELETE CASCADE
+    )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS pacientes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -550,6 +565,27 @@ db.serialize(() => {
         FOREIGN KEY(template_id) REFERENCES crm_templates(id)
     )`);
 
+    // CRM survey logs
+    db.run(`CREATE TABLE IF NOT EXISTS crm_encuestas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        titulo TEXT NOT NULL,
+        link TEXT NOT NULL,
+        destinatarios INTEGER DEFAULT 0,
+        enviado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // CRM survey templates
+    db.run(`CREATE TABLE IF NOT EXISTS crm_encuestas_plantillas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        titulo TEXT NOT NULL,
+        link TEXT NOT NULL,
+        descripcion TEXT,
+        activo INTEGER DEFAULT 1,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion DATETIME
+    )`);
+
     // Ensure CRM template columns exist (for older DBs)
     db.all("PRAGMA table_info(crm_templates)", (err, rows) => {
         if (err) return console.error('Error leyendo info de tabla crm_templates', err);
@@ -637,6 +673,12 @@ db.serialize(() => {
     });
     db.run(`CREATE INDEX IF NOT EXISTS idx_crm_recordatorios_cita ON crm_recordatorios(cita_id)`, (err) => {
         if (!err) console.log('Created index: idx_crm_recordatorios_cita');
+    });
+    db.run(`CREATE INDEX IF NOT EXISTS idx_crm_encuestas_fecha ON crm_encuestas(enviado_en)`, (err) => {
+        if (!err) console.log('Created index: idx_crm_encuestas_fecha');
+    });
+    db.run(`CREATE INDEX IF NOT EXISTS idx_crm_encuestas_plantillas_activo ON crm_encuestas_plantillas(activo)`, (err) => {
+        if (!err) console.log('Created index: idx_crm_encuestas_plantillas_activo');
     });
 
     // Crear índices para mejorar el rendimiento

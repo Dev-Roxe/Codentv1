@@ -11,6 +11,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!contenedor) return console.error('No se encontró #agendaContainer');
 
+  const safeParseJSON = (value, fallback = {}) => {
+    if (!value) return fallback;
+    try {
+      return JSON.parse(value);
+    } catch (err) {
+      console.warn('[agenda] JSON inválido en app_settings:', err);
+      return fallback;
+    }
+  };
+
   async function cargarVista(vista, dateStr) {
     try {
       const res = await fetch(`./Agendas/${vista}.html`);
@@ -118,6 +128,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Carga inicial
-  cargarVista('diaria');
+  // Carga inicial según configuración
+  const settings = safeParseJSON(localStorage.getItem('app_settings'), {});
+  const initialView = settings.weeklyView ? 'semanal' : 'diaria';
+  cargarVista(initialView);
 });

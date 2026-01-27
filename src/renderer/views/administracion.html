@@ -88,6 +88,16 @@
               <span>Miscelánea</span>
             </div>
           </button>
+          <button id="tab-especialistas"
+            class="tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700">
+            <div class="flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span>Especialistas</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -509,6 +519,113 @@
           </div>
         </div>
       </div>
+
+      <!-- Contenido de Especialistas -->
+      <div id="content-especialistas" class="tab-content hidden space-y-6">
+
+        <!-- Header con Búsqueda y Botones -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-[#1D5D69] dark:text-slate-400 font-semibold mb-2">Gestión
+            </p>
+            <h2 class="text-2xl font-bold text-[#0F2532] dark:text-white">Especialistas</h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <div class="relative">
+              <input type="text" id="searchEspecialistas" placeholder="Buscar especialista..."
+                class="pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] w-64">
+              <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
+              </svg>
+            </div>
+
+            <button id="newEspecialistaBtn"
+              class="flex items-center gap-2 px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] transition font-semibold shadow-md">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Nuevo Especialista
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Total Especialistas</p>
+                <p id="statTotalEspecialistas" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Activos</p>
+                <p id="statActivosEspecialistas" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-white dark:bg-[#0E1A25] rounded-xl border border-[#D9D9D9] dark:border-slate-800 p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-sm font-medium text-[#0F2532]/60 dark:text-gray-400">Especialidades</p>
+                <p id="statEspecialidades" class="text-3xl font-bold text-[#0F2532] dark:text-white mt-1">0</p>
+              </div>
+              <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Especialistas -->
+        <div
+          class="bg-white dark:bg-[#0E1A25] rounded-xl shadow-sm border border-[#D9D9D9] dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white">
+                <tr>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Nombre</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Especialidad</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Teléfono</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Email</th>
+                  <th class="py-4 px-6 text-left font-semibold text-sm">Estado</th>
+                  <th class="py-4 px-6 text-center font-semibold text-sm">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="especialistas-list" class="divide-y divide-[#E6E6E6] dark:divide-slate-700">
+                <!-- Los especialistas se cargarán dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -836,6 +953,79 @@
 
         <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
           <button type="button" id="cancel-miscelanea"
+            class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+            Cancelar
+          </button>
+          <button type="submit"
+            class="px-6 py-2 rounded-lg bg-[#4EABBE] text-white font-semibold hover:bg-[#1D5D69] transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal para Agregar/Editar Especialista -->
+  <div id="modal-especialista"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div
+      class="bg-white dark:bg-[#0E1A25] border border-gray-300 dark:border-slate-800 rounded-2xl w-full max-w-2xl p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modal-especialista-title" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Especialista
+        </h2>
+        <button id="close-modal-especialista"
+          class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
+          ×
+        </button>
+      </div>
+
+      <form id="form-especialista" class="space-y-5">
+        <input type="hidden" id="especialista-id-input" />
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Nombre Completo *
+          </label>
+          <input type="text" name="nombre" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            Especialidad *
+          </label>
+          <input type="text" name="especialidad" required
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent"
+            placeholder="Ej: Endodoncia, Ortodoncia, Periodoncia" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Teléfono
+            </label>
+            <input type="tel" name="telefono"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              Email
+            </label>
+            <input type="email" name="email"
+              class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-transparent" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input type="checkbox" name="activo" checked id="especialista-activo"
+            class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-[#4EABBE] focus:ring-2 focus:ring-[#4EABBE]" />
+          <label for="especialista-activo" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Especialista activo
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-slate-700">
+          <button type="button" id="cancel-especialista"
             class="px-5 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
             Cancelar
           </button>

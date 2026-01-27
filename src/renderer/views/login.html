@@ -63,7 +63,7 @@
                 class="w-4 h-4 text-[#4EABBE] border-gray-300 dark:border-gray-600 rounded focus:ring-[#4EABBE] bg-white dark:bg-gray-700">
               <span class="ml-2 text-xs text-gray-600 dark:text-gray-400">Recordarme</span>
             </label>
-            <a href="#" class="text-xs text-[#4EABBE] hover:text-[#3d8a99] font-medium">
+            <a href="#" id="forgotPasswordLink" class="text-xs text-[#4EABBE] hover:text-[#3d8a99] font-medium">
               ¿Olvidaste tu contraseña?
             </a>
           </div>
@@ -88,7 +88,7 @@
 
         <!-- Opciones alternativas -->
         <div class="space-y-3">
-          <button
+          <button id="googleSignInBtn"
             class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800">
             <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="#4285F4"
@@ -102,15 +102,61 @@
             </svg>
             Google
           </button>
+        </div>
 
-          <button
-            class="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800">
-            <svg class="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
-              <path
-                d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-            </svg>
-            Facebook
-          </button>
+        <!-- Role Selection Modal for OAuth -->
+        <div id="roleSelectionModal"
+          class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div
+            class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700">
+            <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Selecciona tu Rol</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Para completar tu registro, selecciona el rol que
+              mejor describe tu función</p>
+
+            <div class="space-y-3">
+              <button data-role="Administrador"
+                class="role-option w-full flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#4EABBE] hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left">
+                <div class="flex-shrink-0 w-10 h-10 bg-[#4EABBE]/10 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">Administrador</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Acceso completo al sistema</p>
+                </div>
+              </button>
+
+              <button data-role="Especialista"
+                class="role-option w-full flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#4EABBE] hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left">
+                <div class="flex-shrink-0 w-10 h-10 bg-[#4EABBE]/10 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">Especialista</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Dentista o profesional de la salud</p>
+                </div>
+              </button>
+
+              <button data-role="Recepcionista"
+                class="role-option w-full flex items-start p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:border-[#4EABBE] hover:bg-gray-50 dark:hover:bg-gray-700 transition text-left">
+                <div class="flex-shrink-0 w-10 h-10 bg-[#4EABBE]/10 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 class="font-semibold text-gray-900 dark:text-white">Recepcionista</h3>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">Gestión de citas y pacientes</p>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Footer mobile -->
@@ -152,6 +198,122 @@
 
     </div>
 
+  </div>
+
+  <!-- Powered by roxedev -->
+  <div class="fixed bottom-4 left-0 right-0 flex justify-center">
+    <div class="flex flex-col items-center gap-1 opacity-50 hover:opacity-100 transition-opacity">
+      <span class="text-xs text-gray-500 dark:text-gray-400">Powered by</span>
+      <img src="../assets/images/roxedev-logo.png" alt="roxedev" class="h-16 w-auto dark:invert">
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700">
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Recuperar Contraseña</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Ingresa tu correo electrónico y te enviaremos un código
+        para restablecer tu contraseña</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Correo
+            Electrónico</label>
+          <input id="resetEmail" type="email" placeholder="correo@ejemplo.com" required
+            class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button id="cancelResetBtn"
+            class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200">
+            Cancelar
+          </button>
+          <button id="sendResetBtn"
+            class="flex-1 bg-[#4EABBE] text-white py-2.5 rounded-lg font-medium text-sm hover:bg-[#3d8a99] transition">
+            Enviar Código
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div id="resetPasswordModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700">
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Restablecer Contraseña</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Ingresa el código que recibiste por correo y tu nueva
+        contraseña</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Código
+            de Recuperación</label>
+          <input id="resetToken" type="text" placeholder="Pega aquí el código del correo" required
+            class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Nueva
+            Contraseña</label>
+          <input id="newPassword" type="password" placeholder="Mínimo 8 caracteres" required
+            class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
+        </div>
+
+        <div>
+          <label
+            class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Confirmar
+            Contraseña</label>
+          <input id="confirmPassword" type="password" placeholder="Repite tu contraseña" required
+            class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button id="cancelNewPasswordBtn"
+            class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200">
+            Cancelar
+          </button>
+          <button id="confirmResetBtn"
+            class="flex-1 bg-[#4EABBE] text-white py-2.5 rounded-lg font-medium text-sm hover:bg-[#3d8a99] transition">
+            Restablecer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Google OAuth Code Modal -->
+  <div id="googleOAuthModal"
+    class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div
+      class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl border border-gray-200 dark:border-gray-700">
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Conectar con Google</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Pega aquí el código de autorización que obtuviste de
+        Google</p>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Código
+            de Google</label>
+          <input id="googleAuthCode" type="text" placeholder="Pega el código aquí" required
+            class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button id="cancelGoogleAuthBtn"
+            class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition text-sm font-medium text-gray-700 dark:text-gray-200">
+            Cancelar
+          </button>
+          <button id="confirmGoogleAuthBtn"
+            class="flex-1 bg-[#4EABBE] text-white py-2.5 rounded-lg font-medium text-sm hover:bg-[#3d8a99] transition">
+            Conectar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="../scripts/login.js" type="module"></script>

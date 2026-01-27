@@ -10,6 +10,15 @@ contextBridge.exposeInMainWorld('api', {
     openView: (viewName) => ipcRenderer.invoke('open-view', viewName),
     getUserProfile: (params) => ipcRenderer.invoke('get-user-profile', params),
     updateUserProfile: (userData) => ipcRenderer.invoke('update-user-profile', userData),
+    // Google OAuth
+    googleOAuthAuthenticate: () => ipcRenderer.invoke('google-oauth-authenticate'),
+    completeOAuthRegistration: (userInfo, role) => ipcRenderer.invoke('complete-oauth-registration', { userInfo, role }),
+    // Password Recovery
+    requestPasswordReset: (email) => ipcRenderer.invoke('request-password-reset', email),
+    validateResetToken: (token) => ipcRenderer.invoke('validate-reset-token', token),
+    resetPassword: (token, newPassword) => ipcRenderer.invoke('reset-password', { token, newPassword }),
+    // Appointment Notifications
+    sendAppointmentNotification: (data) => ipcRenderer.invoke('send-appointment-notification', data),
     db: {
         all: (sql, params, cb) => {
             const p = ipcRenderer.invoke('db-all', sql, params || []);

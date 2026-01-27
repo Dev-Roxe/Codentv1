@@ -29,6 +29,16 @@ export async function initSemanal(container, referenceDate) {
     let selectedDentist = '';
     let selectedChair = '1';
 
+    const safeParseJSON = (value, fallback = {}) => {
+        if (!value) return fallback;
+        try {
+            return JSON.parse(value);
+        } catch (err) {
+            console.warn('[agenda_semanal] JSON inválido en app_settings:', err);
+            return fallback;
+        }
+    };
+
     // Selectores con validación
     const $ = (sel) => container.querySelector(sel);
     const prevWeekBtn = $('#prevWeek');
@@ -51,11 +61,23 @@ export async function initSemanal(container, referenceDate) {
     // Helpers
     const toSQLDate = (d) => d.toISOString().slice(0, 10);
     const formatTime = (d) => d.toTimeString().slice(0, 5);
+    const formatDisplayTimeFromString = (timeStr, timeFormat) => {
+        const [h, m] = (timeStr || '00:00').split(':').map(Number);
+        if (!Number.isFinite(h) || !Number.isFinite(m)) return timeStr;
+        if (timeFormat === '12h') {
+            const period = h >= 12 ? 'PM' : 'AM';
+            const hour12 = h % 12 || 12;
+            return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
+        }
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
 
     function startOfWeek(date) {
         const d = new Date(date);
         const day = d.getDay();
-        const diff = (day + 6) % 7;
+        const startDayRaw = parseInt(config.firstDayWeek ?? 1, 10);
+        const startDay = Number.isFinite(startDayRaw) ? startDayRaw : 1;
+        const diff = (day - startDay + 7) % 7;
         d.setDate(d.getDate() - diff);
         d.setHours(0, 0, 0, 0);
         return d;
@@ -67,18 +89,11 @@ export async function initSemanal(container, referenceDate) {
 
     // Cargar configuración del localStorage
     function loadConfig() {
-        const savedSettings = localStorage.getItem('app_settings');
+        const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {});
         let workDays = [1, 2, 3, 4, 5]; // Default: Lunes a Viernes
 
-        if (savedSettings) {
-            try {
-                const settings = JSON.parse(savedSettings);
-                if (settings.workDays && Array.isArray(settings.workDays)) {
-                    workDays = settings.workDays;
-                }
-            } catch (e) {
-                console.error('Error parsing settings:', e);
-            }
+        if (savedSettings && Array.isArray(savedSettings.workDays)) {
+            workDays = savedSettings.workDays.map((d) => parseInt(d, 10)).filter(Number.isFinite);
         }
 
         return {
@@ -86,8 +101,10 @@ export async function initSemanal(container, referenceDate) {
             workEnd: parseInt(localStorage.getItem('work-end')?.split(':')[0] || '18'),
             defaultDuration: parseInt(localStorage.getItem('default-duration') || '30'),
             appointmentInterval: parseInt(localStorage.getItem('appointment-interval') || '10'),
-            timeFormat: localStorage.getItem('time-format') || '24h',
-            workDays: workDays
+            timeFormat: localStorage.getItem('time-format') || savedSettings.timeFormat || '24h',
+            workDays: workDays,
+            firstDayWeek: savedSettings.firstDayWeek ?? '1',
+            autoConfirm: savedSettings.autoConfirm ?? false
         };
     }
 
@@ -131,6 +148,7 @@ export async function initSemanal(container, referenceDate) {
     async function renderWeek() {
         const weekStart = startOfWeek(refDate);
         const days = [];
+        const locale = 'es-ES';
 
         for (let i = 0; i < 7; i++) {
             const d = new Date(weekStart);
@@ -139,8 +157,8 @@ export async function initSemanal(container, referenceDate) {
             const isWorkDay = config.workDays.includes(dayOfWeek);
 
             days.push({
-                name: d.toLocaleString('es-ES', { weekday: 'short' }).replace(/^./, s => s.toUpperCase()),
-                fullName: d.toLocaleString('es-ES', { weekday: 'long' }).replace(/^./, s => s.toUpperCase()),
+                name: d.toLocaleString(locale, { weekday: 'short' }).replace(/^./, s => s.toUpperCase()),
+                fullName: d.toLocaleString(locale, { weekday: 'long' }).replace(/^./, s => s.toUpperCase()),
                 day: d.getDate(),
                 date: toSQLDate(d),
                 isToday: isToday(toSQLDate(d)),
@@ -151,7 +169,7 @@ export async function initSemanal(container, referenceDate) {
 
         // Actualizar mes/año
         if (currentMonthYear) {
-            const monthYear = weekStart.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+            const monthYear = weekStart.toLocaleString(locale, { month: 'long', year: 'numeric' });
             currentMonthYear.textContent = monthYear.replace(/^./, s => s.toUpperCase());
         }
 
@@ -161,12 +179,14 @@ export async function initSemanal(container, referenceDate) {
 
         try {
             let sql = `
-                SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado, c.dentista_id, c.monto,
+                SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado, c.dentista_id, c.monto, c.especialista_id,
                        p.nombre, p.apellido,
-                       u.nombre as dentista_nombre, u.apellido as dentista_apellido
+                       u.nombre as dentista_nombre, u.apellido as dentista_apellido,
+                       e.nombre as especialista_nombre, e.especialidad as especialista_especialidad
                 FROM citas c
                 JOIN pacientes p ON p.id = c.paciente_id
                 LEFT JOIN usuarios u ON u.id = c.dentista_id
+                LEFT JOIN especialistas e ON e.id = c.especialista_id
                 WHERE date(c.fecha_hora) BETWEEN ? AND ?
                 ORDER BY c.fecha_hora
             `;
@@ -227,7 +247,7 @@ export async function initSemanal(container, referenceDate) {
             // Celda de hora
             const timeCell = document.createElement('div');
             timeCell.className = 'time-cell bg-[#F9FAFB] dark:bg-gray-900 border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors';
-            timeCell.textContent = time;
+            timeCell.textContent = formatDisplayTimeFromString(time, config.timeFormat);
             grid.appendChild(timeCell);
 
             // Celdas por día
@@ -293,11 +313,15 @@ export async function initSemanal(container, referenceDate) {
     // Modal para crear cita
     async function openCreateModal(dateStr, timeStr) {
         let patients = [];
+        let especialistas = [];
         try {
             patients = await window.api.db.all('SELECT id, nombre, apellido FROM pacientes ORDER BY nombre');
+            especialistas = await window.api.db.all('SELECT id, nombre, especialidad FROM especialistas WHERE activo = 1 ORDER BY nombre');
         } catch (err) {
-            return alert('Error cargando pacientes');
+            return alert('Error cargando datos');
         }
+
+        const displayTime = formatDisplayTimeFromString(timeStr, config.timeFormat);
 
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
@@ -305,7 +329,7 @@ export async function initSemanal(container, referenceDate) {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700" style="animation: slideUp 0.3s ease">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">Nueva Cita</h3>
-                    <p class="text-white/70 text-sm mt-1">${dateStr} a las ${timeStr}</p>
+                    <p class="text-white/70 text-sm mt-1">${dateStr} a las ${displayTime}</p>
                 </div>
                 <form id="createAptFormWeekly" class="p-6 space-y-4">
                     <div>
@@ -316,10 +340,10 @@ export async function initSemanal(container, referenceDate) {
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Dentista</label>
-                        <select id="aptDentistW" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Especialista</label>
+                        <select id="aptEspecialistaW" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
                             <option value="">Sin asignar</option>
-                            ${dentists.map(d => `<option value="${d.id}">Dr(a). ${d.nombre} ${d.apellido}</option>`).join('')}
+                            ${especialistas.map(e => `<option value="${e.id}">${e.nombre} - ${e.especialidad}</option>`).join('')}
                         </select>
                     </div>
                     <div>
@@ -342,16 +366,60 @@ export async function initSemanal(container, referenceDate) {
         overlay.querySelector('#createAptFormWeekly').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pacienteId = overlay.querySelector('#aptPatientW').value;
-            const dentistaId = overlay.querySelector('#aptDentistW').value || null;
+            const especialistaId = overlay.querySelector('#aptEspecialistaW').value || null;
             const motivo = overlay.querySelector('#aptReasonW').value;
 
             if (!pacienteId) return alert('Selecciona un paciente');
 
             try {
+                const estado = config.autoConfirm ? 'confirmado' : 'pendiente';
                 await window.api.db.run(
-                    'INSERT INTO citas (paciente_id, dentista_id, fecha_hora, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?)',
-                    [pacienteId, dentistaId, `${dateStr} ${timeStr}:00`, motivo, 'pendiente', 0]
+                    'INSERT INTO citas (paciente_id, especialista_id, fecha_hora, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?)',
+                    [pacienteId, especialistaId, `${dateStr} ${timeStr}:00`, motivo, estado, 0]
                 );
+
+                // Enviar notificación por email
+                try {
+                    // Obtener datos del paciente
+                    const patient = await window.api.db.get(
+                        'SELECT nombre, apellido, email FROM pacientes WHERE id = ?',
+                        [pacienteId]
+                    );
+
+                    // Solo enviar si el paciente tiene email
+                    if (patient && patient.email) {
+                        // Obtener nombre del especialista si está asignado
+                        let specialistName = null;
+                        if (especialistaId) {
+                            const specialist = await window.api.db.get(
+                                'SELECT nombre, especialidad FROM especialistas WHERE id = ?',
+                                [especialistaId]
+                            );
+                            if (specialist) {
+                                specialistName = `${specialist.nombre} - ${specialist.especialidad}`.trim();
+                            }
+                        }
+
+                        // Enviar notificación
+                        const notificationResult = await window.api.sendAppointmentNotification({
+                            patientEmail: patient.email,
+                            patientName: `${patient.nombre} ${patient.apellido}`.trim(),
+                            appointmentDate: dateStr,
+                            appointmentTime: timeStr,
+                            reason: motivo || null,
+                            dentistName: specialistName,
+                            duration: config.defaultDuration || 30
+                        });
+
+                        if (notificationResult.success) {
+                            console.log('✓ Notificación enviada a', patient.email);
+                        }
+                    }
+                } catch (notifError) {
+                    // No bloquear si falla el envío de notificación
+                    console.warn('No se pudo enviar notificación:', notifError);
+                }
+
                 overlay.remove();
                 await renderWeek();
             } catch (err) {
@@ -364,6 +432,7 @@ export async function initSemanal(container, referenceDate) {
     function showAppointmentDetails(aptId) {
         const apt = appointments.find(a => a.id == aptId);
         if (!apt) return;
+        const locale = 'es-ES';
 
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
@@ -371,7 +440,7 @@ export async function initSemanal(container, referenceDate) {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">${apt.nombre} ${apt.apellido}</h3>
-                    <p class="text-white/70 text-sm mt-1">${new Date(apt.fecha_hora).toLocaleString('es-ES')}</p>
+                    <p class="text-white/70 text-sm mt-1">${new Date(apt.fecha_hora).toLocaleString(locale, { hour12: config.timeFormat === '12h' })}</p>
                 </div>
                 <div class="p-6 space-y-4">
                     <div class="flex justify-between">
@@ -417,7 +486,7 @@ export async function initSemanal(container, referenceDate) {
 
     // Escuchar cambios en la configuración (otras pestañas)
     window.addEventListener('storage', (e) => {
-        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval') {
+        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval' || e.key === 'time-format' || e.key === 'app_settings') {
             console.log('Configuración actualizada (otra pestaña), recargando vista semanal...');
             config = loadConfig();
             renderWeek();

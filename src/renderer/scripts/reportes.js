@@ -74,9 +74,24 @@ const State = {
    UTILITIES
 ============================================================================ */
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('es-MX', {
+    let currency = 'MXN';
+
+    try {
+        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+        currency = settings.currency || localStorage.getItem('currency') || currency;
+    } catch (e) { }
+
+    const getLocale = () => {
+        if (currency === 'COP') return 'es-CO';
+        if (currency === 'MXN') return 'es-MX';
+        if (currency === 'EUR') return 'es-ES';
+        if (currency === 'USD') return 'en-US';
+        return 'es-ES';
+    };
+
+    return new Intl.NumberFormat(getLocale(), {
         style: 'currency',
-        currency: 'MXN'
+        currency
     }).format(amount || 0);
 }
 

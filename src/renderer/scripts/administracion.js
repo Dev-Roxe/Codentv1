@@ -784,6 +784,213 @@ async function deleteMiscelanea(id) {
   }
 }
 
+// ============================================================================
+// ESPECIALISTAS MANAGEMENT
+// ============================================================================
+
+let allEspecialistas = [];
+
+// Cargar todos los especialistas
+async function loadEspecialistas() {
+  const list = document.getElementById('especialistas-list');
+  if (!list) return;
+
+  try {
+    const sql = 'SELECT * FROM especialistas ORDER BY nombre ASC';
+    const rows = await dbAll(sql, []);
+    allEspecialistas = rows;
+
+    // Actualizar estadísticas
+    updateEspecialistasStats(rows);
+
+    // Aplicar filtros
+    renderEspecialistas();
+  } catch (e) {
+    list.innerHTML = `<tr><td colspan="6" class="px-6 py-8 text-center text-red-500">Error: ${e.message}</td></tr>`;
+  }
+}
+
+// Renderizar especialistas con filtros
+function renderEspecialistas() {
+  const list = document.getElementById('especialistas-list');
+  if (!list) return;
+
+  const searchInput = document.getElementById('searchEspecialistas');
+  const search = searchInput ? searchInput.value.toLowerCase() : '';
+
+  let filtered = allEspecialistas.filter(e =>
+    e.nombre.toLowerCase().includes(search) ||
+    (e.especialidad && e.especialidad.toLowerCase().includes(search)) ||
+    (e.email && e.email.toLowerCase().includes(search))
+  );
+
+  if (filtered.length === 0) {
+    list.innerHTML = `
+      <tr>
+        <td colspan="6" class="py-8 text-center text-gray-500 dark:text-gray-400">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="w-12 h-12 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <p class="text-sm font-medium">No hay especialistas registrados</p>
+          </div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  list.innerHTML = filtered.map(item => {
+    const activo = item.activo === 1;
+
+    return `
+      <tr class="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition">
+        <td class="py-4 px-6 font-medium text-gray-900 dark:text-white">${item.nombre}</td>
+        <td class="py-4 px-6 text-gray-600 dark:text-gray-300">${item.especialidad || '-'}</td>
+        <td class="py-4 px-6 text-gray-600 dark:text-gray-300">${item.telefono || '-'}</td>
+        <td class="py-4 px-6 text-gray-600 dark:text-gray-300">${item.email || '-'}</td>
+        <td class="py-4 px-6">
+          <span class="px-3 py-1 rounded-full text-xs font-semibold ${activo ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400'}">
+            ${activo ? 'Activo' : 'Inactivo'}
+          </span>
+        </td>
+        <td class="py-4 px-6 text-center flex justify-center gap-2">
+          <button onclick="editEspecialista(${item.id})" class="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition" title="Editar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+          <button onclick="deleteEspecialista(${item.id})" class="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition" title="Eliminar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Actualizar estadísticas de especialistas
+function updateEspecialistasStats(especialistas = null) {
+  if (!especialistas) especialistas = allEspecialistas;
+
+  const total = especialistas.length;
+  const activos = especialistas.filter(e => e.activo === 1).length;
+  const especialidades = new Set(especialistas.map(e => e.especialidad).filter(Boolean)).size;
+
+  const statTotal = document.getElementById('statTotalEspecialistas');
+  const statActivos = document.getElementById('statActivosEspecialistas');
+  const statEspecialidades = document.getElementById('statEspecialidades');
+
+  if (statTotal) statTotal.textContent = total;
+  if (statActivos) statActivos.textContent = activos;
+  if (statEspecialidades) statEspecialidades.textContent = especialidades;
+}
+
+// Abrir modal de nuevo especialista
+function openNewEspecialistaModal() {
+  const form = document.getElementById('form-especialista');
+  if (form) {
+    form.reset();
+    document.getElementById('especialista-id-input').value = '';
+  }
+
+  const title = document.getElementById('modal-especialista-title');
+  if (title) title.textContent = 'Nuevo Especialista';
+
+  document.getElementById('modal-especialista')?.classList.remove('hidden');
+}
+
+// Cerrar modal de especialista
+function closeEspecialistaModal() {
+  document.getElementById('modal-especialista')?.classList.add('hidden');
+}
+
+// Editar especialista
+async function editEspecialista(id) {
+  try {
+    const especialista = await dbGet('SELECT * FROM especialistas WHERE id = ?', [id]);
+    if (!especialista) {
+      showToast('Especialista no encontrado', 'error');
+      return;
+    }
+
+    // Llenar el formulario
+    document.getElementById('especialista-id-input').value = especialista.id;
+    document.querySelector('#form-especialista input[name="nombre"]').value = especialista.nombre;
+    document.querySelector('#form-especialista input[name="especialidad"]').value = especialista.especialidad || '';
+    document.querySelector('#form-especialista input[name="telefono"]').value = especialista.telefono || '';
+    document.querySelector('#form-especialista input[name="email"]').value = especialista.email || '';
+    document.querySelector('#form-especialista input[name="activo"]').checked = especialista.activo === 1;
+
+    const title = document.getElementById('modal-especialista-title');
+    if (title) title.textContent = 'Editar Especialista';
+
+    document.getElementById('modal-especialista')?.classList.remove('hidden');
+  } catch (e) {
+    showToast('Error al cargar especialista: ' + e.message, 'error');
+  }
+}
+
+// Guardar especialista
+async function saveEspecialista(e) {
+  e.preventDefault();
+
+  const form = document.getElementById('form-especialista');
+  const formData = new FormData(form);
+
+  const data = {
+    id: document.getElementById('especialista-id-input').value,
+    nombre: formData.get('nombre'),
+    especialidad: formData.get('especialidad'),
+    telefono: formData.get('telefono'),
+    email: formData.get('email'),
+    activo: formData.get('activo') ? 1 : 0
+  };
+
+  if (!data.nombre || !data.especialidad) {
+    showToast('Por favor completa los campos requeridos', 'error');
+    return;
+  }
+
+  try {
+    if (data.id) {
+      // Update
+      await dbRun(
+        `UPDATE especialistas SET nombre=?, especialidad=?, telefono=?, email=?, activo=? WHERE id=?`,
+        [data.nombre, data.especialidad, data.telefono, data.email, data.activo, data.id]
+      );
+      showToast('Especialista actualizado correctamente', 'success');
+    } else {
+      // Insert
+      await dbRun(
+        `INSERT INTO especialistas (nombre, especialidad, telefono, email, activo) VALUES (?, ?, ?, ?, ?)`,
+        [data.nombre, data.especialidad, data.telefono, data.email, data.activo]
+      );
+      showToast('Especialista creado correctamente', 'success');
+    }
+
+    closeEspecialistaModal();
+    loadEspecialistas();
+  } catch (e) {
+    showToast('Error al guardar: ' + e.message, 'error');
+  }
+}
+
+// Eliminar especialista
+async function deleteEspecialista(id) {
+  if (!confirm('¿Estás seguro de que deseas eliminar este especialista?')) return;
+
+  try {
+    await dbRun('DELETE FROM especialistas WHERE id = ?', [id]);
+    showToast('Especialista eliminado', 'success');
+    loadEspecialistas();
+  } catch (e) {
+    showToast('Error al eliminar: ' + e.message, 'error');
+  }
+}
+
 
 // Hacer funciones globales
 window.editTratamiento = editTratamiento;
@@ -803,6 +1010,11 @@ window.filterByCategoriaMisc = filterByCategoriaMisc;
 window.openNewMiscelaneaModal = openNewMiscelaneaModal;
 window.closeMiscelaneaModal = closeMiscelaneaModal;
 window.saveMiscelanea = saveMiscelanea;
+window.editEspecialista = editEspecialista;
+window.deleteEspecialista = deleteEspecialista;
+window.openNewEspecialistaModal = openNewEspecialistaModal;
+window.closeEspecialistaModal = closeEspecialistaModal;
+window.saveEspecialista = saveEspecialista;
 
 // Inicializar
 function init() {
@@ -810,20 +1022,24 @@ function init() {
   const tabTratamientos = document.getElementById('tab-tratamientos');
   const tabInventario = document.getElementById('tab-inventario');
   const tabMiscelanea = document.getElementById('tab-miscelanea');
+  const tabEspecialistas = document.getElementById('tab-especialistas');
   const contentTratamientos = document.getElementById('content-tratamientos');
   const contentInventario = document.getElementById('content-inventario');
   const contentMiscelanea = document.getElementById('content-miscelanea');
+  const contentEspecialistas = document.getElementById('content-especialistas');
 
   function hideAllTabs() {
     contentTratamientos?.classList.add('hidden');
     contentInventario?.classList.add('hidden');
     contentMiscelanea?.classList.add('hidden');
+    contentEspecialistas?.classList.add('hidden');
   }
 
   function resetTabStyles() {
     if (tabTratamientos) tabTratamientos.className = 'tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700';
     if (tabInventario) tabInventario.className = 'tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700';
     if (tabMiscelanea) tabMiscelanea.className = 'tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700';
+    if (tabEspecialistas) tabEspecialistas.className = 'tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-gray-100 dark:bg-slate-800 text-[#0F2532] dark:text-slate-300 hover:bg-[#8BCFDD]/30 dark:hover:bg-slate-700';
   }
 
   if (tabTratamientos) {
@@ -919,6 +1135,28 @@ function init() {
   document.querySelectorAll('.categoria-misc-btn').forEach(btn => {
     btn.addEventListener('click', () => filterByCategoriaMisc(btn.dataset.categoriaMisc));
   });
+
+  // Event listeners for Especialistas
+  document.getElementById('newEspecialistaBtn')?.addEventListener('click', openNewEspecialistaModal);
+  document.getElementById('close-modal-especialista')?.addEventListener('click', closeEspecialistaModal);
+  document.getElementById('cancel-especialista')?.addEventListener('click', closeEspecialistaModal);
+  document.getElementById('form-especialista')?.addEventListener('submit', saveEspecialista);
+
+  // Search for especialistas
+  const searchEspecialistas = document.getElementById('searchEspecialistas');
+  if (searchEspecialistas) {
+    searchEspecialistas.addEventListener('input', renderEspecialistas);
+  }
+
+  if (tabEspecialistas) {
+    tabEspecialistas.addEventListener('click', () => {
+      hideAllTabs();
+      resetTabStyles();
+      tabEspecialistas.className = 'tab-btn flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold transition bg-[#4EABBE] text-white';
+      contentEspecialistas?.classList.remove('hidden');
+      loadEspecialistas();
+    });
+  }
 
   // Load initial data
   loadTratamientos();
