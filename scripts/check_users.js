@@ -1,26 +1,21 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { resolveDbPath } = require('../src/db/db-path');
 
-const dbPath = path.join(__dirname, '..', 'src', 'db', 'consultorio.db');
+const dbPath = resolveDbPath();
 const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error abriendo la DB:', err.message);
-    process.exit(1);
-  }
+  if (err) return console.error('Error al conectar a la DB', err.message);
+  console.log('Conectado a SQLite:', dbPath);
 });
 
 db.all('SELECT id, nombre, email, password, rol, fecha_creacion FROM usuarios', (err, rows) => {
   if (err) {
     console.error('Error consultando usuarios:', err.message);
-    db.close();
-    process.exit(1);
-  }
-  if (!rows || rows.length === 0) {
+  } else if (!rows || rows.length === 0) {
     console.log('No hay usuarios en la tabla usuarios.');
   } else {
     console.log('Usuarios encontrados:');
-    rows.forEach(r => {
-      console.log(`- id=${r.id} nombre=${r.nombre} email=${r.email} rol=${r.rol} passwordHash=${r.password}`);
+    rows.forEach((row) => {
+      console.log(`- id=${row.id} nombre=${row.nombre} email=${row.email} rol=${row.rol} passwordHash=${row.password}`);
     });
   }
   db.close();
