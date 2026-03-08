@@ -34,6 +34,7 @@ electron-bin/
 # Secrets / local config
 .env
 .env.*
+!.env.example
 src/main/google/credentials.json
 src/main/google/token.json
 
