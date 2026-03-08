@@ -1,7 +1,7 @@
 {
-  "name": "codentv1",
+  "name": "sonalia",
   "version": "1.0.0",
-  "description": "codent",
+  "description": "Sonalia Dental Management",
   "main": "src/main.js",
   "scripts": {
     "dev:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css --watch",
@@ -9,15 +9,21 @@
     "start": "concurrently \"npm run dev:css\" \"npm run dev\"",
     "build:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css",
     "clean:db": "node scripts/clean-db.js",
+    "postinstall": "electron-builder install-app-deps",
     "pack": "npm run build:css && electron-builder --dir",
     "dist": "npm run build:css && electron-builder",
-    "dist:clean": "npm run clean:db && npm run dist"
+    "dist:clean": "npm run clean:db && npm run dist",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "author": "Nerick Roxe",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.6.1",
     "googleapis": "^166.0.0",
     "nodemailer": "^7.0.10",
     "sqlite3": "^5.1.7",
@@ -28,23 +34,32 @@
     "concurrently": "^9.2.1",
     "electron": "^33.4.11",
     "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
     "electron-reload": "^2.0.0-alpha.1",
+    "jest": "^29.7.0",
+    "png-to-ico": "^2.1.8",
     "postcss": "^8.5.6"
   },
   "build": {
-    "appId": "com.nerick.codent",
-    "productName": "Codent",
+    "appId": "com.nerick.sonalia.app",
+    "productName": "Sonalia",
     "icon": "src/renderer/assets/icons/app.ico",
     "directories": {
-      "output": "dist"
+      "output": "dist_installer"
     },
+    "npmRebuild": false,
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/sqlite3/**/*"
     ],
     "asar": true,
     "win": {
       "icon": "src/renderer/assets/icons/app.ico",
+      "signAndEditExecutable": false,
       "target": [
         "nsis"
       ]
@@ -52,7 +67,13 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": false
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "src/renderer/assets/icons/app.ico",
+      "uninstallerIcon": "src/renderer/assets/icons/app.ico",
+      "deleteAppDataOnUninstall": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Sonalia"
     }
   }
 }

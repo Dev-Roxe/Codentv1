@@ -57,6 +57,36 @@
                   class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
                   plantilla</button>
               </div>
+              <div class="flex flex-col gap-4 mb-4">
+                <div class="flex flex-col lg:flex-row gap-3 lg:items-center lg:justify-between">
+                  <div class="relative flex-1">
+                    <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input id="templateSearchInput" type="search" placeholder="Buscar plantilla por nombre o contenido"
+                      class="w-full pl-9 pr-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition" />
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button id="templateViewActiveBtn" type="button" data-template-view="active"
+                      class="px-3 py-2 rounded-lg border border-[#4EABBE] bg-[#4EABBE]/10 text-[#1D5D69] dark:text-white text-sm font-semibold">
+                      Activas
+                      <span id="activeTemplateCount"
+                        class="ml-1 inline-flex min-w-5 justify-center rounded-full bg-white/80 dark:bg-gray-700 px-1.5 text-xs">0</span>
+                    </button>
+                    <button id="templateViewArchivedBtn" type="button" data-template-view="archived"
+                      class="px-3 py-2 rounded-lg border border-[#D9D9D9] dark:border-gray-600 bg-white dark:bg-gray-700 text-[#0F2532]/70 dark:text-gray-200 text-sm font-medium">
+                      Archivadas
+                      <span id="archivedTemplateCount"
+                        class="ml-1 inline-flex min-w-5 justify-center rounded-full bg-[#F8F7F7] dark:bg-gray-800 px-1.5 text-xs">0</span>
+                    </button>
+                  </div>
+                </div>
+                <p id="templateViewSummary" class="text-xs text-[#0F2532]/50 dark:text-gray-400">
+                  Tus plantillas se archivan para no perder informacion.
+                </p>
+              </div>
               <div id="templateGrid" class="grid grid-cols-2 gap-4">
                 <!-- Templates rendered by JS -->
               </div>
@@ -74,17 +104,26 @@
               <!-- Gmail Connection -->
               <div
                 class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div class="flex items-center gap-2 mb-2">
-                  <button id="getGmailCode"
-                    onclick="(async()=>{const r=await window.electronAPI.invoke('gmail-get-auth-url');if(!r?.success){alert('Error: '+r?.error);return;}await window.electronAPI.invoke('open-external',r.url);document.getElementById('gmailCodeInput').focus();})();"
-                    class="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                <div class="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Conexion Gmail</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300">Autoriza una sola vez la cuenta fija del proyecto desde el navegador del sistema.</p>
+                  </div>
+                  <span id="gmailStatus"
+                    class="inline-flex items-center px-2.5 py-1 rounded-full bg-white/80 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 text-xs font-medium border border-blue-200/70 dark:border-blue-800">
+                    Verificando...
+                  </span>
+                </div>
+                <div class="flex flex-col gap-2 mb-2">
+                  <button id="connectGmailBtn" type="button"
+                    class="w-full px-4 py-2.5 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition">
                     1. Obtener código
                   </button>
                   <input type="text" id="gmailCodeInput" placeholder="2. Pega aquí el código de Google"
-                    class="flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    class="hidden flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                   <button id="saveGmailCode"
                     onclick="(async()=>{const c=document.getElementById('gmailCodeInput').value.trim();if(!c){alert('Pega el código primero');return;}const s=await window.electronAPI.invoke('gmail-save-token',c);alert(s?.success?'✅ Gmail conectado!':'Error: '+s?.error);if(s?.success)location.reload();})();"
-                    class="px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                    class="hidden px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600">
                     3. Guardar
                   </button>
                 </div>
@@ -144,6 +183,29 @@
                     class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition" />
                 </div>
 
+                <div>
+                  <div class="flex items-center justify-between mb-2 gap-3">
+                    <label class="text-sm font-semibold text-[#0F2532] dark:text-gray-200">
+                      Variables rapidas
+                    </label>
+                    <span class="text-xs text-[#0F2532]/40 dark:text-gray-500">Se insertan donde tengas el cursor</span>
+                  </div>
+                  <div id="emailVarTokens" class="flex flex-wrap gap-2">
+                    <button type="button" data-token="{nombre}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{nombre}</button>
+                    <button type="button" data-token="{apellido}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{apellido}</button>
+                    <button type="button" data-token="{email}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{email}</button>
+                    <button type="button" data-token="{telefono}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{telefono}</button>
+                    <button type="button" data-token="{fecha_cita}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{fecha_cita}</button>
+                    <button type="button" data-token="{doctor}"
+                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{doctor}</button>
+                  </div>
+                </div>
+
                 <!-- Message -->
                 <div>
                   <div class="flex items-center justify-between mb-2">
@@ -155,10 +217,47 @@
                   <textarea id="emailMessage" rows="5" placeholder="Escribe tu mensaje aquí..."
                     class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition"></textarea>
                 </div>
+                <!-- Action Buttons -->
+                <div
+                  class="rounded-xl border border-[#E6E6E6] dark:border-gray-700 bg-[#F8F7F7] dark:bg-gray-900/40 p-4 space-y-4">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 class="text-sm font-semibold text-[#0F2532] dark:text-white">Prueba y ritmo de envio</h3>
+                      <p class="text-xs text-[#0F2532]/55 dark:text-gray-400 mt-1">Verifica el mensaje antes del envio masivo.</p>
+                    </div>
+                    <span id="emailEstimate" class="text-xs text-[#0F2532]/50 dark:text-gray-400 text-right">Selecciona destinatarios para ver la espera.</span>
+                  </div>
 
+                  <div>
+                    <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                      Correo de prueba
+                    </label>
+                    <div class="flex gap-2">
+                      <input id="emailTestAddress" type="email" placeholder="tu@correo.com"
+                        class="flex-1 px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition" />
+                      <button id="sendTestEmailBtn" type="button"
+                        class="px-4 py-2.5 bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm border border-[#D9D9D9] dark:border-gray-600 transition opacity-60 cursor-not-allowed"
+                        disabled>
+                        Enviar prueba
+                      </button>
+                    </div>
+                    <p id="testEmailStatus" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Completa asunto y mensaje para enviar una prueba.</p>
+                  </div>
 
-
-
+                  <div>
+                    <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
+                      Pausa entre correos
+                    </label>
+                    <select id="emailThrottle"
+                      class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition">
+                      <option value="0">Sin pausa adicional</option>
+                      <option value="1500">1.5 segundos</option>
+                      <option value="3000">3 segundos</option>
+                      <option value="5000">5 segundos</option>
+                      <option value="10000">10 segundos</option>
+                    </select>
+                  </div>
+                </div>
 
                 <!-- Action Buttons -->
                 <div class="space-y-2 pt-2">
@@ -498,6 +597,7 @@
       <div id="toast-container" class="toast-container"></div>
 
       <script type="module" src="../scripts/crm.js"></script>
+      <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

@@ -3,6 +3,7 @@ import toast from './toast.js';
 
 let db;
 if (window.api && window.api.db) db = window.api.db;
+const financeApi = (window.api && window.api.finance) ? window.api.finance : null;
 
 function dbGet(sql, params = []) {
     return new Promise((resolve, reject) => {
@@ -56,9 +57,15 @@ const State = {
     },
     data: {
         ingresos: 0,
+        devoluciones: 0,
         citas: 0,
         pacientes: 0,
         tratamientos: [],
+        morosos: [],
+        especialistas: [],
+        overdueAmount: 0,
+        overduePatients: 0,
+        incomeChange: 0,
         ingresosMensuales: { labels: [], data: [] },
         usaMovimientos: false,
         citasEstado: {
@@ -107,6 +114,20 @@ function showToast(message, type = 'info') {
     toast.show(message, type);
 }
 
+function setTextById(id, value) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+}
+
+function escapeHtml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function setDateRange(period) {
     const now = new Date();
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -148,58 +169,95 @@ function getChartColors() {
    DATA LOADING
 ============================================================================ */
 async function loadReportData() {
-    if (!db) {
+    if (!db && !financeApi) {
         // Mock data para testing
         loadMockData();
         return;
     }
 
     try {
-        const ingresosQuery = `
-            SELECT COUNT(*) as total_citas, SUM(COALESCE(monto, 0)) as total_ingresos
-            FROM citas
-            WHERE date(fecha_hora) BETWEEN ? AND ?
-            AND estado = 'atendido'
-        `;
-        const recetasQuery = `
-            SELECT SUM(COALESCE(costo, 0)) as total_recetas
-            FROM tratamientos
-            WHERE date(fecha) BETWEEN ? AND ?
-            AND (procedimiento LIKE 'Receta:%' OR procedimiento LIKE 'Receta M%')
-        `;
-        const movimientosQuery = `
-            SELECT SUM(CASE WHEN tipo = 'ingreso' THEN 1 ELSE 0 END) as total_ingresos_count,
-                   SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) as total_ingresos
-            FROM movimientos_caja
-            WHERE date(fecha) BETWEEN ? AND ?
-        `;
+        let financeReport = null;
+        if (financeApi?.getReport) {
+            financeReport = await financeApi.getReport({
+                startDate: State.startDate,
+                endDate: State.endDate,
+            });
+        }
 
-        const ingresosResult = await dbGet(ingresosQuery, [State.startDate, State.endDate]);
-        const recetasResult = await dbGet(recetasQuery, [State.startDate, State.endDate]);
-        const movimientosResult = await dbGet(movimientosQuery, [State.startDate, State.endDate]);
-        const legacyIngresos = Number(ingresosResult?.total_ingresos || 0) + Number(recetasResult?.total_recetas || 0);
-        const movimientosIngresos = Number(movimientosResult?.total_ingresos || 0);
-        const movimientosCount = Number(movimientosResult?.total_ingresos_count || 0);
+        if (financeReport) {
+            const monthlyBuckets = buildMonthBuckets(State.startDate, State.endDate);
+            const byMonth = new Map((financeReport.monthlyIncome || []).map(item => [item.key, Number(item.value || 0)]));
 
-        State.data.usaMovimientos = movimientosCount > 0;
-        State.data.ingresos = State.data.usaMovimientos ? movimientosIngresos : legacyIngresos;
-        State.data.citas = Number(ingresosResult?.total_citas || 0);
+            State.data.ingresos = Number(financeReport.summary?.net_income || 0);
+            State.data.devoluciones = Number(financeReport.summary?.refunds || 0);
+            State.data.citas = Number(financeReport.summary?.appointments || 0);
+            State.data.pacientes = Number(financeReport.summary?.new_patients || 0);
+            State.data.tratamientos = financeReport.treatments || [];
+            State.data.morosos = financeReport.overdue?.patients || [];
+            State.data.especialistas = financeReport.specialistProduction || [];
+            State.data.overdueAmount = Number(financeReport.summary?.overdue_amount || 0);
+            State.data.overduePatients = Number(financeReport.summary?.overdue_patients || 0);
+            State.data.incomeChange = Number(financeReport.summary?.income_change || 0);
+            State.data.ingresosMensuales = {
+                labels: monthlyBuckets.map(bucket => bucket.label),
+                data: monthlyBuckets.map(bucket => byMonth.get(bucket.key) || 0),
+            };
+        } else {
+            const ingresosQuery = `
+                SELECT COUNT(*) as total_citas, SUM(COALESCE(monto, 0)) as total_ingresos
+                FROM citas
+                WHERE date(fecha_hora) BETWEEN ? AND ?
+                AND estado = 'atendido'
+            `;
+            const recetasQuery = `
+                SELECT SUM(COALESCE(costo, 0)) as total_recetas
+                FROM tratamientos
+                WHERE date(fecha) BETWEEN ? AND ?
+                AND (procedimiento LIKE 'Receta:%' OR procedimiento LIKE 'Receta M%')
+            `;
+            const movimientosQuery = `
+                SELECT SUM(CASE WHEN tipo = 'ingreso' THEN 1 ELSE 0 END) as total_ingresos_count,
+                       SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) as total_ingresos
+                FROM movimientos_caja
+                WHERE date(fecha) BETWEEN ? AND ?
+            `;
 
-        const pacientesQuery = `
-            SELECT COUNT(*) as total
-            FROM pacientes
-            WHERE date(created_at) BETWEEN ? AND ?
-        `;
-        const pacientesResult = await dbGet(pacientesQuery, [State.startDate, State.endDate]);
-        State.data.pacientes = Number(pacientesResult?.total || 0);
+            const ingresosResult = await dbGet(ingresosQuery, [State.startDate, State.endDate]);
+            const recetasResult = await dbGet(recetasQuery, [State.startDate, State.endDate]);
+            const movimientosResult = await dbGet(movimientosQuery, [State.startDate, State.endDate]);
+            const legacyIngresos = Number(ingresosResult?.total_ingresos || 0) + Number(recetasResult?.total_recetas || 0);
+            const movimientosIngresos = Number(movimientosResult?.total_ingresos || 0);
+            const movimientosCount = Number(movimientosResult?.total_ingresos_count || 0);
 
-        State.data.tratamientos = await loadTratamientosResumen();
-        State.data.ingresosMensuales = await loadIngresosMensuales();
+            State.data.usaMovimientos = movimientosCount > 0;
+            State.data.ingresos = State.data.usaMovimientos ? movimientosIngresos : legacyIngresos;
+            State.data.devoluciones = 0;
+            State.data.citas = Number(ingresosResult?.total_citas || 0);
+
+            const pacientesQuery = `
+                SELECT COUNT(*) as total
+                FROM pacientes
+                WHERE date(created_at) BETWEEN ? AND ?
+            `;
+            const pacientesResult = await dbGet(pacientesQuery, [State.startDate, State.endDate]);
+            State.data.pacientes = Number(pacientesResult?.total || 0);
+
+            State.data.tratamientos = await loadTratamientosResumen();
+            State.data.ingresosMensuales = await loadIngresosMensuales();
+            State.data.morosos = [];
+            State.data.especialistas = [];
+            State.data.overdueAmount = 0;
+            State.data.overduePatients = 0;
+            State.data.incomeChange = 0;
+        }
+
         State.data.citasEstado = await loadCitasEstado();
 
         updateKPIs();
         updateCharts();
         updateTratamientosTable();
+        updateMorososTable();
+        updateProfesionalesTable();
 
     } catch (err) {
         console.error('Error cargando datos:', err);
@@ -211,9 +269,21 @@ async function loadReportData() {
 function loadMockData() {
     State.data = {
         ingresos: 125400,
+        devoluciones: 2500,
         citas: 87,
         pacientes: 23,
         tratamientos: getMockTratamientos(),
+        morosos: [
+            { paciente_id: 1, nombre: 'Laura', apellido: 'Martínez', cuotas_vencidas: 2, monto_vencido: 3800 },
+            { paciente_id: 2, nombre: 'Pedro', apellido: 'Soto', cuotas_vencidas: 1, monto_vencido: 1200 }
+        ],
+        especialistas: [
+            { profesional: 'Dra. Ruiz', tratamientos: 18, produccion: 45200 },
+            { profesional: 'Dr. Campos', tratamientos: 11, produccion: 28150 }
+        ],
+        overdueAmount: 5000,
+        overduePatients: 2,
+        incomeChange: 12.5,
         ingresosMensuales: {
             labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'],
             data: [45000, 52000, 48000, 61000, 58000, 67000, 72000, 68000, 75000, 82000, 79000, 85000]
@@ -230,6 +300,8 @@ function loadMockData() {
     updateKPIs();
     updateCharts();
     updateTratamientosTable();
+    updateMorososTable();
+    updateProfesionalesTable();
 }
 
 function getMockTratamientos() {
@@ -391,8 +463,24 @@ function updateKPIs() {
     if (els.ticket) els.ticket.textContent = formatCurrency(ticketPromedio);
 
     // Calcular cambios (mock - en producción comparar con período anterior)
-    if (els.ingresosChange) els.ingresosChange.textContent = '+12.5%';
-    if (els.citasChange) els.citasChange.textContent = '+8.3%';
+    const incomeChange = Number(State.data.incomeChange || 0);
+    if (els.ingresosChange) els.ingresosChange.textContent = `${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}%`;
+    if (els.citasChange) els.citasChange.textContent = `${State.data.citas || 0}`;
+    const projectionValues = (State.data.ingresosMensuales?.data || []).filter(value => Number(value) > 0);
+    const averageIncome = projectionValues.length
+        ? projectionValues.reduce((sum, value) => sum + Number(value || 0), 0) / projectionValues.length
+        : State.data.ingresos;
+    setTextById('proyeccionMes', formatCurrency(averageIncome));
+    setTextById('escenarioOptimista', formatCurrency(averageIncome * 1.1));
+    setTextById('escenarioPesimista', formatCurrency(averageIncome * 0.9));
+    const retention = State.data.pacientes > 0
+        ? Math.max(0, 100 - ((State.data.overduePatients / State.data.pacientes) * 100))
+        : 100;
+    setTextById('tasaRetencion', `${retention.toFixed(1)}%`);
+    setTextById('pacientesRiesgo', String(State.data.overduePatients || 0));
+    setTextById('diaMasOcupado', State.data.citas > 0 ? 'Período actual' : 'Sin datos');
+    setTextById('horaPico', State.data.citas > 0 ? `${State.data.citas} citas` : 'Sin datos');
+    setTextById('promedioDia', State.data.citas > 0 ? (State.data.citas / Math.max(1, 7)).toFixed(1) : '0');
 }
 
 function updateCharts() {
@@ -529,7 +617,7 @@ function createCitasChart() {
                     padding: 12,
                     callbacks: {
                         label: function (context) {
-                            return context.label + ': ' + context.parsed + '%';
+                            return context.label + ': ' + context.parsed;
                         }
                     }
                 }
@@ -563,11 +651,64 @@ function updateTratamientosTable() {
         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
             <td class="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">${i + 1}</td>
             <td class="px-6 py-4">
-                <div class="font-semibold text-[#1D5D69] dark:text-[#4EABBE]">${t.nombre}</div>
+                <div class="font-semibold text-[#1D5D69] dark:text-[#4EABBE]">${escapeHtml(t.nombre)}</div>
             </td>
             <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">${t.cantidad}</td>
             <td class="px-6 py-4 text-sm font-semibold text-green-600 dark:text-green-400">${formatCurrency(t.ingresos)}</td>
             <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">${formatCurrency(t.promedio)}</td>
+        </tr>
+    `).join('');
+}
+
+function updateMorososTable() {
+    const tbody = document.getElementById('morososTable');
+    const count = document.getElementById('morososCount');
+    if (!tbody) return;
+
+    const rows = State.data.morosos || [];
+    if (count) count.textContent = `${rows.length} paciente${rows.length === 1 ? '' : 's'}`;
+
+    if (!rows.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="py-6 text-center text-slate-500 dark:text-slate-400">
+                    No hay pacientes morosos en el período actual
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = rows.map(row => `
+        <tr>
+            <td class="py-3 pr-4 font-medium text-slate-900 dark:text-white">${escapeHtml(`${row.nombre || ''} ${row.apellido || ''}`.trim())}</td>
+            <td class="py-3 pr-4 text-slate-700 dark:text-slate-300">${row.cuotas_vencidas}</td>
+            <td class="py-3 text-rose-600 dark:text-rose-400 font-semibold">${formatCurrency(row.monto_vencido)}</td>
+        </tr>
+    `).join('');
+}
+
+function updateProfesionalesTable() {
+    const tbody = document.getElementById('profesionalesTable');
+    if (!tbody) return;
+
+    const rows = State.data.especialistas || [];
+    if (!rows.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="3" class="py-6 text-center text-slate-500 dark:text-slate-400">
+                    No hay producción registrada en el período actual
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = rows.map(row => `
+        <tr>
+            <td class="py-3 pr-4 font-medium text-slate-900 dark:text-white">${escapeHtml(row.profesional)}</td>
+            <td class="py-3 pr-4 text-slate-700 dark:text-slate-300">${row.tratamientos}</td>
+            <td class="py-3 text-emerald-600 dark:text-emerald-400 font-semibold">${formatCurrency(row.produccion)}</td>
         </tr>
     `).join('');
 }

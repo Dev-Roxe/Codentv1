@@ -15,23 +15,6 @@
   <script src="../components/navbar-component.js" type="module"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
-<!DOCTYPE html>
-<html lang="es">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agenda Diaria - Sonalía</title>
-  <link href="../styles/output.css" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-  </script>
-  <script src="../components/navbar-component.js" type="module"></script>
-  <script src="../scripts/init.js" type="module"></script>
-</head>
 
 <body class="bg-gray-50 dark:bg-gray-900 font-sans min-h-screen text-[#0F2532] dark:text-white">
 
@@ -133,6 +116,8 @@
 
   <!-- Carga el módulo que gestiona la agenda (navbar, listeners y carga dinámica de vistas) -->
   <script type="module" src="../scripts/agenda.js"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>
+

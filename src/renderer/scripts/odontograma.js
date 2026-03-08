@@ -105,6 +105,11 @@ let showAdultTeeth = true;
 let showSurfaceModal = false;
 let selectedSurfaces = {};
 let currentTreatment = null;
+let diagnosticsState = {};
+let dxContext = { tooth: null, face: null };
+let dxCount = 0;
+let toothImages = {};
+let recentDxFeedback = { tooth: null, key: null };
 
 // ===== DATA =====
 const adultTeeth = {
@@ -118,7 +123,7 @@ const childTeeth = {
 };
 
 // Treatments: dejé profilaxis con tu primary/accent para que “huela” a Sonalía
-const treatments = [
+let treatments = [
   { id: "profilaxis-simple", name: "Profilaxis Simple", color: BRAND.primary, icon: ICONS.plus },
   { id: "profilaxis-profunda", name: "Profilaxis Profunda", color: "#2C93A8", icon: ICONS.drop },
 
@@ -132,6 +137,43 @@ const treatments = [
   { id: "implante", name: "Implante", color: "#059669", icon: ICONS.link },
   { id: "perno", name: "Perno Muñón", color: "#374151", icon: ICONS.pin },
 ];
+
+const FACE_LABELS = {
+  oclusal: "Oclusal",
+  mesial: "Mesial",
+  distal: "Distal",
+  vestibular: "Vestibular",
+  lingual: "Lingual",
+};
+
+const DIAGNOSES = [
+  { id: "crown-ok", name: "Corona", cssClass: "tooth-crown-ok", target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.star },
+  { id: "crown-bad", name: "Corona (Mal Estado)", cssClass: "tooth-crown-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "absent", name: "Ausente", cssClass: "tooth-absent", target: "tooth", status: "Pendiente", color: "#6b7280", icon: ICONS.x },
+  { id: "caries-dx", name: "Caries", cssClass: "state-caries", target: "face", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
+  { id: "rest-ok", name: "Restauración", cssClass: "state-rest-ok", target: "face", status: "Realizado", color: "#3b82f6", icon: ICONS.check },
+  { id: "rest-bad", name: "Restauración (Mal Estado)", cssClass: "state-rest-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
+  { id: "sealant", name: "Sellante", cssClass: "state-sealant", target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
+  { id: "amalgam", name: "Amalgama", cssClass: "state-amalgam", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
+  { id: "endo", name: "Endodoncia", cssClass: "state-endo", target: "face", status: "Realizado", color: "#a855f7", icon: ICONS.bolt },
+  { id: "implante", name: "Implante", cssClass: "state-implante", target: "face", status: "Realizado", color: "#059669", icon: ICONS.link },
+  { id: "perno", name: "Perno Muñón", cssClass: "state-perno", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
+  { id: "fractura", name: "Fractura", cssClass: "state-fractura", target: "face", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "pulpar", name: "Infección Pulpar", cssClass: "state-pulpar", target: "face", status: "Pendiente", color: "#f87171", icon: ICONS.bolt },
+  { id: "movilidad", name: "Movilidad", cssClass: "state-mov", target: "face", status: "Pendiente", color: "#0ea5e9", icon: ICONS.adjust },
+  { id: "resto", name: "Resto Radicular", cssClass: "state-resto", target: "face", status: "Pendiente", color: "#0f172a", icon: ICONS.x },
+  { id: "erupcion", name: "Sin Erupcionar", cssClass: "state-erup", target: "face", status: "Pendiente", color: "#cbd5e1", icon: ICONS.circle },
+  { id: "sano", name: "Sano", cssClass: "clean", target: "face", status: "Realizado", color: "#10b981", icon: ICONS.check },
+];
+
+const DX_CATEGORIES = [
+  { title: "Preexistencias", ids: ["crown-ok", "endo", "implante", "perno", "rest-ok", "amalgam", "absent"] },
+  { title: "Lesiones", ids: ["caries-dx", "fractura", "pulpar", "movilidad", "resto", "rest-bad"] },
+  { title: "Otras Simbologías", ids: ["sano", "sealant", "erupcion", "crown-bad"] },
+];
+
+const SURFACE_DX_IDS = new Set(["caries-dx", "rest-ok", "rest-bad", "sealant", "amalgam"]);
+const WHOLE_TOOTH_TREATMENT_IDS = new Set(["corona", "implante", "perno", "endodoncia", "fractura", "pulpar", "ausente"]);
 
 // Load treatments from catalog
 async function loadTreatmentCatalog() {
@@ -221,6 +263,390 @@ function toast(msg, type = "info") {
 
 function currentTeeth() { return showAdultTeeth ? adultTeeth : childTeeth; }
 
+function findDiagnosis(id) {
+  return DIAGNOSES.find(d => d.id === id) || null;
+}
+
+function findTreatment(id) {
+  return treatments.find(t => t.id === id) || null;
+}
+
+function findVisualSpec(id) {
+  return findDiagnosis(id) || findTreatment(id) || null;
+}
+
+function ensureDxState(tooth) {
+  if (!diagnosticsState[tooth]) diagnosticsState[tooth] = { faces: {}, tooth: null };
+  if (!diagnosticsState[tooth].faces) diagnosticsState[tooth].faces = {};
+  return diagnosticsState[tooth];
+}
+
+function faceLabel(faceId) {
+  return FACE_LABELS[faceId] || faceId || "Cara";
+}
+
+function normalizeFaceId(value) {
+  if (!value) return null;
+  const raw = String(value).trim().toLowerCase();
+  if (!raw) return null;
+  if (raw === "tooth" || raw.includes("pieza")) return "tooth";
+  if (FACE_LABELS[raw]) return raw;
+
+  const byLabel = Object.entries(FACE_LABELS).find(([, label]) => String(label).trim().toLowerCase() === raw);
+  if (byLabel) return byLabel[0];
+
+  if (raw.includes("oclusal")) return "oclusal";
+  if (raw.includes("mesial")) return "mesial";
+  if (raw.includes("distal")) return "distal";
+  if (raw.includes("vestibular") || raw.includes("labial")) return "vestibular";
+  if (raw.includes("lingual") || raw.includes("palatal")) return "lingual";
+  return null;
+}
+
+function statusBadge(status) {
+  if (status && status.toLowerCase().includes("pend")) {
+    return `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold">Pendiente</span>`;
+  }
+  return `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-[10px] font-bold">Realizado</span>`;
+}
+
+function escapeAttr(val) {
+  return String(val)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function getDiagnosisPriority(dxId) {
+  const priorityMap = {
+    absent: 100,
+    pulpar: 95,
+    fractura: 92,
+    "rest-bad": 88,
+    "caries-dx": 85,
+    movilidad: 82,
+    resto: 80,
+    "crown-bad": 72,
+    erupcion: 60,
+    endo: 54,
+    implante: 52,
+    perno: 50,
+    "rest-ok": 45,
+    amalgam: 44,
+    sealant: 40,
+    "crown-ok": 38,
+    sano: 10,
+  };
+  return priorityMap[dxId] || 20;
+}
+
+function getToothDiagnostics(toothNumber) {
+  const state = diagnosticsState[toothNumber];
+  if (!state) return [];
+
+  const entries = [];
+  if (state.tooth?.id) {
+    const dx = findDiagnosis(state.tooth.id) || state.tooth;
+    entries.push({
+      key: "tooth",
+      id: dx.id,
+      name: dx.name,
+      cssClass: dx.cssClass,
+      status: dx.status || state.tooth.status || "",
+      color: dx.color || BRAND.primary,
+      icon: dx.icon || ICONS.circle,
+      target: "tooth",
+      face: null,
+      priority: getDiagnosisPriority(dx.id),
+    });
+  }
+
+  Object.entries(state.faces || {}).forEach(([face, rawDx]) => {
+    if (!rawDx?.id) return;
+    const dx = findDiagnosis(rawDx.id) || rawDx;
+    entries.push({
+      key: face,
+      id: dx.id,
+      name: dx.name,
+      cssClass: rawDx.cssClass || dx.cssClass,
+      status: rawDx.status || dx.status || "",
+      color: dx.color || BRAND.primary,
+      icon: dx.icon || ICONS.circle,
+      target: "face",
+      face,
+      priority: getDiagnosisPriority(dx.id),
+    });
+  });
+
+  return entries.sort((a, b) => b.priority - a.priority || a.name.localeCompare(b.name));
+}
+
+function getDiagnosisSummaryTitle(toothNumber) {
+  const entries = getToothDiagnostics(toothNumber);
+  if (!entries.length) return `Pieza ${toothNumber}`;
+  const detail = entries
+    .map((entry) => entry.target === "tooth" ? `Pieza: ${entry.name}` : `${faceLabel(entry.face)}: ${entry.name}`)
+    .join(" | ");
+  return `Pieza ${toothNumber} | ${detail}`;
+}
+
+function buildDxStyle(color) {
+  return `--dx-color:${color || BRAND.primary}; --dx-glow:${hexToRgba(color || BRAND.primary, 0.34)};`;
+}
+
+function getToothVisualState(toothNumber) {
+  const status = teethStatus[toothNumber] || null;
+  const treatment = status?.treatment ? findTreatment(status.treatment) : null;
+  const entries = getToothDiagnostics(toothNumber);
+  const toothEntry = entries.find((entry) => entry.target === "tooth") || null;
+  const faceEntries = entries.filter((entry) => entry.target === "face");
+  const ids = new Set(entries.map((entry) => entry.id));
+  if (status?.treatment) ids.add(status.treatment);
+
+  return {
+    status,
+    treatment,
+    entries,
+    toothEntry,
+    faceEntries,
+    has(id) { return ids.has(id); },
+    primaryColor: toothEntry?.color || treatment?.color || faceEntries[0]?.color || BRAND.primary,
+  };
+}
+
+function compactVisualLabel(name) {
+  const plain = String(name || "").toLowerCase();
+  if (!plain) return "";
+  if (plain.includes("corona") && plain.includes("mal")) return "Corona mal";
+  if (plain.includes("corona")) return "Corona";
+  if (plain.includes("implante")) return "Implante";
+  if (plain.includes("perno")) return "Perno";
+  if (plain.includes("endodon")) return "Endodoncia";
+  if (plain.includes("caries")) return "Caries";
+  if (plain.includes("restaur") && plain.includes("mal")) return "Rest. mal";
+  if (plain.includes("restaur")) return "Restauracion";
+  if (plain.includes("fractura")) return "Fractura";
+  if (plain.includes("pulpar")) return "Pulpar";
+  if (plain.includes("ausent")) return "Ausente";
+  if (plain.includes("radicular")) return "Resto rad.";
+  if (plain.includes("movilidad")) return "Movilidad";
+  if (plain.includes("erup")) return "No erup.";
+  return name;
+}
+
+function getToothQuickTag(toothNumber) {
+  const visual = getToothVisualState(toothNumber);
+  const primaryEntry = visual.entries[0] || null;
+
+  if (primaryEntry) {
+    return {
+      text: compactVisualLabel(primaryEntry.name),
+      color: primaryEntry.color || BRAND.primary,
+    };
+  }
+
+  if (visual.treatment && visual.treatment.id !== "profilaxis-simple" && visual.treatment.id !== "profilaxis-profunda") {
+    return {
+      text: compactVisualLabel(visual.treatment.name),
+      color: visual.treatment.color || BRAND.primary,
+    };
+  }
+
+  return null;
+}
+
+function isDiagnosisFresh(toothNumber, key) {
+  return recentDxFeedback.tooth === toothNumber && recentDxFeedback.key === key;
+}
+
+function triggerDiagnosisFeedback(toothNumber, key) {
+  recentDxFeedback = { tooth: toothNumber, key };
+  clearTimeout(triggerDiagnosisFeedback._t);
+  triggerDiagnosisFeedback._t = setTimeout(() => {
+    recentDxFeedback = { tooth: null, key: null };
+    render();
+  }, 1450);
+}
+
+function renderToothDiagnosisMarkers(toothNumber) {
+  const visual = getToothVisualState(toothNumber);
+  if (!visual.entries.length && !visual.treatment) return "";
+
+  const toothFresh = isDiagnosisFresh(toothNumber, "tooth") ? " dx-feedback-fresh" : "";
+  const showFrame = !!visual.toothEntry || WHOLE_TOOTH_TREATMENT_IDS.has(visual.treatment?.id);
+  const frame = showFrame ? `
+    <span class="tooth-dx-frame${visual.has("absent") || visual.has("ausente") ? " dxfx-absent" : ""}${toothFresh}"
+      style="${buildDxStyle(visual.primaryColor)}"></span>
+  ` : "";
+
+  const crownId = visual.has("crown-bad") ? "crown-bad" : visual.has("crown-ok") ? "crown-ok" : visual.has("corona") ? "corona" : "";
+  const crown = crownId ? `
+    <span class="tooth-dx-crown dxfx-${crownId}${toothFresh}" style="${buildDxStyle(findVisualSpec(crownId)?.color)}">
+      <span class="tooth-dx-crown-band"></span>
+    </span>
+  ` : "";
+
+  const implant = visual.has("implante") ? `
+    <span class="tooth-dx-implant dxfx-implante${toothFresh}" style="${buildDxStyle(findVisualSpec("implante")?.color)}">
+      <span class="tooth-dx-implant-cap"></span>
+      <span class="tooth-dx-implant-body"></span>
+      <span class="tooth-dx-implant-tip"></span>
+    </span>
+  ` : "";
+
+  const post = visual.has("perno") ? `
+    <span class="tooth-dx-post dxfx-perno${toothFresh}" style="${buildDxStyle(findVisualSpec("perno")?.color)}">
+      <span class="tooth-dx-post-core"></span>
+      <span class="tooth-dx-post-pin"></span>
+    </span>
+  ` : "";
+
+  const endoId = visual.has("endo") ? "endo" : visual.has("endodoncia") ? "endodoncia" : "";
+  const endo = endoId ? `
+    <span class="tooth-dx-endo dxfx-${endoId}${toothFresh}" style="${buildDxStyle(findVisualSpec(endoId)?.color)}">
+      <span class="tooth-dx-endo-line"></span>
+      <span class="tooth-dx-endo-node"></span>
+    </span>
+  ` : "";
+
+  const fracture = visual.has("fractura") ? `
+    <span class="tooth-dx-fracture dxfx-fractura${toothFresh}" style="${buildDxStyle(findVisualSpec("fractura")?.color)}">
+      <span class="tooth-dx-fracture-a"></span>
+      <span class="tooth-dx-fracture-b"></span>
+    </span>
+  ` : "";
+
+  const pulpar = visual.has("pulpar") ? `
+    <span class="tooth-dx-pulp dxfx-pulpar${toothFresh}" style="${buildDxStyle(findVisualSpec("pulpar")?.color)}"></span>
+  ` : "";
+
+  const rootStub = visual.has("resto") ? `
+    <span class="tooth-dx-root-stub dxfx-resto${toothFresh}" style="${buildDxStyle(findVisualSpec("resto")?.color)}"></span>
+  ` : "";
+
+  const eruption = visual.has("erupcion") ? `
+    <span class="tooth-dx-eruption dxfx-erupcion${toothFresh}" style="${buildDxStyle(findVisualSpec("erupcion")?.color)}"></span>
+  ` : "";
+
+  const mobility = visual.has("movilidad") ? `
+    <span class="tooth-dx-mobility dxfx-movilidad${toothFresh}" style="${buildDxStyle(findVisualSpec("movilidad")?.color)}">
+      <span class="tooth-dx-mobility-bar left"></span>
+      <span class="tooth-dx-mobility-bar right"></span>
+    </span>
+  ` : "";
+
+  const surfaceEntries = visual.faceEntries.filter((entry) => SURFACE_DX_IDS.has(entry.id));
+  const surfaces = surfaceEntries.length ? `
+    <div class="tooth-dx-surface-map">
+      ${surfaceEntries.map((entry) => `
+        <span class="tooth-dx-surface tooth-dx-surface-${entry.face} dxsurface-${entry.id}${isDiagnosisFresh(toothNumber, entry.face) ? " dx-feedback-fresh" : ""}"
+          style="${buildDxStyle(entry.color)}"
+          title="${escapeAttr(`${faceLabel(entry.face)}: ${entry.name}`)}"></span>
+      `).join("")}
+    </div>
+  ` : "";
+
+  return `<div class="tooth-dx-layer">${frame}${surfaces}${crown}${endo}${post}${implant}${pulpar}${fracture}${rootStub}${eruption}${mobility}</div>`;
+}
+
+function renderToothDxHud(toothNumber, isUpper) {
+  const entries = getToothDiagnostics(toothNumber);
+  if (!entries.length) return "";
+
+  const popoverClass = isUpper ? "tooth-dx-popover-top" : "tooth-dx-popover-bottom";
+  const rows = entries.map((entry) => `
+    <div class="tooth-dx-item">
+      <span class="tooth-dx-chip" style="${buildDxStyle(entry.color)}">${escapeAttr(entry.target === "tooth" ? "Pieza" : faceLabel(entry.face))}</span>
+      <span class="tooth-dx-text">${escapeAttr(entry.name)}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="tooth-dx-hud">
+      <div class="tooth-dx-popover ${popoverClass}">
+        <p class="tooth-dx-popover-title">Diagnosticos activos</p>
+        ${rows}
+      </div>
+    </div>
+  `;
+}
+
+function renderToothQuickTag(toothNumber) {
+  const tag = getToothQuickTag(toothNumber);
+  if (!tag) return `<div class="tooth-quick-tag-slot"></div>`;
+
+  return `
+    <div class="tooth-quick-tag-slot">
+      <span class="tooth-quick-tag" style="${buildDxStyle(tag.color)}">${escapeAttr(tag.text)}</span>
+    </div>
+  `;
+}
+
+function normalizeToothImageEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return { imagen_v: "", imagen_p: "", imagen_url: "" };
+  }
+
+  const normalized = {
+    imagen_v: typeof entry.imagen_v === "string" ? entry.imagen_v : "",
+    imagen_p: typeof entry.imagen_p === "string" ? entry.imagen_p : "",
+    imagen_url: typeof entry.imagen_url === "string" ? entry.imagen_url : "",
+  };
+
+  if (!normalized.imagen_v && !normalized.imagen_p && normalized.imagen_url) {
+    normalized.imagen_v = normalized.imagen_url;
+    normalized.imagen_p = normalized.imagen_url;
+  }
+
+  return normalized;
+}
+
+function getToothImageUrl(toothNumber) {
+  const entry = toothImages[toothNumber];
+  if (!entry) return "";
+  return (entry.imagen_v || entry.imagen_url || entry.imagen_p || "").trim();
+}
+
+async function loadToothImagesFromPeriodontograma() {
+  toothImages = {};
+  if (!currentPacienteId || !db) return;
+
+  try {
+    const columns = await dbAll("PRAGMA table_info(periodontograma)");
+    const hasImagesColumn = Array.isArray(columns) && columns.some((column) => column?.name === "dientes_imagenes");
+    const selectCols = hasImagesColumn ? "datos, dientes_imagenes" : "datos";
+    const row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+    if (!row) return;
+
+    if (row.datos) {
+      const parsedDatos = JSON.parse(row.datos);
+      const rawTeeth = parsedDatos?.teeth && typeof parsedDatos.teeth === "object" ? parsedDatos.teeth : parsedDatos;
+      if (rawTeeth && typeof rawTeeth === "object") {
+        Object.entries(rawTeeth).forEach(([toothNumber, entry]) => {
+          if (!/^\d+$/.test(String(toothNumber))) return;
+          toothImages[toothNumber] = normalizeToothImageEntry(entry);
+        });
+      }
+    }
+
+    if (!row.dientes_imagenes) return;
+
+    const parsedImages = JSON.parse(row.dientes_imagenes);
+    if (!parsedImages || typeof parsedImages !== "object") return;
+
+    Object.entries(parsedImages).forEach(([toothNumber, entry]) => {
+      if (!/^\d+$/.test(String(toothNumber))) return;
+      toothImages[toothNumber] = normalizeToothImageEntry(entry);
+    });
+  } catch (e) {
+    console.error("Error cargando imagenes del periodontograma:", e);
+  }
+}
+
+
+
+
 function hexToRgba(hex, alpha) {
   if (!hex) return `rgba(78, 171, 190, ${alpha})`;
   const raw = hex.replace("#", "").trim();
@@ -230,14 +656,6 @@ function hexToRgba(hex, alpha) {
   const b = parseInt(raw.slice(4, 6), 16);
   if ([r, g, b].some(Number.isNaN)) return `rgba(78, 171, 190, ${alpha})`;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function escapeAttr(val) {
-  return String(val)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
 }
 
 function getToothType(num) {
@@ -428,35 +846,99 @@ function createToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMi
   ` : "";
 
   const baseOpacity = isMissing ? 0.45 : 1;
+  const toothImageUrl = getToothImageUrl(num);
+
+  if (toothImageUrl) {
+    return `
+      <div class="tooth-visual tooth-visual-image">
+        <div class="tooth-image-stage">
+          <img src="${escapeAttr(toothImageUrl)}" alt="Diente ${num}"
+            class="tooth-illustration"
+            style="opacity:${baseOpacity};" draggable="false" />
+          ${renderToothDiagnosisMarkers(num)}
+          <svg viewBox="0 0 ${w} ${h}" class="absolute inset-0 w-full h-full pointer-events-none">
+            ${overlays}
+            ${missingMark}
+          </svg>
+        </div>
+      </div>
+    `;
+  }
 
   return `
-    <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
-      <defs>
-        <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1" />
-          <stop offset="55%" style="stop-color:#FFF7E9;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#F3E9DC;stop-opacity:1" />
-        </linearGradient>
-        <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? "30%" : "70%"}">
-          <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1" />
-          <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
-        </radialGradient>
-      </defs>
+    <div class="tooth-visual">
+      <div class="tooth-image-stage tooth-svg-stage">
+        ${renderToothDiagnosisMarkers(num)}
+        <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
+          <defs>
+            <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1" />
+              <stop offset="55%" style="stop-color:#FFF7E9;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#F3E9DC;stop-opacity:1" />
+            </linearGradient>
+            <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? "30%" : "70%"}">
+              <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1" />
+              <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
+            </radialGradient>
+          </defs>
 
-      <path d="${path}"
-        fill="url(#${gradientId})"
-        stroke="${borderColor}"
-        stroke-width="${strokeWidth}"
-        stroke-dasharray="${isMissing ? "6 4" : "0"}"
-        opacity="${baseOpacity}" />
+          <path d="${path}"
+            fill="url(#${gradientId})"
+            stroke="${borderColor}"
+            stroke-width="${strokeWidth}"
+            stroke-dasharray="${isMissing ? "6 4" : "0"}"
+            opacity="${baseOpacity}" />
 
-      ${detail}
-      <ellipse cx="${w * 0.5}" cy="${isUpper ? h * 0.28 : h * 0.72}" rx="${w * 0.28}" ry="${h * 0.16}"
-        fill="url(#${shineId})" opacity="0.85"/>
+          ${detail}
+          <ellipse cx="${w * 0.5}" cy="${isUpper ? h * 0.28 : h * 0.72}" rx="${w * 0.28}" ry="${h * 0.16}"
+            fill="url(#${shineId})" opacity="0.85"/>
 
-      ${overlays}
-      ${missingMark}
-    </svg>
+          ${overlays}
+          ${missingMark}
+        </svg>
+      </div>
+    </div>
+  `;
+}
+
+function renderGeoCircle(num) {
+  const state = diagnosticsState[num] || {};
+  const faces = state.faces || {};
+  const toothClass = state.tooth?.cssClass || "";
+  const isAbsent = state.tooth?.id === "absent";
+  const summary = getToothDiagnostics(num);
+  const faceCls = (id) => {
+    const dx = faces[id];
+    if (!dx?.id) return "";
+    const classes = [dx.cssClass || "", `dxfx-${dx.id}`];
+    if (isDiagnosisFresh(num, id)) classes.push("dx-feedback-fresh");
+    return ` ${classes.filter(Boolean).join(" ")}`;
+  };
+  const circleClasses = ["geo-circle", toothClass || ""];
+  if (state.tooth?.id) circleClasses.push(`dxfx-${state.tooth.id}`);
+  if (isDiagnosisFresh(num, "tooth")) circleClasses.push("dx-feedback-fresh");
+  const countBadge = summary.length ? `<span class="geo-dx-count" style="${buildDxStyle(summary[0].color)}">${summary.length}</span>` : "";
+
+  return `
+    <div class="geo-mini ${toothClass || ""}" title="${escapeAttr(getDiagnosisSummaryTitle(num))}">
+      ${countBadge}
+      <svg viewBox="0 0 100 100" class="geo-svg">
+        <circle cx="50" cy="50" r="48" class="${circleClasses.filter(Boolean).join(" ")}" />
+
+        <path d="M15,15 L85,85 M85,15 L15,85" stroke="#0f172a" stroke-width="4" class="geo-cross ${isAbsent ? "" : "hidden"}" />
+
+        <path d="M15,15 L85,15 L65,35 L35,35 Z" class="geo-sector${faceCls("vestibular")}"
+          data-geo-face="vestibular" data-tooth="${num}" />
+        <path d="M15,85 L85,85 L65,65 L35,65 Z" class="geo-sector${faceCls("lingual")}"
+          data-geo-face="lingual" data-tooth="${num}" />
+        <path d="M15,15 L15,85 L35,65 L35,35 Z" class="geo-sector${faceCls("mesial")}"
+          data-geo-face="mesial" data-tooth="${num}" />
+        <path d="M85,15 L85,85 L65,65 L65,35 Z" class="geo-sector${faceCls("distal")}"
+          data-geo-face="distal" data-tooth="${num}" />
+        <rect x="35" y="35" width="30" height="30" class="geo-sector${faceCls("oclusal")}"
+          data-geo-face="oclusal" data-tooth="${num}" />
+      </svg>
+    </div>
   `;
 }
 
@@ -551,6 +1033,25 @@ async function loadTreatmentsFromDB() {
       let treatmentId = null;
       const proc = (row.procedimiento || "").toLowerCase();
 
+      // Check if it is a diagnosis
+      if (row.notas && row.notas.startsWith("DX:")) {
+        try {
+          const json = JSON.parse(row.notas.substring(3));
+          const dx = findDiagnosis(json.dxId);
+          if (dx) {
+            const state = ensureDxState(toothNum);
+            if (json.face) {
+              state.faces = state.faces || {};
+              state.faces[json.face] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status };
+            } else {
+              state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name };
+            }
+            addDxRow(toothNum, json.face ? faceLabel(json.face) : "Pieza completa", dx, json.face || null);
+          }
+        } catch (e) { console.error("Error parsing dx note", e); }
+        return;
+      }
+
       if (proc.includes("profilaxis simple")) treatmentId = "profilaxis-simple";
       else if (proc.includes("profilaxis profunda")) treatmentId = "profilaxis-profunda";
       else if (proc.includes("caries") || proc.includes("lesión")) treatmentId = "caries";
@@ -605,55 +1106,78 @@ function renderToothButton(num, isUpper, index, total) {
   const status = teethStatus[num];
   const surfaces = status?.surfaces || {};
   const hasSurfaces = Object.values(surfaces).some(Boolean);
+  const diagTooth = diagnosticsState[num]?.tooth;
 
   const treatment = status ? treatments.find(t => t.id === status.treatment) : null;
   const treatColor = treatment?.color || "";
   const isSelected = selectedTooth === num;
-  const isMissing = status?.treatment === "ausente";
+  const isMissing = status?.treatment === "ausente" || diagTooth?.id === "absent";
 
   const offset = arcOffset(index, total, isUpper);
   const border = isSelected ? BRAND.primary : (treatColor || "#CBD5E1");
 
   const shadow = isSelected
-    ? `0 0 0 4px ${BRAND.ring}, 0 18px 40px rgba(15,37,50,.16)`
+    ? `0 0 0 4px ${BRAND.ring}, 0 16px 32px rgba(15,37,50,.14)`
     : treatColor
-      ? `0 0 0 3px ${hexToRgba(treatColor, 0.22)}, 0 14px 26px rgba(15,37,50,.14)`
-      : `0 10px 22px rgba(15,37,50,.10)`;
+      ? `0 0 0 2px ${hexToRgba(treatColor, 0.18)}, 0 12px 24px rgba(15,37,50,.12)`
+      : `0 8px 18px rgba(15,37,50,.08)`;
 
   const label = treatment?.name || "";
-  const title = escapeAttr(label ? `Pieza ${num} - ${label}` : `Pieza ${num}`);
+  const title = escapeAttr(`${getDiagnosisSummaryTitle(num)}${label ? ` | Tratamiento: ${label}` : ""}`);
 
   // Tailwind look del botón (más “Sonalía”)
   const baseBtn =
-    `tooth-btn rounded-2xl border-[2.5px] bg-white dark:bg-slate-900
+    `tooth-btn rounded-[24px] border-[2.5px] bg-white
      transition will-change-transform
      hover:-translate-y-1.5 hover:shadow-[0_18px_40px_rgba(15,37,50,.16)]
      dark:hover:shadow-[0_18px_40px_rgba(0,0,0,.35)]
      active:translate-y-0`;
 
   const selectedCls = isSelected ? "shadow-ring" : "";
-  const hasTreatmentDot = treatment ? `
-    <span class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full pulse-dot"
-      style="background:${treatColor || BRAND.primary}; box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 8px 18px rgba(15,37,50,.18)"></span>
-  ` : "";
 
-  return `
-    <div class="odonto-tooth flex flex-col items-center gap-2" style="transform: translateY(${offset}px);">
-      <div class="text-[11px] font-extrabold tracking-wide opacity-80 text-black/70 dark:text-white/70">${num}</div>
+  if (isUpper) {
+    // Arcada superior: número arriba → diente → círculo diagnóstico → etiqueta
+    return `
+      <div class="odonto-tooth odonto-tooth-upper flex flex-col items-center gap-3" style="transform: translateY(${offset}px);">
+        ${renderToothDxHud(num, true)}
+        <div class="tooth-number-badge">${num}</div>
 
-      <button data-tooth="${num}"
-        class="${baseBtn} ${selectedCls} relative overflow-hidden"
-        title="${title}" aria-label="${title}"
-        style="border-color:${border}; box-shadow:${shadow};">
-        ${hasTreatmentDot}
-        ${createToothSVG(num, isUpper, isSelected, treatColor, hasSurfaces ? surfaces : null, isMissing)}
-      </button>
+        <button data-tooth="${num}"
+          class="${baseBtn} ${selectedCls} relative overflow-hidden"
+          title="${title}" aria-label="${title}"
+          style="border-color:${border}; box-shadow:${shadow};">
+          <div class="tooth-shell">
+            ${createToothSVG(num, !isUpper, isSelected, treatColor, hasSurfaces ? surfaces : null, isMissing)}
+          </div>
+        </button>
 
-      <div class="min-h-[14px] text-[10px] font-semibold text-black/60 dark:text-white/60 text-center max-w-[var(--tooth-w)]">
-        ${label}
+        ${renderGeoCircle(num)}
+
+        ${renderToothQuickTag(num)}
       </div>
-    </div>
-  `;
+    `;
+  } else {
+    // Arcada inferior: etiqueta → círculo diagnóstico → diente → número abajo
+    return `
+      <div class="odonto-tooth odonto-tooth-lower flex flex-col items-center gap-3" style="transform: translateY(${offset}px);">
+        ${renderToothDxHud(num, false)}
+        ${renderGeoCircle(num)}
+
+        <button data-tooth="${num}"
+          class="${baseBtn} ${selectedCls} relative overflow-hidden"
+          title="${title}" aria-label="${title}"
+          style="border-color:${border}; box-shadow:${shadow};">
+          <div class="tooth-shell">
+            ${createToothSVG(num, !isUpper, isSelected, treatColor, hasSurfaces ? surfaces : null, isMissing)}
+          </div>
+        </button>
+
+        ${renderToothQuickTag(num)}
+
+        <div class="tooth-number-badge">${num}</div>
+      </div>
+    `;
+  }
 }
 
 function renderTreatments() {
@@ -676,20 +1200,233 @@ function renderTreatments() {
   });
 }
 
-function renderLegend() {
-  const cont = $("leyenda");
+
+
+function renderDxOptions() {
+  const cont = $("dxOptions");
   if (!cont) return;
 
-  cont.innerHTML = treatments.map(t => `
-    <div class="rounded-2xl p-3 border border-[#8BCFDD]/30 dark:border-slate-700 bg-white dark:bg-[#0E1A25] shadow-sm hover:shadow-soft transition">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl shadow flex items-center justify-center text-xl" style="background:${t.color}">
-          ${t.icon}
-        </div>
-        <span class="text-xs font-extrabold text-black/75 dark:text-white/80">${t.name}</span>
+  cont.innerHTML = DX_CATEGORIES.map(cat => `
+    <div>
+      <p class="text-[11px] uppercase tracking-[0.18em] text-black/50 dark:text-white/50 mb-2 font-bold">${cat.title}</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+        ${cat.ids.map(id => {
+    const dx = findDiagnosis(id);
+    if (!dx) return "";
+    const badge = dx.icon
+      ? `<span class="inline-flex items-center justify-center w-9 h-9 rounded-xl" style="background:${hexToRgba(dx.color || '#4EABBE', 0.14)}; color:${dx.color}; border:1px solid ${hexToRgba(dx.color || '#4EABBE', 0.35)}">${dx.icon}</span>`
+      : `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${dx.color || '#4EABBE'}"></span>`;
+    return `
+            <button class="dx-option w-full p-3 rounded-xl border border-[#8BCFDD]/30 dark:border-slate-700 hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition text-left font-semibold flex items-start gap-3"
+              data-dx="${dx.id}">
+              ${badge}
+              <span class="min-w-0 text-sm leading-snug whitespace-normal">${dx.name}</span>
+            </button>
+          `;
+  }).join("")}
       </div>
     </div>
   `).join("");
+
+  cont.querySelectorAll("[data-dx]").forEach(btn => {
+    btn.addEventListener("click", () => applyDiagnosis(btn.getAttribute("data-dx")));
+  });
+}
+
+async function saveDiagnosisToDB(tooth, face, dx) {
+  if (!currentPacienteId || !db) return;
+  try {
+    const noteObj = { type: "diagnosis", dxId: dx.id, face: face || null };
+    const nota = "DX:" + JSON.stringify(noteObj);
+
+    await dbRun(
+      'INSERT INTO tratamientos (paciente_id, diente, procedimiento, costo, notas, fecha) VALUES (?, ?, ?, ?, ?, datetime("now"))',
+      [currentPacienteId, tooth.toString(), dx.name, 0, nota]
+    );
+    if (window.parent !== window) window.parent.postMessage({ type: "tratamiento-guardado" }, "*");
+  } catch (e) {
+    console.error("Error saving diagnosis:", e);
+    toast("Error al guardar diagnóstico", "error");
+  }
+}
+
+async function deleteDiagnosisFromDB(tooth, face, dxId) {
+  if (!currentPacienteId || !db) return;
+  try {
+    // Buscar el tratamiento que coincida con la nota
+    // Como no guardamos el ID en el DOM, buscaremos por contenido de la nota aproximado o parseado
+    // Para simplificar, borramos el mas reciente que coincida
+
+    const rows = await dbAll('SELECT id, notas FROM tratamientos WHERE paziente_id = ? AND diente = ?', [currentPacienteId, tooth]); // Typo in paziente_id fixed below
+    // Actually simpler: Select where note like...
+
+    // Better query:
+    const notePattern = `%"dxId":"${dxId}"%`;
+    const facePattern = face ? `%"face":"${face}"%` : `%"face":null%`;
+
+    // SQLite LIKE is case insensitive by default usually, but let's be safe.
+    // Actually, let's just fetch all for patient/tooth and filter in JS to be safe with JSON format
+    const candidateRows = await dbAll('SELECT id, notas FROM tratamientos WHERE paciente_id = ? AND diente = ?', [currentPacienteId, tooth]);
+
+    let targetId = null;
+    for (const row of candidateRows) {
+      if (row.notas && row.notas.startsWith("DX:")) {
+        try {
+          const json = JSON.parse(row.notas.substring(3));
+          if (json.dxId === dxId && json.face === (face || null)) {
+            targetId = row.id;
+            break; // Delete one match
+          }
+        } catch (e) { }
+      }
+    }
+
+    if (targetId) {
+      await dbRun('DELETE FROM tratamientos WHERE id = ?', [targetId]);
+      if (window.parent !== window) window.parent.postMessage({ type: "tratamiento-guardado" }, "*");
+    }
+
+  } catch (e) {
+    console.error("Error deleting diagnosis:", e);
+  }
+}
+
+function openDxModal(tooth, face) {
+  dxContext = { tooth, face };
+  const overlay = $("dxModalOverlay");
+  if (!overlay) return;
+  $("dxToothLabel").textContent = tooth ?? "--";
+  $("dxFaceLabel").textContent = faceLabel(face);
+  overlay.classList.remove("hidden");
+  overlay.classList.add("flex");
+  renderDxOptions();
+}
+
+function closeDxModal() {
+  const overlay = $("dxModalOverlay");
+  if (!overlay) return;
+  overlay.classList.add("hidden");
+  overlay.classList.remove("flex");
+  dxContext = { tooth: null, face: null };
+}
+
+function clearDxFace() {
+  if (!dxContext.tooth || !dxContext.face) return;
+  const state = diagnosticsState[dxContext.tooth];
+  if (state && state.faces) {
+    delete state.faces[dxContext.face];
+    if (!state.tooth && Object.keys(state.faces).length === 0) delete diagnosticsState[dxContext.tooth];
+  }
+  render();
+  closeDxModal();
+}
+
+function clearDxTooth() {
+  if (!dxContext.tooth) return;
+  delete diagnosticsState[dxContext.tooth];
+  render();
+  closeDxModal();
+}
+
+async function applyDiagnosis(dxId) {
+  if (!dxContext.tooth) return;
+  const dx = findDiagnosis(dxId);
+  if (!dx) return;
+
+  const state = ensureDxState(dxContext.tooth);
+
+  if (dx.id === "sano" || dx.cssClass === "clean") {
+    if (dxContext.face && state.faces) delete state.faces[dxContext.face];
+  } else if (dx.target === "tooth") {
+    state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name };
+    if (dx.id === "absent") state.faces = {};
+  } else if (dxContext.face) {
+    state.faces[dxContext.face] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status };
+  }
+
+  diagnosticsState[dxContext.tooth] = state;
+  addDxRow(
+    dxContext.tooth,
+    dx.target === "tooth" ? "Pieza completa" : faceLabel(dxContext.face),
+    dx,
+    dx.target === "tooth" ? null : dxContext.face
+  );
+  triggerDiagnosisFeedback(dxContext.tooth, dx.target === "tooth" ? "tooth" : dxContext.face);
+  toast(`DX: ${dx.name} en pieza ${dxContext.tooth}${dx.target === "face" && dxContext.face ? ` · ${faceLabel(dxContext.face)}` : ""}`, dx.status?.toLowerCase().includes("pend") ? "warn" : "ok");
+
+  // Guardar en BD
+  saveDiagnosisToDB(dxContext.tooth, dxContext.face, dx);
+
+  closeDxModal();
+  render();
+}
+
+function addDxRow(tooth, face, dx, faceIdRaw = null) {
+  const tbody = $("dxTableBody");
+  if (!tbody || !dx) return;
+  $("dxEmpty")?.classList.add("hidden");
+
+  const normalizedFaceId = dx.target === "tooth"
+    ? "tooth"
+    : (normalizeFaceId(faceIdRaw) || normalizeFaceId(dxContext.face) || normalizeFaceId(face) || "");
+
+  const tr = document.createElement("tr");
+  tr.dataset.tooth = tooth;
+  tr.dataset.faceId = normalizedFaceId;
+  tr.dataset.diag = dx.id;
+  const date = new Date().toLocaleDateString("es-ES");
+
+  tr.innerHTML = `
+    <td class="py-2 text-xs text-black/60 dark:text-white/60">${date}</td>
+    <td class="py-2 font-bold text-[#4EABBE] dark:text-[#8BCFDD]">${tooth}</td>
+    <td class="py-2 text-sm">${face}</td>
+    <td class="py-2 font-semibold">${dx.name}</td>
+    <td class="py-2">${statusBadge(dx.status)}</td>
+    <td class="py-2 text-right">
+      <button class="px-3 py-1 rounded-lg text-[11px] font-bold bg-orange-400 text-white hover:bg-orange-500 transition"
+        data-dx-delete>ANULAR</button>
+    </td>
+  `;
+
+  tr.querySelector("[data-dx-delete]")?.addEventListener("click", () => deleteDxRow(tr));
+  tbody.prepend(tr);
+  dxCount += 1;
+  $("dxTotal").textContent = dxCount;
+}
+
+async function deleteDxRow(rowEl) {
+  if (!rowEl) return;
+  const tooth = parseInt(rowEl.dataset.tooth, 10);
+  const faceId = normalizeFaceId(rowEl.dataset.faceId);
+  const diagId = rowEl.dataset.diag;
+  const dx = findDiagnosis(diagId);
+  const state = diagnosticsState[tooth];
+
+  if (state) {
+    const isToothDx = faceId === "tooth" || dx?.target === "tooth";
+    if (isToothDx) {
+      state.tooth = null;
+    } else if (state.faces && faceId && state.faces[faceId]) {
+      delete state.faces[faceId];
+    }
+    if (!state.tooth && state.faces && Object.keys(state.faces).length === 0) delete diagnosticsState[tooth];
+
+    // Eliminar de BD
+    await deleteDiagnosisFromDB(tooth, isToothDx ? null : faceId, diagId);
+  }
+
+  rowEl.remove();
+  dxCount = Math.max(0, dxCount - 1);
+  $("dxTotal").textContent = dxCount;
+  updateDxEmptyState();
+  render();
+}
+
+function updateDxEmptyState() {
+  const empty = $("dxEmpty");
+  if (!empty) return;
+  if (dxCount <= 0) empty.classList.remove("hidden");
+  else empty.classList.add("hidden");
 }
 
 function renderModalContents() {
@@ -758,56 +1495,35 @@ function renderModalContents() {
   });
 }
 
+function bindGeoListeners() {
+  document.querySelectorAll("[data-geo-face]").forEach(el => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const tooth = parseInt(el.getAttribute("data-tooth"), 10);
+      const face = el.getAttribute("data-geo-face");
+      openDxModal(tooth, face);
+    });
+  });
+}
+
 function render() {
-  const radioInf = $("radioInfantil");
-  const radioAdu = $("radioAdulto");
-  const labelInf = $("labelInfantil");
-  const labelAdu = $("labelAdulto");
-
-  if (radioInf && radioAdu) {
-    radioInf.checked = !showAdultTeeth;
-    radioAdu.checked = showAdultTeeth;
+  const denticionAuto = $("denticionAuto");
+  if (denticionAuto) {
+    denticionAuto.textContent = showAdultTeeth ? "Adulto" : "Infantil";
   }
-
-  // labels activos con tu gradiente
-  const activeStyle = `linear-gradient(to right, ${BRAND.primary}, ${BRAND.accent})`;
-  if (labelInf && labelAdu) {
-    if (showAdultTeeth) {
-      labelAdu.style.background = activeStyle;
-      labelAdu.style.color = "#fff";
-      labelInf.style.background = "transparent";
-      labelInf.style.color = "";
-    } else {
-      labelInf.style.background = activeStyle;
-      labelInf.style.color = "#fff";
-      labelAdu.style.background = "transparent";
-      labelAdu.style.color = "";
-    }
-  }
-
-  const titulo = $("tituloDenticion");
-  if (titulo) titulo.textContent = showAdultTeeth ? "Odontograma · Adulto" : "Odontograma · Infantil";
 
   const teeth = currentTeeth();
   $("filaSuperior").innerHTML = teeth.superior.map((n, idx) => renderToothButton(n, true, idx, teeth.superior.length)).join("");
   $("filaInferior").innerHTML = teeth.inferior.map((n, idx) => renderToothButton(n, false, idx, teeth.inferior.length)).join("");
 
-  // Click dientes
+  // Click dientes deshabilitado (selección sólo desde el círculo de diagnóstico)
   document.querySelectorAll("button[data-tooth]").forEach(btn => {
-    btn.addEventListener("click", () => setSelected(parseInt(btn.getAttribute("data-tooth"), 10)));
+    btn.classList.add("pointer-events-none");
+    btn.setAttribute("aria-disabled", "true");
   });
+  bindGeoListeners();
 
-  // Panel tratamientos
-  const panel = $("tratamientosPanel");
-  if (selectedTooth && panel) {
-    panel.classList.remove("hidden");
-    $("piezaPanel").textContent = selectedTooth;
-    renderTreatments();
-  } else {
-    panel?.classList.add("hidden");
-    const list = $("listaTratamientos");
-    if (list) list.innerHTML = "";
-  }
+  // Panel tratamientos eliminado
 
   // Modal
   const overlay = $("modalOverlay");
@@ -820,199 +1536,64 @@ function render() {
     overlay.classList.remove("flex");
   }
 
-  renderLegend();
+
+  updateDxEmptyState();
 }
 
 // ===== INIT =====
 async function init() {
   const pacienteId = getQueryParam("id");
   if (pacienteId) currentPacienteId = pacienteId;
-
-  let ageDetected = false;
   if (currentPacienteId) {
     try {
       const paciente = await dbGet('SELECT fecha_nacimiento FROM pacientes WHERE id = ?', [currentPacienteId]);
       const edad = calculateAgeYears(paciente?.fecha_nacimiento);
       if (edad !== null) {
         showAdultTeeth = edad >= PEDIATRIC_MAX_YEARS;
-        ageDetected = true;
       }
     } catch (e) {
       console.error('Error calculando edad de paciente:', e);
     }
   }
 
-  // Deshabilitar radio buttons si la edad fue detectada automáticamente
-  const radioInf = $("radioInfantil");
-  const radioAdu = $("radioAdulto");
-  const labelInf = $("labelInfantil");
-  const labelAdu = $("labelAdulto");
-
-  if (ageDetected) {
-    if (radioInf) radioInf.disabled = true;
-    if (radioAdu) radioAdu.disabled = true;
-    // Deshabilitar también los labels para evitar clics
-    if (labelInf) {
-      labelInf.style.pointerEvents = 'none';
-      labelInf.style.opacity = '0.6';
-    }
-    if (labelAdu) {
-      labelAdu.style.pointerEvents = 'none';
-      labelAdu.style.opacity = '0.6';
-    }
-  }
-
-  // Radios
-  radioInf?.addEventListener("change", (e) => {
-    // No permitir cambios si la edad fue detectada automáticamente
-    if (ageDetected) {
-      radioInf.checked = !showAdultTeeth;
-      return;
-    }
-    if (e.target.checked) { showAdultTeeth = false; clearSelected(); }
-  });
-  radioAdu?.addEventListener("change", (e) => {
-    // No permitir cambios si la edad fue detectada automáticamente
-    if (ageDetected) {
-      radioAdu.checked = showAdultTeeth;
-      return;
-    }
-    if (e.target.checked) { showAdultTeeth = true; clearSelected(); }
-  });
-
-  // Limpiar
-  $("btnLimpiarSeleccion")?.addEventListener("click", () => {
-    clearSelected();
-    toast("Selección limpia", "info");
-  });
-
-  // Profilaxis dropdown
-  const btn = $("btnProfilaxis");
-  const dd = $("dropdownProfilaxis");
-  if (btn && dd) {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      dd.classList.toggle("hidden");
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!btn.contains(e.target) && !dd.contains(e.target)) dd.classList.add("hidden");
-    });
-
-    dd.querySelectorAll("[data-treatment]").forEach(b => {
-      b.addEventListener("click", async () => {
-        const id = b.getAttribute("data-treatment");
-        const treatment = treatments.find(t => t.id === id);
-
-        if (!selectedTooth) {
-          toast("Primero selecciona una pieza dental", "warn");
-          dd.classList.add("hidden");
-          return;
-        }
-        if (treatment) {
-          await handleTreatmentSelect(treatment);
-          dd.classList.add("hidden");
-        }
-      });
-    });
-  }
-
-  // Cerrar panel
-  $("btnCerrarPanel")?.addEventListener("click", clearSelected);
-
   // Modal buttons
   $("btnCancelarModal")?.addEventListener("click", cancelModal);
   $("btnGuardarModal")?.addEventListener("click", saveSurfaceSelection);
+  $("dxBtnClose")?.addEventListener("click", closeDxModal);
+  $("dxClearFace")?.addEventListener("click", clearDxFace);
+  $("dxClearTooth")?.addEventListener("click", clearDxTooth);
 
   // click afuera modal
   $("modalOverlay")?.addEventListener("click", (e) => {
     if (e.target === $("modalOverlay")) cancelModal();
+  });
+  $("dxModalOverlay")?.addEventListener("click", (e) => {
+    if (e.target === $("dxModalOverlay")) closeDxModal();
   });
 
   // Esc para cerrar
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if (showSurfaceModal) cancelModal();
+      else if (!$("dxModalOverlay")?.classList.contains("hidden")) closeDxModal();
       else if (selectedTooth) clearSelected();
     }
   });
 
-  // Hacer el panel arrastrable
-  const panel = $("tratamientosPanel");
-  const panelHeader = $("panelHeader");
-
-  if (panel && panelHeader) {
-    let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
-    let xOffset = 0;
-    let yOffset = 0;
-
-    panelHeader.addEventListener("mousedown", dragStart);
-    document.addEventListener("mousemove", drag);
-    document.addEventListener("mouseup", dragEnd);
-
-    // Touch events para móviles
-    panelHeader.addEventListener("touchstart", dragStart);
-    document.addEventListener("touchmove", drag);
-    document.addEventListener("touchend", dragEnd);
-
-    function dragStart(e) {
-      if (e.type === "touchstart") {
-        initialX = e.touches[0].clientX - xOffset;
-        initialY = e.touches[0].clientY - yOffset;
-      } else {
-        initialX = e.clientX - xOffset;
-        initialY = e.clientY - yOffset;
-      }
-
-      if (e.target === panelHeader || panelHeader.contains(e.target)) {
-        // No arrastrar si se clickea el botón de cerrar
-        if (e.target.closest('#btnCerrarPanel')) return;
-        isDragging = true;
-      }
-    }
-
-    function drag(e) {
-      if (isDragging) {
-        e.preventDefault();
-
-        if (e.type === "touchmove") {
-          currentX = e.touches[0].clientX - initialX;
-          currentY = e.touches[0].clientY - initialY;
-        } else {
-          currentX = e.clientX - initialX;
-          currentY = e.clientY - initialY;
-        }
-
-        xOffset = currentX;
-        yOffset = currentY;
-
-        setTranslate(currentX, currentY, panel);
-      }
-    }
-
-    function dragEnd(e) {
-      initialX = currentX;
-      initialY = currentY;
-      isDragging = false;
-    }
-
-    function setTranslate(xPos, yPos, el) {
-      el.style.transform = `translate(${xPos}px, ${yPos}px)`;
-    }
-  }
+  // Panel tratamientos eliminado
 
   // Load treatment catalog first
   await loadTreatmentCatalog();
 
   // Cargar de BD
-  if (currentPacienteId) await loadTreatmentsFromDB();
+  if (currentPacienteId) {
+    await loadToothImagesFromPeriodontograma();
+    await loadTreatmentsFromDB();
+  }
 
   render();
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
 else init();
+

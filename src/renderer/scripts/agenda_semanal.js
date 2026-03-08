@@ -1,7 +1,7 @@
 // agenda_semanal.js - Vista semanal mejorada
 
 export async function initSemanal(container, referenceDate) {
-    // Inyectar estilos de animación
+    // Inyectar estilos de animaciÃ³n
     if (!document.getElementById('semanal-animations')) {
         const style = document.createElement('style');
         style.id = 'semanal-animations';
@@ -19,7 +19,7 @@ export async function initSemanal(container, referenceDate) {
     }
 
     // La plantilla HTML ya fue cargada por agenda.js
-    // Solo esperamos a que el DOM esté listo
+    // Solo esperamos a que el DOM estÃ© listo
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
     // Estado
@@ -34,12 +34,12 @@ export async function initSemanal(container, referenceDate) {
         try {
             return JSON.parse(value);
         } catch (err) {
-            console.warn('[agenda_semanal] JSON inválido en app_settings:', err);
+            console.warn('[agenda_semanal] JSON invÃ¡lido en app_settings:', err);
             return fallback;
         }
     };
 
-    // Selectores con validación
+    // Selectores con validaciÃ³n
     const $ = (sel) => container.querySelector(sel);
     const prevWeekBtn = $('#prevWeek');
     const nextWeekBtn = $('#nextWeek');
@@ -47,6 +47,8 @@ export async function initSemanal(container, referenceDate) {
     const gridContainer = $('#gridContainer');
     const currentMonthYear = $('#currentMonthYear');
     const dentistSelect = $('#dentistSelectWeekly');
+    const lunchStartInput = $('#lunchStartInputWeekly');
+    const lunchEndInput = $('#lunchEndInputWeekly');
 
     // Verificar que existen los elementos necesarios
     if (!gridContainer) {
@@ -54,7 +56,7 @@ export async function initSemanal(container, referenceDate) {
             gridContainer: !!gridContainer,
             container: container.innerHTML.substring(0, 200)
         });
-        container.innerHTML = '<div class="p-8 text-center text-red-500">Error: Elementos del DOM no encontrados. Verifica que la plantilla semanal.html esté disponible.</div>';
+        container.innerHTML = '<div class="p-8 text-center text-red-500">Error: Elementos del DOM no encontrados. Verifica que la plantilla semanal.html estÃ© disponible.</div>';
         return;
     }
 
@@ -69,6 +71,19 @@ export async function initSemanal(container, referenceDate) {
             const hour12 = h % 12 || 12;
             return `${hour12}:${String(m).padStart(2, '0')} ${period}`;
         }
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+    const timeToMinutes = (value) => {
+        if (!value) return null;
+        const [hours, minutes] = String(value).split(':').map(Number);
+        if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+        return (hours * 60) + minutes;
+    };
+    const minutesToTime = (totalMinutes) => {
+        if (!Number.isFinite(totalMinutes)) return '00:00';
+        const clamped = Math.max(0, Math.min(1439, totalMinutes));
+        const h = Math.floor(clamped / 60);
+        const m = clamped % 60;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     };
 
@@ -87,7 +102,7 @@ export async function initSemanal(container, referenceDate) {
         return dateStr === toSQLDate(new Date());
     }
 
-    // Cargar configuración del localStorage
+    // Cargar configuraciÃ³n del localStorage
     function loadConfig() {
         const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {});
         let workDays = [1, 2, 3, 4, 5]; // Default: Lunes a Viernes
@@ -101,6 +116,8 @@ export async function initSemanal(container, referenceDate) {
             workEnd: parseInt(localStorage.getItem('work-end')?.split(':')[0] || '18'),
             defaultDuration: parseInt(localStorage.getItem('default-duration') || '30'),
             appointmentInterval: parseInt(localStorage.getItem('appointment-interval') || '10'),
+            lunchStart: localStorage.getItem('lunch-start') || savedSettings.lunchStart || '14:00',
+            lunchEnd: localStorage.getItem('lunch-end') || savedSettings.lunchEnd || '15:00',
             timeFormat: localStorage.getItem('time-format') || savedSettings.timeFormat || '24h',
             workDays: workDays,
             firstDayWeek: savedSettings.firstDayWeek ?? '1',
@@ -109,6 +126,50 @@ export async function initSemanal(container, referenceDate) {
     }
 
     let config = loadConfig();
+
+    const getLunchRangeMinutes = () => {
+        const start = timeToMinutes(config.lunchStart);
+        const end = timeToMinutes(config.lunchEnd);
+        if (start === null || end === null) return null;
+        if (end <= start) return null;
+        return { start, end };
+    };
+
+    const isLunchSlot = (timeStr) => {
+        const lunch = getLunchRangeMinutes();
+        if (!lunch) return false;
+        const start = timeToMinutes(timeStr);
+        if (start === null) return false;
+        const slotEnd = start + (Number(config.appointmentInterval) || 30);
+        return start < lunch.end && slotEnd > lunch.start;
+    };
+
+    function syncLunchInputs() {
+        if (lunchStartInput) lunchStartInput.value = config.lunchStart || '14:00';
+        if (lunchEndInput) lunchEndInput.value = config.lunchEnd || '15:00';
+    }
+
+    function saveLunchConfig() {
+        const startValue = lunchStartInput?.value || '14:00';
+        const endValue = lunchEndInput?.value || '15:00';
+        const startMinutes = timeToMinutes(startValue);
+        const endMinutes = timeToMinutes(endValue);
+
+        if (startMinutes === null || endMinutes === null) {
+            alert('Define correctamente la hora de comida');
+            syncLunchInputs();
+            return;
+        }
+        if (endMinutes <= startMinutes) {
+            alert('La hora fin de comida debe ser mayor a la hora inicio');
+            syncLunchInputs();
+            return;
+        }
+
+        localStorage.setItem('lunch-start', startValue);
+        localStorage.setItem('lunch-end', endValue);
+        window.dispatchEvent(new Event('configurationChanged'));
+    }
 
     // Cargar dentistas
     async function loadDentists() {
@@ -123,7 +184,7 @@ export async function initSemanal(container, referenceDate) {
         }
     }
 
-    // Generar slots de tiempo basados en configuración
+    // Generar slots de tiempo basados en configuraciÃ³n
     function generateTimeSlots() {
         const slots = [];
         const startHour = config.workStart;
@@ -132,7 +193,7 @@ export async function initSemanal(container, referenceDate) {
 
         // Validar intervalo para evitar loops infinitos
         if (!interval || interval <= 0 || interval > 60) {
-            interval = 30; // Default a 30 minutos si es inválido
+            interval = 30; // Default a 30 minutos si es invÃ¡lido
         }
 
         for (let hour = startHour; hour <= endHour; hour++) {
@@ -167,7 +228,7 @@ export async function initSemanal(container, referenceDate) {
             });
         }
 
-        // Actualizar mes/año
+        // Actualizar mes/aÃ±o
         if (currentMonthYear) {
             const monthYear = weekStart.toLocaleString(locale, { month: 'long', year: 'numeric' });
             currentMonthYear.textContent = monthYear.replace(/^./, s => s.toUpperCase());
@@ -198,7 +259,7 @@ export async function initSemanal(container, referenceDate) {
             appointments = [];
         }
 
-        // Contar citas por día
+        // Contar citas por dÃ­a
         const appointmentsByDay = {};
         appointments.forEach(apt => {
             const date = toSQLDate(new Date(apt.fecha_hora));
@@ -227,7 +288,7 @@ export async function initSemanal(container, referenceDate) {
         grid.className = 'grid';
         grid.style.gridTemplateColumns = '80px repeat(7, minmax(140px, 1fr))';
 
-        // Header de días (vacío + 7 días)
+        // Header de dÃ­as (vacÃ­o + 7 dÃ­as)
         const headerEmpty = document.createElement('div');
         headerEmpty.className = 'bg-[#F8F7F7] dark:bg-gray-900 border-r border-b border-[#E6E6E6] dark:border-gray-700 sticky top-0 left-0 z-30 transition-colors';
         grid.appendChild(headerEmpty);
@@ -244,18 +305,21 @@ export async function initSemanal(container, referenceDate) {
 
         // Filas de tiempo
         timeSlots.forEach(time => {
+            const lunchTimeSlot = isLunchSlot(time);
             // Celda de hora
             const timeCell = document.createElement('div');
-            timeCell.className = 'time-cell bg-[#F9FAFB] dark:bg-gray-900 border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors';
+            timeCell.className = `time-cell border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors ${lunchTimeSlot ? 'bg-amber-100/70 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold' : 'bg-[#F9FAFB] dark:bg-gray-900'}`;
             timeCell.textContent = formatDisplayTimeFromString(time, config.timeFormat);
             grid.appendChild(timeCell);
 
-            // Celdas por día
+            // Celdas por dÃ­a
             days.forEach(day => {
                 const cell = document.createElement('div');
-                cell.className = `grid-cell border-r border-b border-[#F3F4F6] dark:border-gray-700 transition-colors ${day.isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5 dark:bg-[#8BCFDD]/5' : ''}`;
+                cell.className = `grid-cell border-r border-b border-[#F3F4F6] dark:border-gray-700 transition-colors ${day.isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5 dark:bg-[#8BCFDD]/5' : ''} ${lunchTimeSlot ? 'bg-amber-50 dark:bg-amber-900/15' : ''}`;
                 cell.dataset.date = day.date;
                 cell.dataset.time = time;
+                cell.dataset.isWeekend = day.isWeekend ? '1' : '0';
+                cell.dataset.isLunch = lunchTimeSlot ? '1' : '0';
 
                 const key = `${day.date}|${time}`;
                 const apt = appointmentsMap[key];
@@ -269,8 +333,14 @@ export async function initSemanal(container, referenceDate) {
                             <div class="text-white/80 text-xs truncate">${apt.motivo || 'Sin motivo'}</div>
                         </div>
                     `;
+                } else if (!day.isWeekend && lunchTimeSlot) {
+                    cell.innerHTML = `
+                        <div class="h-full flex items-center justify-center text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                            Comida
+                        </div>
+                    `;
                 } else if (!day.isWeekend) {
-                    // Solo mostrar botón de agregar si es día laboral
+                    // Solo mostrar botÃ³n de agregar si es dÃ­a laboral
                     cell.innerHTML = `
                         <div class="add-appointment-btn">
                             <button title="Agregar cita" class="hover:scale-110 transition-transform">
@@ -295,7 +365,16 @@ export async function initSemanal(container, referenceDate) {
                 const apt = cell.querySelector('.appointment-block');
                 if (apt) {
                     showAppointmentDetails(apt.dataset.aptId);
-                } else if (!cell.closest('.grid-cell').classList.contains('bg-gray-50')) {
+                } else if (cell.dataset.isWeekend !== '1') {
+                    if (cell.dataset.isLunch === '1') {
+                        const lunch = getLunchRangeMinutes();
+                        if (lunch) {
+                            alert(`Horario bloqueado por comida (${minutesToTime(lunch.start)} - ${minutesToTime(lunch.end)})`);
+                        } else {
+                            alert('Horario bloqueado por comida');
+                        }
+                        return;
+                    }
                     openCreateModal(cell.dataset.date, cell.dataset.time);
                 }
             });
@@ -312,6 +391,16 @@ export async function initSemanal(container, referenceDate) {
 
     // Modal para crear cita
     async function openCreateModal(dateStr, timeStr) {
+        if (isLunchSlot(timeStr)) {
+            const lunch = getLunchRangeMinutes();
+            if (lunch) {
+                alert(`Horario bloqueado por comida (${minutesToTime(lunch.start)} - ${minutesToTime(lunch.end)})`);
+            } else {
+                alert('Horario bloqueado por comida');
+            }
+            return;
+        }
+
         let patients = [];
         let especialistas = [];
         try {
@@ -378,7 +467,7 @@ export async function initSemanal(container, referenceDate) {
                     [pacienteId, especialistaId, `${dateStr} ${timeStr}:00`, motivo, estado, 0]
                 );
 
-                // Enviar notificación por email
+                // Enviar notificaciÃ³n por email
                 try {
                     // Obtener datos del paciente
                     const patient = await window.api.db.get(
@@ -388,7 +477,7 @@ export async function initSemanal(container, referenceDate) {
 
                     // Solo enviar si el paciente tiene email
                     if (patient && patient.email) {
-                        // Obtener nombre del especialista si está asignado
+                        // Obtener nombre del especialista si estÃ¡ asignado
                         let specialistName = null;
                         if (especialistaId) {
                             const specialist = await window.api.db.get(
@@ -400,7 +489,7 @@ export async function initSemanal(container, referenceDate) {
                             }
                         }
 
-                        // Enviar notificación
+                        // Enviar notificaciÃ³n
                         const notificationResult = await window.api.sendAppointmentNotification({
                             patientEmail: patient.email,
                             patientName: `${patient.nombre} ${patient.apellido}`.trim(),
@@ -412,12 +501,12 @@ export async function initSemanal(container, referenceDate) {
                         });
 
                         if (notificationResult.success) {
-                            console.log('✓ Notificación enviada a', patient.email);
+                            console.log('âœ“ NotificaciÃ³n enviada a', patient.email);
                         }
                     }
                 } catch (notifError) {
-                    // No bloquear si falla el envío de notificación
-                    console.warn('No se pudo enviar notificación:', notifError);
+                    // No bloquear si falla el envÃ­o de notificaciÃ³n
+                    console.warn('No se pudo enviar notificaciÃ³n:', notifError);
                 }
 
                 overlay.remove();
@@ -473,22 +562,24 @@ export async function initSemanal(container, referenceDate) {
             tab.classList.add('bg-[#4EABBE]', 'text-white', 'shadow-sm');
             tab.classList.remove('text-[#0F2532]/70', 'hover:bg-[#F8F7F7]');
             selectedChair = tab.dataset.chair;
-            // Recargar si filtras por sillón
+            // Recargar si filtras por sillÃ³n
         });
     });
 
-    // Escuchar cambios en la configuración (mismo window)
+    // Escuchar cambios en la configuraciÃ³n (mismo window)
     window.addEventListener('configurationChanged', (e) => {
-        console.log('Configuración actualizada (mismo window), recargando vista semanal...');
+        console.log('ConfiguraciÃ³n actualizada (mismo window), recargando vista semanal...');
         config = loadConfig();
+        syncLunchInputs();
         renderWeek();
     });
 
-    // Escuchar cambios en la configuración (otras pestañas)
+    // Escuchar cambios en la configuraciÃ³n (otras pestaÃ±as)
     window.addEventListener('storage', (e) => {
-        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval' || e.key === 'time-format' || e.key === 'app_settings') {
-            console.log('Configuración actualizada (otra pestaña), recargando vista semanal...');
+        if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval' || e.key === 'time-format' || e.key === 'app_settings' || e.key === 'lunch-start' || e.key === 'lunch-end') {
+            console.log('ConfiguraciÃ³n actualizada (otra pestaÃ±a), recargando vista semanal...');
             config = loadConfig();
+            syncLunchInputs();
             renderWeek();
         }
     });
@@ -498,8 +589,12 @@ export async function initSemanal(container, referenceDate) {
     if (nextWeekBtn) nextWeekBtn.addEventListener('click', () => { refDate.setDate(refDate.getDate() + 7); renderWeek(); });
     if (todayBtn) todayBtn.addEventListener('click', () => { refDate = new Date(); renderWeek(); });
     if (dentistSelect) dentistSelect.addEventListener('change', (e) => { selectedDentist = e.target.value; renderWeek(); });
+    lunchStartInput?.addEventListener('change', saveLunchConfig);
+    lunchEndInput?.addEventListener('change', saveLunchConfig);
 
     // Inicializar
+    syncLunchInputs();
     await loadDentists();
     await renderWeek();
 }
+

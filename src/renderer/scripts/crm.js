@@ -30,6 +30,8 @@ const State = {
   gmailConnected: false,
   activeSendTarget: null,
   activeEmailFieldId: 'emailMessage',
+  templateView: 'active',
+  templateSearch: '',
 };
 
 // Toast Notification System
@@ -395,6 +397,7 @@ function updateRecipientSummary(target = 'email') {
 
 function updateComposerButtons() {
   const sendBulkEmailBtn = $('sendBulkEmailBtn');
+  const gmailReady = State.gmailConnected;
   const emailSubject = $('emailSubject');
   const emailMessage = $('emailMessage');
   const sendTestEmailBtn = $('sendTestEmailBtn');
@@ -407,7 +410,7 @@ function updateComposerButtons() {
   const hasSubject = (emailSubject?.value || '').trim().length > 0;
   const hasBody = (emailMessage?.value || '').trim().length > 0;
   const isBusy = Boolean(State.activeSendTarget);
-  const canSend = hasRecipients && hasSubject && hasBody && !isBusy;
+  const canSend = hasRecipients && hasSubject && hasBody && gmailReady && !isBusy;
 
   // Cambiar texto del botón según cantidad de destinatarios
   if (recipientCount === 1) {
@@ -423,12 +426,14 @@ function updateComposerButtons() {
   sendBulkEmailBtn.classList.toggle('cursor-not-allowed', !canSend);
 
   if (sendTestEmailBtn) {
-    const canTest = hasSubject && hasBody && !isBusy;
+    const canTest = hasSubject && hasBody && gmailReady && !isBusy;
     sendTestEmailBtn.disabled = !canTest;
     sendTestEmailBtn.classList.toggle('opacity-60', !canTest);
     sendTestEmailBtn.classList.toggle('cursor-not-allowed', !canTest);
     if (!canTest && testEmailStatus) {
-      testEmailStatus.textContent = 'Completa asunto y mensaje para enviar una prueba.';
+      testEmailStatus.textContent = gmailReady
+        ? 'Completa asunto y mensaje para enviar una prueba.'
+        : 'Conecta Gmail para enviar una prueba.';
       testEmailStatus.dataset.state = 'hint';
     } else if (canTest && testEmailStatus?.dataset.state === 'hint') {
       testEmailStatus.textContent = '';
@@ -440,6 +445,7 @@ function updateComposerButtons() {
 
 function updateSurveyButtons() {
   const sendSurveyEmailsBtn = $('sendSurveyEmailsBtn');
+  const gmailReady = State.gmailConnected;
   const surveyTitleInput = $('surveyTitleInput');
   const surveyLinkInput = $('surveyLinkInput');
 
@@ -449,7 +455,7 @@ function updateSurveyButtons() {
   const hasTitle = (surveyTitleInput?.value || '').trim().length > 0;
   const hasLink = (surveyLinkInput?.value || '').trim().length > 0;
   const isBusy = Boolean(State.activeSendTarget);
-  const canSend = hasRecipients && hasTitle && hasLink && !isBusy;
+  const canSend = hasRecipients && hasTitle && hasLink && gmailReady && !isBusy;
 
   sendSurveyEmailsBtn.disabled = !canSend;
   sendSurveyEmailsBtn.classList.toggle('opacity-60', !canSend);
@@ -547,9 +553,98 @@ function updateEmailEstimate() {
   estimate.textContent = `Espera total estimada: ${formatDuration(totalSeconds)}.`;
 }
 
+function isTemplateActive(template) {
+  return Number(template?.activo ?? 1) !== 0;
+}
+
+function getTemplateCounts() {
+  return State.templates.reduce((acc, template) => {
+    if (isTemplateActive(template)) acc.active += 1;
+    else acc.archived += 1;
+    return acc;
+  }, { active: 0, archived: 0 });
+}
+
+function getVisibleTemplates() {
+  const search = String(State.templateSearch || '').trim().toLowerCase();
+  const wantActive = State.templateView !== 'archived';
+
+  return State.templates
+    .filter(template => isTemplateActive(template) === wantActive)
+    .filter(template => {
+      if (!search) return true;
+      const haystack = [
+        template?.nombre,
+        template?.asunto,
+        template?.contenido
+      ].join(' ').toLowerCase();
+      return haystack.includes(search);
+    })
+    .sort((a, b) => {
+      const predefinedDiff = Number(b?.es_predeterminada || 0) - Number(a?.es_predeterminada || 0);
+      if (predefinedDiff !== 0) return predefinedDiff;
+
+      const aDate = Date.parse(a?.fecha_actualizacion || a?.fecha_creacion || 0) || 0;
+      const bDate = Date.parse(b?.fecha_actualizacion || b?.fecha_creacion || 0) || 0;
+      return bDate - aDate;
+    });
+}
+
+function updateTemplateFilterUi(visibleCount) {
+  const { active, archived } = getTemplateCounts();
+  const activeBtn = $('templateViewActiveBtn');
+  const archivedBtn = $('templateViewArchivedBtn');
+  const activeCount = $('activeTemplateCount');
+  const archivedCount = $('archivedTemplateCount');
+  const summary = $('templateViewSummary');
+
+  if (activeCount) activeCount.textContent = String(active);
+  if (archivedCount) archivedCount.textContent = String(archived);
+
+  if (activeBtn) {
+    const isSelected = State.templateView === 'active';
+    activeBtn.className = isSelected
+      ? 'px-3 py-2 rounded-lg border border-[#4EABBE] bg-[#4EABBE]/10 text-[#1D5D69] dark:text-white text-sm font-semibold'
+      : 'px-3 py-2 rounded-lg border border-[#D9D9D9] dark:border-gray-600 bg-white dark:bg-gray-700 text-[#0F2532]/70 dark:text-gray-200 text-sm font-medium';
+  }
+
+  if (archivedBtn) {
+    const isSelected = State.templateView === 'archived';
+    archivedBtn.className = isSelected
+      ? 'px-3 py-2 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 text-sm font-semibold'
+      : 'px-3 py-2 rounded-lg border border-[#D9D9D9] dark:border-gray-600 bg-white dark:bg-gray-700 text-[#0F2532]/70 dark:text-gray-200 text-sm font-medium';
+  }
+
+  if (!summary) return;
+
+  if (State.templateView === 'archived') {
+    summary.textContent = archived
+      ? `Mostrando ${visibleCount} plantilla(s) archivada(s). Puedes restaurarlas cuando quieras.`
+      : 'No hay plantillas archivadas.';
+    return;
+  }
+
+  if (!active) {
+    summary.textContent = 'No hay plantillas activas. Crear nuevas no elimina las existentes.';
+    return;
+  }
+
+  if (State.templateSearch.trim()) {
+    summary.textContent = `Mostrando ${visibleCount} de ${active} plantilla(s) activas. Archivar no elimina tus datos.`;
+    return;
+  }
+
+  summary.textContent = `Tienes ${active} plantilla(s) activas. Al eliminar ahora se archivan para no perder informacion.`;
+}
+
 async function loadTemplates() {
   try {
-    State.templates = await dbAll(`SELECT * FROM crm_templates WHERE tipo = 'email' ORDER BY fecha_creacion DESC`);
+    State.templates = await dbAll(`
+      SELECT *
+      FROM crm_templates
+      WHERE tipo = 'email'
+      ORDER BY COALESCE(fecha_actualizacion, fecha_creacion) DESC
+    `);
   } catch (e) {
     console.error('loadTemplates error', e);
     State.templates = [];
@@ -563,38 +658,63 @@ function renderTemplates() {
   if (!grid) return;
 
   if (State.templates.length === 0) {
+    updateTemplateFilterUi(0);
     grid.innerHTML = '<div class="col-span-2 text-center text-sm text-[#0F2532]/50 dark:text-gray-400">No hay plantillas creadas.</div>';
     return;
   }
 
-  // Ordenar: predeterminadas primero
-  const sorted = [...State.templates].sort((a, b) => {
-    if (a.es_predeterminada && !b.es_predeterminada) return -1;
-    if (!a.es_predeterminada && b.es_predeterminada) return 1;
-    return 0;
-  });
+  const visibleTemplates = getVisibleTemplates();
+  updateTemplateFilterUi(visibleTemplates.length);
 
-  grid.innerHTML = sorted.map(t => {
+  if (!visibleTemplates.length) {
+    grid.innerHTML = `
+      <div class="col-span-2 text-center text-sm text-[#0F2532]/50 dark:text-gray-400 py-10">
+        ${State.templateView === 'archived'
+          ? 'No hay plantillas archivadas que coincidan con la busqueda.'
+          : 'No hay plantillas activas que coincidan con la busqueda.'}
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = visibleTemplates.map(t => {
     const snippet = escapeHtml((t.contenido || '').slice(0, 120));
     const image = t.imagen ? `<img src="${t.imagen}" alt="${escapeHtml(t.nombre)}" class="w-full h-24 object-cover rounded-lg" />` :
       '<div class="w-full h-24 rounded-lg bg-[#F8F7F7] dark:bg-gray-700 flex items-center justify-center text-xs text-[#0F2532]/40">Sin imagen</div>';
 
     const isPredefined = t.es_predeterminada === 1;
-    const badge = isPredefined ? '<span class="ml-2 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full font-medium">✓ Predeterminada</span>' : '';
+    const isArchived = !isTemplateActive(t);
+    const badges = [];
+
+    if (isPredefined) {
+      badges.push('<span class="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs rounded-full font-medium">Predeterminada</span>');
+    }
+
+    if (isArchived) {
+      badges.push('<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs rounded-full font-medium">Archivada</span>');
+    }
+
+    const archiveButton = isArchived
+      ? `<button class="template-action px-3 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 rounded-lg text-xs border border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition" data-action="restore" data-id="${t.id}">Restaurar</button>`
+      : (isPredefined
+        ? ''
+        : `<button class="template-action px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-xs border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition" data-action="archive" data-id="${t.id}">Archivar</button>`);
 
     return `
-      <div class="border border-[#E6E6E6] dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow-sm ${isPredefined ? 'ring-2 ring-emerald-200 dark:ring-emerald-800' : ''}">
-        ${image}
+      <div class="border border-[#E6E6E6] dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow-sm ${isPredefined ? 'ring-2 ring-emerald-200 dark:ring-emerald-800' : ''} ${isArchived ? 'opacity-80' : ''}">
+        <div class="${isArchived ? 'grayscale-[0.2]' : ''}">
+          ${image}
+        </div>
         <div class="mt-3 flex items-start justify-between gap-2">
           <h3 class="font-semibold text-[#0F2532] dark:text-white flex-1">${escapeHtml(t.nombre)}</h3>
-          ${badge}
+          <div class="flex flex-wrap justify-end gap-1">${badges.join('')}</div>
         </div>
         <p class="text-xs text-[#0F2532]/60 dark:text-gray-400 mt-1 min-h-[36px]">${snippet || 'Sin contenido'}</p>
         <div class="flex flex-wrap gap-2 mt-3">
-          <button class="template-action px-3 py-1 bg-[#4EABBE] text-white rounded-lg text-xs hover:bg-[#1D5D69] transition" data-action="use" data-id="${t.id}">Usar</button>
+          ${isArchived ? '' : `<button class="template-action px-3 py-1 bg-[#4EABBE] text-white rounded-lg text-xs hover:bg-[#1D5D69] transition" data-action="use" data-id="${t.id}">Usar</button>`}
           <button class="template-action px-3 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg text-xs border border-[#E6E6E6] dark:border-gray-600 hover:bg-[#E8ECEE] dark:hover:bg-gray-600 transition" data-action="edit" data-id="${t.id}">Editar</button>
           <button class="template-action px-3 py-1 bg-[#F8F7F7] dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg text-xs border border-[#E6E6E6] dark:border-gray-600 hover:bg-[#E8ECEE] dark:hover:bg-gray-600 transition" data-action="duplicate" data-id="${t.id}">Duplicar</button>
-          <button class="template-action px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-xs border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition" data-action="delete" data-id="${t.id}">Eliminar</button>
+          ${archiveButton}
         </div>
       </div>
     `;
@@ -648,7 +768,7 @@ function populateTemplateSelects() {
 
   if (campaignTemplateSelect) {
     const options = ['<option value="">-- Sin plantilla --</option>'];
-    State.templates.forEach(t => {
+    State.templates.filter(isTemplateActive).forEach(t => {
       options.push(`<option value="${t.id}">${escapeHtml(t.nombre)}</option>`);
     });
     campaignTemplateSelect.innerHTML = options.join('');
@@ -716,7 +836,7 @@ async function saveTemplate() {
       showToast('Plantilla actualizada correctamente', 'success', '✓ Guardado');
     } else {
       await dbRun(
-        `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, datetime('now'))`,
+        `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, activo, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`,
         [nombre, asunto, contenido, State.editingTemplateImage, State.templateType]
       );
       showToast('Nueva plantilla creada exitosamente', 'success', '✓ Creada');
@@ -731,21 +851,40 @@ async function saveTemplate() {
 }
 
 async function deleteTemplate(id) {
-  // Verificar si es plantilla predeterminada
+  return archiveTemplate(id);
+}
+
+async function archiveTemplate(id) {
   const template = State.templates.find(t => String(t.id) === String(id));
-  if (template?.es_predeterminada === 1) {
-    showToast('Las plantillas predeterminadas no se pueden eliminar. Puedes editarlas o duplicarlas.', 'warning', 'Acción no permitida');
+  if (!template) return;
+  if (template.es_predeterminada === 1) {
+    showToast('Las plantillas predeterminadas no se pueden eliminar. Puedes editarlas o duplicarlas.', 'warning', 'AcciÃ³n no permitida');
     return;
   }
 
-  if (!confirm('¿Estás seguro de eliminar esta plantilla? Esta acción no se puede deshacer.')) return;
+  if (!confirm(`Archivar la plantilla "${template.nombre}"? Podras restaurarla despues.`)) return;
   try {
-    await dbRun('DELETE FROM crm_templates WHERE id = ?', [id]);
+    await dbRun(`UPDATE crm_templates SET activo = 0, fecha_actualizacion = datetime('now') WHERE id = ?`, [id]);
     await loadTemplates();
-    showToast('Plantilla eliminada correctamente', 'success', '✓ Eliminada');
+    showToast('Plantilla archivada correctamente', 'success', 'âœ“ Archivada');
   } catch (e) {
-    console.error('deleteTemplate error', e);
-    showToast('No se pudo eliminar la plantilla', 'error', 'Error');
+    console.error('archiveTemplate error', e);
+    showToast('No se pudo archivar la plantilla', 'error', 'Error');
+  }
+}
+
+async function restoreTemplate(id) {
+  const template = State.templates.find(t => String(t.id) === String(id));
+  if (!template) return;
+
+  try {
+    await dbRun(`UPDATE crm_templates SET activo = 1, fecha_actualizacion = datetime('now') WHERE id = ?`, [id]);
+    State.templateView = 'active';
+    await loadTemplates();
+    showToast('Plantilla restaurada correctamente', 'success', 'âœ“ Restaurada');
+  } catch (e) {
+    console.error('restoreTemplate error', e);
+    showToast('No se pudo restaurar la plantilla', 'error', 'Error');
   }
 }
 
@@ -759,8 +898,8 @@ async function duplicateTemplate(id) {
 
     const newName = `${template.nombre} (Copia)`;
     await dbRun(
-      `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, es_predeterminada, fecha_creacion, fecha_actualizacion) 
-       VALUES (?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))`,
+      `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, activo, es_predeterminada, fecha_creacion, fecha_actualizacion) 
+       VALUES (?, ?, ?, ?, ?, 1, 0, datetime('now'), datetime('now'))`,
       [newName, template.asunto, template.contenido, template.imagen, template.tipo]
     );
 
@@ -996,12 +1135,16 @@ async function checkGmailStatus() {
   }
 
   if (gmailStatus) {
-    gmailStatus.textContent = State.gmailConnected ? 'Gmail conectado ✓' : 'Gmail no conectado';
+    gmailStatus.textContent = State.gmailConnected ? 'Gmail conectado' : 'Gmail sin conectar';
+    gmailStatus.className = State.gmailConnected
+      ? 'inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-medium border border-emerald-200 dark:border-emerald-800'
+      : 'inline-flex items-center px-2.5 py-1 rounded-full bg-white/80 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 text-xs font-medium border border-blue-200/70 dark:border-blue-800';
   }
   if (connectGmailBtn) {
-    connectGmailBtn.textContent = State.gmailConnected ? 'Conectado' : 'Conectar Gmail';
+    connectGmailBtn.textContent = State.gmailConnected ? 'Cuenta remitente conectada' : 'Conectar cuenta remitente';
     connectGmailBtn.disabled = State.gmailConnected;
     connectGmailBtn.classList.toggle('opacity-60', State.gmailConnected);
+    connectGmailBtn.classList.toggle('cursor-not-allowed', State.gmailConnected);
   }
 
   // Los campos siempre están habilitados para permitir escritura
@@ -1011,13 +1154,13 @@ async function checkGmailStatus() {
 
 async function connectGmail() {
   if (!window.electronAPI) return;
-  const result = await window.electronAPI.invoke('gmail-get-auth-url');
+  const result = await window.electronAPI.invoke('gmail-connect-fixed-account');
   if (!result?.success) {
     showToast(result?.error || 'No se pudo generar el link de autorización', 'error', 'Error');
     return;
   }
-  await window.electronAPI.invoke('open-external', result.url);
-  showModal($('gmailAuthModal'), true);
+  showToast(result?.email ? `Cuenta conectada: ${result.email}` : 'Gmail conectado exitosamente', 'success', 'Conectado');
+  await checkGmailStatus();
 }
 
 async function saveGmailToken() {
@@ -1183,6 +1326,10 @@ function setupEmailSendOptions() {
 }
 
 async function sendBulkEmail() {
+  if (!State.gmailConnected) {
+    showToast('Conecta Gmail antes de enviar correos masivos.', 'warning', 'Gmail requerido');
+    return;
+  }
   if (State.activeSendTarget) {
     alert('Hay un envío en curso. Espera a que termine.');
     return;
@@ -1307,6 +1454,10 @@ async function sendBulkEmail() {
 }
 
 async function sendSurveyEmails() {
+  if (!State.gmailConnected) {
+    showToast('Conecta Gmail antes de enviar encuestas.', 'warning', 'Gmail requerido');
+    return;
+  }
   if (State.activeSendTarget) {
     alert('Hay un envío en curso. Espera a que termine.');
     return;
@@ -1364,7 +1515,7 @@ async function sendSurveyEmails() {
       recipients,
       subject,
       body,
-      attachments: prepareTemplateImageAttachment(State.currentTemplateImage)
+      attachments: []
     });
 
     if (result?.success) {
@@ -1598,6 +1749,8 @@ function setupTemplateActions() {
   const newTemplateBtn = $('newTemplateBtn');
   const saveTemplateBtn = $('saveTemplateBtn');
   const cancelTemplateBtn = $('cancelTemplateBtn');
+  const templateSearchInput = $('templateSearchInput');
+  const templateViewBtns = document.querySelectorAll('[data-template-view]');
   const templateImageInput = $('templateImageInput');
   const templateImageDropzone = $('templateImageDropzone');
   const templateImagePreview = $('templateImagePreview');
@@ -1609,6 +1762,22 @@ function setupTemplateActions() {
   if (newReminderTemplateBtn) newReminderTemplateBtn.addEventListener('click', () => openTemplateModal('reminder', null));
   if (saveTemplateBtn) saveTemplateBtn.addEventListener('click', saveTemplate);
   if (cancelTemplateBtn) cancelTemplateBtn.addEventListener('click', () => showModal($('templateEditorModal'), false));
+
+  if (templateSearchInput) {
+    templateSearchInput.addEventListener('input', (e) => {
+      State.templateSearch = e.target.value || '';
+      renderTemplates();
+    });
+  }
+
+  if (templateViewBtns.length) {
+    templateViewBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        State.templateView = btn.dataset.templateView === 'archived' ? 'archived' : 'active';
+        renderTemplates();
+      });
+    });
+  }
 
   if (templateImageInput) {
     templateImageInput.addEventListener('change', (e) => {
@@ -1646,7 +1815,8 @@ function setupTemplateActions() {
       }
 
       if (action === 'edit') openTemplateModal('email', template);
-      if (action === 'delete') deleteTemplate(template.id);
+      if (action === 'archive') archiveTemplate(template.id);
+      if (action === 'restore') restoreTemplate(template.id);
       if (action === 'duplicate') duplicateTemplate(template.id);
     });
   }
@@ -1758,12 +1928,14 @@ function setupSurveyRecipients() {
 
 function setupGmailAuth() {
   const connectGmailBtn = $('connectGmailBtn');
-  const cancelGmailAuthBtn = $('cancelGmailAuthBtn');
-  const saveGmailAuthBtn = $('saveGmailAuthBtn');
+  if (connectGmailBtn) {
+    connectGmailBtn.addEventListener('click', connectGmail);
 
-  if (connectGmailBtn) connectGmailBtn.addEventListener('click', connectGmail);
-  if (cancelGmailAuthBtn) cancelGmailAuthBtn.addEventListener('click', () => showModal($('gmailAuthModal'), false));
-  if (saveGmailAuthBtn) saveGmailAuthBtn.addEventListener('click', saveGmailToken);
+    const helperText = connectGmailBtn.parentElement?.nextElementSibling;
+    if (helperText) {
+      helperText.textContent = 'Se abrira Google en tu navegador. Selecciona la cuenta fija que enviara todas las notificaciones del CRM.';
+    }
+  }
 }
 
 function setupReminderActions() {
@@ -1999,6 +2171,7 @@ function setupProgressListener() {
 async function init() {
   initTabs();
   initSmsCounter();
+  setupGmailAuth();
   setupEmailComposer();
   setupVariableTokens();
   setupEmailRecipients();
@@ -2013,10 +2186,12 @@ async function init() {
   setupSurveyTemplateActions();
   setupProgressListener();
 
+  await checkGmailStatus();
   await loadTemplates();
   await loadSurveyTemplates();
-  // await loadSurveyHistory(); // TODO: Function doesn't exist
-  // updateEmailEstimate(); // TODO: Function doesn't exist
+  await loadSurveyHistory();
+  updateEmailEstimate();
+  updateComposerButtons();
   updateSurveyButtons();
 }
 

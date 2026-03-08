@@ -58,12 +58,18 @@ function getCurrentUserId() {
 }
 
 async function getCajaAbiertaId() {
-  const rows = await dbAll("SELECT id FROM cajas WHERE estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1");
+  const userId = getCurrentUserId();
+  if (!userId) return null;
+  const rows = await dbAll(
+    "SELECT id FROM cajas WHERE usuario_id = ? AND estado = 'abierta' ORDER BY fecha_apertura DESC LIMIT 1",
+    [userId]
+  );
   return rows[0]?.id || null;
 }
 
 let currentPacienteId = null;
 let selectedMedicamentos = [];
+let recetaPopup = null;
 
 async function computeRecetaCosto() {
   if (!selectedMedicamentos.length) return 0;
@@ -132,7 +138,7 @@ function setupRecetas() {
         alert('No se pudo obtener el ID del paciente');
         return;
       }
-      window.open(`receta_medica.html?paciente_id=${pacienteId}`, '_blank', 'width=1200,height=800');
+      recetaPopup = window.open(`receta_medica.html?paciente_id=${pacienteId}`, '_blank', 'width=1200,height=800');
     });
   }
 
@@ -313,6 +319,9 @@ async function loadRecetasList() {
 }
 
 window.addEventListener('message', (event) => {
+  const trustedOrigin = !event?.origin || event.origin === 'null' || event.origin === 'file://' || event.origin === window.location.origin;
+  if (!trustedOrigin) return;
+  if (event.source !== recetaPopup) return;
   const data = event && event.data;
   if (!data || data.type !== 'receta-guardada') return;
   if (!currentPacienteId) {

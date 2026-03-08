@@ -8,8 +8,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self';" />
   <title>Ficha Clinica</title>
   <link rel="stylesheet" href="../styles/output.css" />
+  <script type="module" src="../scripts/init.js"></script>
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       document.documentElement.classList.add('dark');
@@ -208,6 +211,7 @@
   </div>
 
   <script src="../scripts/ficha_clinica.js"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

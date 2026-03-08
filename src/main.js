@@ -1,8 +1,20 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { fileURLToPath } = require('url');
 const db = require('./db/database');
 const bcrypt = require('bcryptjs');
+const financeService = require('./main/finance-service');
+const cajasReportService = require('./main/cajas-report-service');
+const { assertSafeSql } = require('./main/sql-guard');
+const backupService = require('./main/backup-service');
+
+// -------------------------------------------------------------
+// SETUP APP ID (Required for Windows Notifications & Taskbar Icon)
+// -------------------------------------------------------------
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.nerick.sonalia.app');
+}
 
 // -------------------------------------------------------------
 // DEV-ONLY: AUTO-RELOAD
@@ -18,17 +30,74 @@ const bcrypt = require('bcryptjs');
 // MAIN WINDOW
 // -------------------------------------------------------------
 let mainWindow = null;
+const rendererRoot = path.normalize(path.join(__dirname, 'renderer'));
+
+function getSecureWebPreferences() {
+  return {
+    preload: path.join(__dirname, 'preload.js'),
+    nodeIntegration: false,
+    contextIsolation: true,
+    sandbox: true,
+    webSecurity: true,
+    allowRunningInsecureContent: false,
+  };
+}
+
+function isSafeAppUrl(targetUrl) {
+  try {
+    if (!targetUrl) return false;
+    const parsed = new URL(targetUrl);
+    if (parsed.protocol !== 'file:') return false;
+    const targetPath = path.normalize(fileURLToPath(parsed));
+    return targetPath.startsWith(`${rendererRoot}${path.sep}`);
+  } catch (error) {
+    return false;
+  }
+}
+
+function assertTrustedRenderer(event) {
+  const senderUrl = event?.senderFrame?.url || event?.sender?.getURL?.() || '';
+  if (!isSafeAppUrl(senderUrl)) {
+    throw new Error('Renderer no autorizado');
+  }
+}
 
 const createWindow = () => {
+  const iconPath = path.join(__dirname, 'renderer', 'assets', 'icons', 'app.ico');
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    icon: path.join(__dirname, 'renderer', 'assets', 'icons', 'app.ico'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
+    icon: fs.existsSync(iconPath) ? iconPath : null, // Fallback check
+    webPreferences: getSecureWebPreferences(),
+  });
+
+  win.webContents.on('will-attach-webview', (event) => {
+    event.preventDefault();
+  });
+
+  win.webContents.on('will-navigate', (event, targetUrl) => {
+    if (isSafeAppUrl(targetUrl)) return;
+    event.preventDefault();
+    if (/^https?:/i.test(targetUrl)) {
+      shell.openExternal(targetUrl).catch(() => { });
+    }
+  });
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isSafeAppUrl(url)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          icon: fs.existsSync(iconPath) ? iconPath : null,
+          webPreferences: getSecureWebPreferences(),
+        },
+      };
+    }
+
+    if (/^https?:/i.test(url)) {
+      shell.openExternal(url).catch(() => { });
+    }
+    return { action: 'deny' };
   });
 
   mainWindow = win;
@@ -36,10 +105,29 @@ const createWindow = () => {
 };
 
 // -------------------------------------------------------------
+// PASSWORD POLICY HELPER (S11)
+// Returns null if password is strong enough, or an error string.
+// Rules: ≥8 chars, uppercase, lowercase, digit, special char.
+// -------------------------------------------------------------
+function validatePasswordStrength(password) {
+  if (!password || typeof password !== 'string') return 'La contraseña es requerida';
+  if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres';
+  if (!/[A-Z]/.test(password)) return 'Debe contener al menos una letra mayúscula';
+  if (!/[a-z]/.test(password)) return 'Debe contener al menos una letra minúscula';
+  if (!/[0-9]/.test(password)) return 'Debe contener al menos un número';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Debe contener al menos un carácter especial (!@#$%...)';
+  return null;
+}
+
+// -------------------------------------------------------------
 // USER REGISTRATION
 // -------------------------------------------------------------
 ipcMain.handle('register-user', async (event, userData) => {
-  const hashedPassword = userData.password ? bcrypt.hashSync(userData.password, 10) : '';
+  // ⚠️ SECURITY S11: Validate password strength server-side before hashing
+  const pwError = validatePasswordStrength(userData.password);
+  if (pwError) throw new Error(pwError);
+
+  const hashedPassword = bcrypt.hashSync(userData.password, 10);
 
   return new Promise((resolve, reject) => {
     db.run(
@@ -61,7 +149,16 @@ ipcMain.handle('login-user', async (event, userData) => {
     const lookup = userData.email;
 
     db.get(
-      `SELECT \n          id,\n          nombre,\n          COALESCE(apellido, apellidos, '') AS apellido,\n          rol,\n          password,\n          auth_provider,\n          email\n        FROM usuarios\n        WHERE email = ? OR nombre = ?`,
+      `SELECT
+          id,
+          nombre,
+          COALESCE(apellido, apellidos, '') AS apellido,
+          rol,
+          password,
+          auth_provider,
+          email
+        FROM usuarios
+        WHERE email = ? OR nombre = ?`,
       [lookup, lookup],
       (err, row) => {
         if (err) return reject(err);
@@ -81,10 +178,11 @@ ipcMain.handle('login-user', async (event, userData) => {
   });
 });
 
+
 // -------------------------------------------------------------
 // GOOGLE OAUTH
 // -------------------------------------------------------------
-const { authenticateWithGoogle } = require('./main/google/google-oauth-service');
+const { authenticateWithGoogle, logoutOAuthUser } = require('./main/google/google-oauth-service');
 
 ipcMain.handle('google-oauth-authenticate', async () => {
   try {
@@ -127,6 +225,16 @@ ipcMain.handle('google-oauth-authenticate', async () => {
         }
       );
     });
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+// Logout from Google OAuth
+ipcMain.handle('google-oauth-logout', async () => {
+  try {
+    const success = logoutOAuthUser();
+    return { success, message: success ? 'Sesión cerrada correctamente' : 'Error al cerrar sesión' };
   } catch (e) {
     return { success: false, error: e.message };
   }
@@ -308,8 +416,10 @@ ipcMain.handle('open-view', async (event, viewName) => {
 // GENERIC DB HANDLERS
 // -------------------------------------------------------------
 ipcMain.handle('db-all', async (event, sql, params) => {
+  assertTrustedRenderer(event);
+  const query = assertSafeSql('db-all', sql, params);
   return new Promise((resolve, reject) => {
-    db.all(sql, params || [], (err, rows) => {
+    db.all(query.sql, query.params, (err, rows) => {
       if (err) return reject(err);
       resolve(rows);
     });
@@ -317,8 +427,10 @@ ipcMain.handle('db-all', async (event, sql, params) => {
 });
 
 ipcMain.handle('db-get', async (event, sql, params) => {
+  assertTrustedRenderer(event);
+  const query = assertSafeSql('db-get', sql, params);
   return new Promise((resolve, reject) => {
-    db.get(sql, params || [], (err, row) => {
+    db.get(query.sql, query.params, (err, row) => {
       if (err) return reject(err);
       resolve(row);
     });
@@ -326,10 +438,10 @@ ipcMain.handle('db-get', async (event, sql, params) => {
 });
 
 ipcMain.handle('db-run', async (event, sql, params) => {
+  assertTrustedRenderer(event);
+  const query = assertSafeSql('db-run', sql, params);
   return new Promise((resolve, reject) => {
-    console.log('[IPC db-run] SQL:', sql, 'params:', params);
-
-    db.run(sql, params || [], function (err) {
+    db.run(query.sql, query.params, function (err) {
       if (err) {
         console.error('[IPC db-run] Error:', err.message);
         return reject(err);
@@ -340,10 +452,92 @@ ipcMain.handle('db-run', async (event, sql, params) => {
 });
 
 // -------------------------------------------------------------
+// FINANCE HANDLERS
+// -------------------------------------------------------------
+ipcMain.handle('finance-save-treatment-plan', async (event, payload) => {
+  assertTrustedRenderer(event);
+  return financeService.saveTreatmentPlan(db, payload || {});
+});
+
+ipcMain.handle('finance-get-treatment-plan-detail', async (event, planId) => {
+  assertTrustedRenderer(event);
+  return financeService.getTreatmentPlanDetail(db, planId);
+});
+
+ipcMain.handle('finance-get-patient-summary', async (event, patientId) => {
+  assertTrustedRenderer(event);
+  return financeService.getPatientFinancialSummary(db, patientId);
+});
+
+ipcMain.handle('finance-register-payment', async (event, payload) => {
+  assertTrustedRenderer(event);
+  return financeService.registerPayment(db, payload || {});
+});
+
+ipcMain.handle('finance-register-refund', async (event, payload) => {
+  assertTrustedRenderer(event);
+  return financeService.registerRefund(db, payload || {});
+});
+
+ipcMain.handle('finance-generate-simulated-invoice', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return financeService.generateSimulatedInvoice(db, payload);
+});
+
+ipcMain.handle('finance-get-simulated-invoices', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return financeService.getSimulatedInvoices(db, payload);
+});
+
+ipcMain.handle('finance-get-overdue-accounts', async (event) => {
+  assertTrustedRenderer(event);
+  return financeService.getOverdueAccounts(db);
+});
+
+ipcMain.handle('finance-get-report', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return financeService.getFinanceReport(db, payload);
+});
+
+ipcMain.handle('finance-send-collection-reminder', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return financeService.sendCollectionReminder(db, payload);
+});
+
+// -------------------------------------------------------------
+// CAJAS REPORT HANDLERS
+// -------------------------------------------------------------
+ipcMain.handle('cajas-get-movimientos-avanzado', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return cajasReportService.getMovimientosAvanzado(db, payload || {});
+});
+
+ipcMain.handle('cajas-get-resumen-contable', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return cajasReportService.getResumenContable(db, payload || {});
+});
+
+ipcMain.handle('cajas-get-saldos-metodo', async (event, payload = {}) => {
+  assertTrustedRenderer(event);
+  return cajasReportService.getSaldosPorMetodo(db, payload || {});
+});
+
+// -------------------------------------------------------------
 // APP LIFECYCLE
 // -------------------------------------------------------------
 app.whenReady().then(() => {
   createWindow();
+
+  // ⚠️ SECURITY S10: Start auto-backup (daily, keeps last 30 copies)
+  backupService.startAutoBackup();
+
+  // ⚠️ SECURITY S1: Warn if SMTP password is still in plain-text .env
+  if (process.env.SMTP_PASSWORD && process.env.NODE_ENV !== 'production') {
+    console.warn(
+      '[SECURITY S1] ⚠️  SMTP_PASSWORD detectado en variables de entorno. ' +
+      'Considera moverlo a Windows Credential Manager o a electron-store cifrado.'
+    );
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -351,7 +545,10 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== 'darwin') {
+    backupService.stopAutoBackup();
+    app.quit();
+  }
 });
 
 // Log desde renderer
@@ -360,36 +557,53 @@ ipcMain.on('renderer-log', (event, msg) => {
 });
 
 // -------------------------------------------------------------
+// BACKUP HANDLERS (S10)
+// -------------------------------------------------------------
+ipcMain.handle('backup-run-manual', async (event) => {
+  assertTrustedRenderer(event);
+  return backupService.runManualBackup();
+});
+
+ipcMain.handle('backup-list', async (event) => {
+  assertTrustedRenderer(event);
+  return backupService.listBackups();
+});
+
+// -------------------------------------------------------------
 // GMAIL API HANDLERS (OAuth2)
 // -------------------------------------------------------------
 const {
-  generateAuthUrl,
-  saveToken,
+  connectFixedSenderAccount,
+  hasFixedSenderToken,
   sendEmail,
 } = require('./main/google/gmail-service');
 
-ipcMain.handle('gmail-get-auth-url', async () => {
+ipcMain.handle('gmail-connect-fixed-account', async () => {
   try {
-    const url = await generateAuthUrl();
-    return { success: true, url };
+    const result = await connectFixedSenderAccount();
+    return { success: true, ...result };
   } catch (e) {
     return { success: false, error: e.message };
   }
 });
 
+ipcMain.handle('gmail-get-auth-url', async () => {
+  return {
+    success: false,
+    error: 'Flujo manual/OOB deshabilitado. Usa gmail-connect-fixed-account.'
+  };
+});
+
 ipcMain.handle('gmail-save-token', async (event, code) => {
-  try {
-    await saveToken(code);
-    return { success: true };
-  } catch (e) {
-    return { success: false, error: e.message };
-  }
+  return {
+    success: false,
+    error: 'Flujo manual/OOB deshabilitado. Usa gmail-connect-fixed-account.'
+  };
 });
 
 ipcMain.handle('gmail-has-token', async () => {
   try {
-    const tokenPath = path.join(__dirname, 'main', 'google', 'token.json');
-    return { success: true, connected: fs.existsSync(tokenPath) };
+    return { success: true, connected: hasFixedSenderToken() };
   } catch (e) {
     return { success: false, connected: false, error: e.message };
   }

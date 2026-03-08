@@ -597,21 +597,75 @@
           </div>
         </section>
       </main>
+
+      <!-- Tarjeta: Respaldos (S10) -->
+      <section
+        class="bg-white dark:bg-gray-800/70 rounded-2xl shadow-md hover:shadow-lg transition-shadow border border-[#E5EEF1]/70 dark:border-gray-700">
+        <div class="px-6 py-5 border-b border-[#E5EEF1]/70 dark:border-gray-700 flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-primary-dark dark:text-white">Respaldos de Base de Datos</h2>
+            <p class="text-xs text-gray-600 dark:text-gray-400">Automático diario · Se conservan los últimos 30
+              respaldos</p>
+          </div>
+        </div>
+        <div class="p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Estado del backup automático</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">El sistema realiza un backup al iniciar y cada 24
+                horas</p>
+            </div>
+            <span
+              class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-full">
+              <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+              Activo
+            </span>
+          </div>
+          <div class="pt-2 flex gap-3">
+            <button type="button" id="backup-now-btn"
+              class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium transition focus:outline-none focus:ring-4 focus:ring-emerald-300 dark:focus:ring-emerald-700">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Crear backup ahora
+            </button>
+            <button type="button" id="backup-refresh-btn"
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Actualizar lista
+            </button>
+          </div>
+          <div id="backup-msg" class="text-sm hidden"></div>
+          <div class="pt-2 border-t border-[#E5EEF1]/70 dark:border-gray-700">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">Respaldos
+              recientes</p>
+            <div id="backups-list" class="space-y-2 text-xs text-gray-500 dark:text-gray-400 italic">Cargando…</div>
+          </div>
+        </div>
+      </section>
+
       <!-- Tarjeta de información -->
       <div
         class="bg-gradient-to-r from-primary-dark/5 to-primary-light/5 dark:from-primary-dark/10 dark:to-primary-light/10 border border-primary-light/30 rounded-2xl p-6">
         <div class="flex items-start gap-4">
-          <div class="flex-shrink-0">
-            <svg class="w-6 h-6 text-primary-dark dark:text-primary-light" fill="none" stroke="currentColor"
-              viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
+          <svg class="w-6 h-6 text-primary-dark dark:text-primary-light shrink-0" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           <div class="flex-1 space-y-1">
-            <h3 class="text-sm font-semibold text-primary-dark dark:text-white mb-1">
-              💡 Consejo
-            </h3>
+            <h3 class="text-sm font-semibold text-primary-dark dark:text-white mb-1">💡 Consejo</h3>
             <p class="text-sm text-gray-700 dark:text-gray-300">
               Los cambios se guardan automáticamente en tu navegador. Algunas modificaciones pueden requerir recargar la
               página para aplicarse completamente.
@@ -621,7 +675,51 @@
       </div>
     </div>
   </div>
+
+  <script>
+    // ── Backup UI ────────────────────────────────────────────────────────────
+    const backupMsg = document.getElementById('backup-msg');
+    const backupList = document.getElementById('backups-list');
+    function fmtSize(b) { return b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(2) + ' MB'; }
+    async function loadBackups() {
+      if (!window.api?.backupList) { backupList.textContent = 'API no disponible'; return; }
+      const res = await window.api.backupList();
+      if (!res.success) { backupList.innerHTML = `<span class="text-red-500">${res.error || 'Error'}</span>`; return; }
+      const top5 = (res.backups || []).slice(0, 5);
+      if (!top5.length) { backupList.textContent = 'Sin respaldos aún'; return; }
+      backupList.innerHTML = top5.map(b => `
+        <div class="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0">
+          <span class="font-mono text-gray-600 dark:text-gray-300 truncate max-w-xs">${b.name}</span>
+          <span class="text-gray-400 ml-2 shrink-0">${fmtSize(b.sizeBytes)}</span>
+        </div>`).join('');
+    }
+    document.getElementById('backup-now-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('backup-now-btn');
+      btn.disabled = true; btn.textContent = 'Creando…';
+      backupMsg.className = 'text-sm hidden'; backupMsg.textContent = '';
+      try {
+        const res = await window.api.backupRunManual();
+        backupMsg.className = res.success
+          ? 'text-sm text-emerald-600 dark:text-emerald-400 font-medium'
+          : 'text-sm text-red-500';
+        backupMsg.textContent = res.success
+          ? '✅ Backup creado: ' + (res.file || '').split(/[\\/]/).pop()
+          : '❌ Error: ' + (res.error || 'desconocido');
+        backupMsg.classList.remove('hidden');
+        await loadBackups();
+      } catch (e) {
+        backupMsg.className = 'text-sm text-red-500';
+        backupMsg.textContent = '❌ ' + e.message;
+        backupMsg.classList.remove('hidden');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Crear backup ahora';
+    });
+    document.getElementById('backup-refresh-btn').addEventListener('click', loadBackups);
+    loadBackups();
+  </script>
   <script src="../scripts/configuracion.js" type="module"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

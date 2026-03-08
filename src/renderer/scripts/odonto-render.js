@@ -1,0 +1,234 @@
+window.OdontoRender = (function () {
+
+    // ===== BRAND (Application Colors) =====
+    const BRAND = {
+        bg: "#F8F7F7",
+        ink: "#0F2532",
+        primary: "#4EABBE",
+        accent: "#8BCFDD",
+        dark: "#1D5D69",
+        ring: "rgba(78,171,190,.18)",
+    };
+
+    const ICONS = {
+        tooth: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3c-3 0-5.5 2.2-5.5 5 0 1.6.7 3 1.8 4 .7.6 1.1 1.5 1.3 2.5.3 1.6 1 3.5 2.4 3.5 1.2 0 1.9-1.1 2-2.6.1 1.5.8 2.6 2 2.6 1.4 0 2.1-1.9 2.4-3.5.2-1 .6-1.9 1.3-2.5 1.1-1 1.8-2.4 1.8-4 0-2.8-2.5-5-5.5-5-.9 0-1.7.3-2.4.8-.4.3-.9.3-1.3 0C13.7 3.3 12.9 3 12 3z" /></svg>',
+        plus: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>',
+        drop: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3s-5 5.2-5 9a5 5 0 0010 0c0-3.8-5-9-5-9z" /></svg>',
+        circle: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6" stroke-width="2" /></svg>',
+        bolt: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>',
+        alert: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86l-7.5 13A1 1 0 003.65 18h16.7a1 1 0 00.86-1.5l-7.5-13a1 1 0 00-1.72 0z" /></svg>',
+        x: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>',
+        check: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>',
+        star: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.364 1.118l1.519 4.674c.3.921-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.519-4.674a1 1 0 00-.364-1.118L2.98 9.101c-.783-.57-.38-1.81.588-1.81h4.915a1 1 0 00.95-.69l1.519-4.674z" /></svg>',
+        link: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5m1.172-1.172a4 4 0 015.656 0l1.5 1.5" /></svg>',
+        pin: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 12.5l-5.5 5.5a3 3 0 01-4.243-4.243l7.5-7.5a1.5 1.5 0 112.121 2.121l-7 7a.5.5 0 01-.707-.707l6.5-6.5" /></svg>',
+        clipboard: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5a2 2 0 002 2h2a2 2 0 002-2" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6M9 16h6" /></svg>',
+        adjust: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16M14 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>',
+        square: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" stroke-width="2" /></svg>',
+        chevronLeft: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6" /></svg>',
+        chevronRight: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6l6 6-6 6" /></svg>',
+        chevronUp: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 15l-6-6-6 6" /></svg>',
+        chevronDown: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6" /></svg>'
+    };
+
+    const adultTeeth = {
+        superior: [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28],
+        inferior: [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38],
+    };
+
+    const childTeeth = {
+        superior: [55, 54, 53, 52, 51, 61, 62, 63, 64, 65],
+        inferior: [85, 84, 83, 82, 81, 71, 72, 73, 74, 75],
+    };
+
+    const FACE_LABELS = {
+        oclusal: "Oclusal",
+        mesial: "Mesial",
+        distal: "Distal",
+        vestibular: "Vestibular",
+        lingual: "Lingual",
+    };
+
+    function hexToRgba(hex, alpha) {
+        if (!hex) return `rgba(78, 171, 190, ${alpha})`;
+        const raw = hex.replace("#", "").trim();
+        if (raw.length !== 6) return `rgba(78, 171, 190, ${alpha})`;
+        const r = parseInt(raw.slice(0, 2), 16);
+        const g = parseInt(raw.slice(2, 4), 16);
+        const b = parseInt(raw.slice(4, 6), 16);
+        if ([r, g, b].some(Number.isNaN)) return `rgba(78, 171, 190, ${alpha})`;
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function getToothType(num) {
+        if ([16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48].includes(num)) return "molar";
+        if ([14, 15, 24, 25, 34, 35, 44, 45].includes(num)) return "premolar";
+        if ([13, 23, 33, 43].includes(num)) return "canine";
+        if ([11, 12, 21, 22, 31, 32, 41, 42].includes(num)) return "incisor";
+        if ([55, 54, 64, 65, 85, 84, 74, 75].includes(num)) return "child-molar";
+        if ([53, 63, 83, 73].includes(num)) return "child-canine";
+        if ([52, 51, 61, 62, 82, 81, 71, 72].includes(num)) return "child-incisor";
+        return "molar";
+    }
+
+    function arcOffset(index, total, isUpper, showAdultTeeth) {
+        if (total <= 1) return 0;
+        const mid = (total - 1) / 2;
+        const dist = Math.abs(index - mid) / mid;
+        const maxOffset = showAdultTeeth ? 12 : 8;
+        const offset = dist * maxOffset;
+        return isUpper ? -offset : offset;
+    }
+
+    function renderSurfaceMarks(surfaces, isUpper, color, w, h) {
+        if (!surfaces) return "";
+        const mark = (cond, svg) => (cond ? svg : "");
+        const ocY = isUpper ? h * 0.36 : h * 0.64;
+        const sideY = isUpper ? h * 0.28 : h * 0.38;
+        const sideH = h * 0.34;
+        const vestY = isUpper ? h * 0.18 : h * 0.76;
+        const lingY = isUpper ? h * 0.76 : h * 0.18;
+
+        return `
+      <g opacity="0.92">
+        ${mark(surfaces.oclusal, `<ellipse cx="${w * 0.5}" cy="${ocY}" rx="${w * 0.18}" ry="${h * 0.10}" fill="${color}" />`)}
+        ${mark(surfaces.mesial, `<rect x="${w * 0.14}" y="${sideY}" width="${w * 0.14}" height="${sideH}" rx="${w * 0.05}" fill="${color}" />`)}
+        ${mark(surfaces.distal, `<rect x="${w * 0.72}" y="${sideY}" width="${w * 0.14}" height="${sideH}" rx="${w * 0.05}" fill="${color}" />`)}
+        ${mark(surfaces.vestibular, `<rect x="${w * 0.3}" y="${vestY}" width="${w * 0.4}" height="${h * 0.1}" rx="${w * 0.06}" fill="${color}" />`)}
+        ${mark(surfaces.lingual, `<rect x="${w * 0.3}" y="${lingY}" width="${w * 0.4}" height="${h * 0.1}" rx="${w * 0.06}" fill="${color}" />`)}
+      </g>
+    `;
+    }
+
+    function createToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMissing) {
+        const w = 80;
+        const h = 104;
+        const strokeWidth = 2.6;
+
+        const borderColor = isSelected ? BRAND.primary : (treatmentColor || "#CBD5E1");
+        const gradientId = `tooth-grad-${num}-${isUpper ? "u" : "l"}`;
+        const shineId = `tooth-shine-${num}-${isUpper ? "u" : "l"}`;
+        const shapeType = getToothType(num).replace("child-", "");
+
+        let path = "";
+        let detail = "";
+
+        // Shapes logic...
+        if (shapeType === "molar") {
+            if (isUpper) {
+                path = `M ${w * 0.18} ${h * 0.12} L ${w * 0.45} ${h * 0.08} L ${w * 0.55} ${h * 0.08} L ${w * 0.82} ${h * 0.12} Q ${w * 0.92} ${h * 0.18} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72} Q ${w * 0.92} ${h * 0.86} ${w * 0.82} ${h * 0.92} L ${w * 0.18} ${h * 0.92} Q ${w * 0.08} ${h * 0.86} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28} Q ${w * 0.08} ${h * 0.18} ${w * 0.18} ${h * 0.12} Z`;
+                detail = `<path d="M ${w * 0.25} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.75} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.5} ${h * 0.26} L ${w * 0.5} ${h * 0.56}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+            } else {
+                path = `M ${w * 0.18} ${h * 0.08} L ${w * 0.82} ${h * 0.08} Q ${w * 0.92} ${h * 0.14} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72} Q ${w * 0.92} ${h * 0.82} ${w * 0.82} ${h * 0.88} L ${w * 0.55} ${h * 0.92} L ${w * 0.45} ${h * 0.92} L ${w * 0.18} ${h * 0.88} Q ${w * 0.08} ${h * 0.82} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28} Q ${w * 0.08} ${h * 0.14} ${w * 0.18} ${h * 0.08} Z`;
+                detail = `<path d="M ${w * 0.25} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.75} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+            }
+        } else if (shapeType === "premolar") {
+            if (isUpper) {
+                path = `M ${w * 0.22} ${h * 0.15} L ${w * 0.5} ${h * 0.10} L ${w * 0.78} ${h * 0.15} Q ${w * 0.88} ${h * 0.22} ${w * 0.88} ${h * 0.32} L ${w * 0.88} ${h * 0.70} Q ${w * 0.88} ${h * 0.84} ${w * 0.78} ${h * 0.90} L ${w * 0.22} ${h * 0.90} Q ${w * 0.12} ${h * 0.84} ${w * 0.12} ${h * 0.70} L ${w * 0.12} ${h * 0.32} Q ${w * 0.12} ${h * 0.22} ${w * 0.22} ${h * 0.15} Z`;
+                detail = `<path d="M ${w * 0.35} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/><path d="M ${w * 0.65} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>`;
+            } else {
+                path = `M ${w * 0.22} ${h * 0.10} L ${w * 0.78} ${h * 0.10} Q ${w * 0.88} ${h * 0.16} ${w * 0.88} ${h * 0.30} L ${w * 0.88} ${h * 0.68} Q ${w * 0.88} ${h * 0.78} ${w * 0.78} ${h * 0.85} L ${w * 0.5} ${h * 0.90} L ${w * 0.22} ${h * 0.85} Q ${w * 0.12} ${h * 0.78} ${w * 0.12} ${h * 0.68} L ${w * 0.12} ${h * 0.30} Q ${w * 0.12} ${h * 0.16} ${w * 0.22} ${h * 0.10} Z`;
+                detail = `<path d="M ${w * 0.35} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/><path d="M ${w * 0.65} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>`;
+            }
+        } else if (shapeType === "canine") {
+            if (isUpper) {
+                path = `M ${w * 0.25} ${h * 0.15} Q ${w * 0.15} ${h * 0.25} ${w * 0.18} ${h * 0.35} L ${w * 0.18} ${h * 0.70} Q ${w * 0.15} ${h * 0.82} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90} Q ${w * 0.85} ${h * 0.82} ${w * 0.82} ${h * 0.70} L ${w * 0.82} ${h * 0.35} Q ${w * 0.85} ${h * 0.25} ${w * 0.75} ${h * 0.15} L ${w * 0.5} ${h * 0.08} Z`;
+                detail = `<path d="M ${w * 0.5} ${h * 0.14} L ${w * 0.5} ${h * 0.54}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+            } else {
+                path = `M ${w * 0.25} ${h * 0.10} Q ${w * 0.15} ${h * 0.18} ${w * 0.18} ${h * 0.30} L ${w * 0.18} ${h * 0.65} Q ${w * 0.15} ${h * 0.75} ${w * 0.25} ${h * 0.85} L ${w * 0.5} ${h * 0.92} L ${w * 0.75} ${h * 0.85} Q ${w * 0.85} ${h * 0.75} ${w * 0.82} ${h * 0.65} L ${w * 0.82} ${h * 0.30} Q ${w * 0.85} ${h * 0.18} ${w * 0.75} ${h * 0.10} Z`;
+                detail = `<path d="M ${w * 0.5} ${h * 0.88} L ${w * 0.5} ${h * 0.50}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+            }
+        } else {
+            if (isUpper) {
+                path = `M ${w * 0.25} ${h * 0.12} Q ${w * 0.20} ${h * 0.18} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72} Q ${w * 0.20} ${h * 0.84} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90} Q ${w * 0.80} ${h * 0.84} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28} Q ${w * 0.80} ${h * 0.18} ${w * 0.75} ${h * 0.12} Z`;
+                detail = `<path d="M ${w * 0.35} ${h * 0.30} Q ${w * 0.5} ${h * 0.35} ${w * 0.65} ${h * 0.30}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+            } else {
+                path = `M ${w * 0.25} ${h * 0.10} Q ${w * 0.20} ${h * 0.16} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72} Q ${w * 0.20} ${h * 0.82} ${w * 0.25} ${h * 0.88} L ${w * 0.75} ${h * 0.88} Q ${w * 0.80} ${h * 0.82} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28} Q ${w * 0.80} ${h * 0.16} ${w * 0.75} ${h * 0.10} Z`;
+                detail = `<path d="M ${w * 0.35} ${h * 0.70} Q ${w * 0.5} ${h * 0.65} ${w * 0.65} ${h * 0.70}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+            }
+        }
+
+        const surfaceColor = treatmentColor || "#EF4444";
+        const overlays = !isMissing && surfaces ? renderSurfaceMarks(surfaces, isUpper, surfaceColor, w, h) : "";
+
+        const missingMark = isMissing ? `
+      <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+      <line x1="${w * 0.8}" y1="${h * 0.2}" x2="${w * 0.2}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+    ` : "";
+
+        const baseOpacity = isMissing ? 0.45 : 1;
+
+        return `
+      <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
+        <defs>
+          <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1" />
+            <stop offset="55%" style="stop-color:#FFF7E9;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#F3E9DC;stop-opacity:1" />
+          </linearGradient>
+          <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? "30%" : "70%"}">
+            <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1" />
+            <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
+          </radialGradient>
+        </defs>
+
+        <path d="${path}"
+          fill="url(#${gradientId})"
+          stroke="${borderColor}"
+          stroke-width="${strokeWidth}"
+          stroke-dasharray="${isMissing ? "6 4" : "0"}"
+          opacity="${baseOpacity}" />
+
+        ${detail}
+        <ellipse cx="${w * 0.5}" cy="${isUpper ? h * 0.28 : h * 0.72}" rx="${w * 0.28}" ry="${h * 0.16}"
+          fill="url(#${shineId})" opacity="0.85"/>
+
+        ${overlays}
+        ${missingMark}
+      </svg>
+    `;
+    }
+
+    function renderGeoCircle(num, diagnosticsState) {
+        const state = (diagnosticsState && diagnosticsState[num]) || {};
+        const faces = state.faces || {};
+        const toothClass = state.tooth?.cssClass || "";
+        const isAbsent = state.tooth?.id === "absent";
+        const faceCls = (id) => faces[id]?.cssClass ? ` ${faces[id].cssClass}` : "";
+
+        return `
+      <div class="geo-mini ${toothClass || ""}">
+        <svg viewBox="0 0 100 100" class="geo-svg">
+          <circle cx="50" cy="50" r="48" class="geo-circle ${toothClass || ""}" />
+
+          <path d="M15,15 L85,85 M85,15 L15,85" stroke="#0f172a" stroke-width="4" class="geo-cross ${isAbsent ? "" : "hidden"}" />
+
+          <path d="M15,15 L85,15 L65,35 L35,35 Z" class="geo-sector${faceCls("vestibular")}"
+            data-geo-face="vestibular" data-tooth="${num}" />
+          <path d="M15,85 L85,85 L65,65 L35,65 Z" class="geo-sector${faceCls("lingual")}"
+            data-geo-face="lingual" data-tooth="${num}" />
+          <path d="M15,15 L15,85 L35,65 L35,35 Z" class="geo-sector${faceCls("mesial")}"
+            data-geo-face="mesial" data-tooth="${num}" />
+          <path d="M85,15 L85,85 L65,65 L65,35 Z" class="geo-sector${faceCls("distal")}"
+            data-geo-face="distal" data-tooth="${num}" />
+          <rect x="35" y="35" width="30" height="30" class="geo-sector${faceCls("oclusal")}"
+            data-geo-face="oclusal" data-tooth="${num}" />
+        </svg>
+      </div>
+    `;
+    }
+
+    return {
+        BRAND,
+        ICONS,
+        adultTeeth,
+        childTeeth,
+        FACE_LABELS,
+        getToothType,
+        arcOffset,
+        renderSurfaceMarks,
+        createToothSVG,
+        renderGeoCircle,
+        hexToRgba
+    };
+})();

@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file: https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; object-src 'none'; base-uri 'self';" />
   <title>Reportes - Sonalía</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -29,8 +31,8 @@
       },
     }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="../scripts/vendor/chart.umd.min.js"></script>
+  <script src="../scripts/vendor/xlsx.full.min.js"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
 
@@ -266,6 +268,51 @@
       </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-slide-up" style="animation-delay: 0.25s;">
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Morosidad</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Pacientes con cuotas vencidas</p>
+          </div>
+          <span id="morososCount" class="px-3 py-1 rounded-full bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 text-xs font-semibold">0 pacientes</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-slate-500 dark:text-slate-400 border-b border-gray-200 dark:border-gray-700">
+                <th class="py-2 pr-4">Paciente</th>
+                <th class="py-2 pr-4">Cuotas</th>
+                <th class="py-2">Monto vencido</th>
+              </tr>
+            </thead>
+            <tbody id="morososTable" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Producción por Profesional</h3>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Basado en tratamientos ejecutados</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-slate-500 dark:text-slate-400 border-b border-gray-200 dark:border-gray-700">
+                <th class="py-2 pr-4">Profesional</th>
+                <th class="py-2 pr-4">Tratamientos</th>
+                <th class="py-2">Producción</th>
+              </tr>
+            </thead>
+            <tbody id="profesionalesTable" class="divide-y divide-gray-200 dark:divide-gray-700"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Tabla de Tratamientos -->
     <div
       class="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden mb-8 animate-slide-up"
@@ -481,6 +528,7 @@
   </main>
 
   <script src="../scripts/reportes.js" type="module"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

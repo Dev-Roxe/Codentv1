@@ -497,6 +497,13 @@ function setupEventListeners() {
     document.getElementById('newPatientBtn')?.addEventListener('click', showNewPatientModal);
     document.getElementById('configBtn')?.addEventListener('click', showConfigModal);
     document.getElementById('exportBtn')?.addEventListener('click', exportPatients);
+
+    // Import
+    document.getElementById('importBtn')?.addEventListener('click', () => {
+        document.getElementById('importFile').click();
+    });
+
+    document.getElementById('importFile')?.addEventListener('change', handleImport);
 }
 
 function updateClearFiltersVisibility() {
@@ -556,8 +563,8 @@ function showNewPatientModal() {
                 const opts = (f.options || []).map(o => `<option value="${o}">${o || 'Seleccionar...'}</option>`).join('');
                 return `
                     <div>
-                        <label class="block text-sm font-medium text-[#0F2532] mb-2">${f.label} ${reqMark}</label>
-                        <select name="${f.key}" ${reqAttr} class="w-full px-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE] bg-white transition">
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">${f.label} ${reqMark}</label>
+                        <select name="${f.key}" ${reqAttr} class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-[#0F2532] dark:text-white transition">
                             ${opts}
                         </select>
                     </div>`;
@@ -565,9 +572,9 @@ function showNewPatientModal() {
 
             return `
                 <div>
-                    <label class="block text-sm font-medium text-[#0F2532] mb-2">${f.label} ${reqMark}</label>
+                    <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">${f.label} ${reqMark}</label>
                     <input type="${f.type}" name="${f.key}" ${reqAttr}
-                        class="w-full px-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+                        class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-[#0F2532] dark:text-white transition"
                         placeholder="${f.label}"/>
                 </div>`;
         }).join('');
@@ -576,7 +583,7 @@ function showNewPatientModal() {
         modal.id = 'new-patient-modal';
         modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in';
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-slide-up">
+            <div class="bg-white dark:bg-[#0E1A25] border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-slide-up">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-bold">Nuevo Paciente</h2>
@@ -592,8 +599,8 @@ function showNewPatientModal() {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${fieldsHtml}
                     </div>
-                    <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-[#E6E6E6]">
-                        <button type="button" id="cancelNewPatient" class="px-5 py-2.5 border border-[#D9D9D9] rounded-xl hover:bg-[#F8F7F7] font-medium transition">
+                    <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-[#E6E6E6] dark:border-slate-700">
+                        <button type="button" id="cancelNewPatient" class="px-5 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-gray-200 font-medium transition">
                             Cancelar
                         </button>
                         <button type="submit" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold transition flex items-center gap-2">
@@ -634,25 +641,25 @@ function showConfigModal() {
             const isCore = f.key === 'nombre' || f.key === 'apellido';
 
             return `
-                <div class="field-config-row flex items-center justify-between p-3 rounded-lg border border-[#E6E6E6] hover:border-[#4EABBE] transition" data-key="${f.key}">
-                    <span class="font-medium text-[#0F2532]">${f.label}</span>
+                <div class="field-config-row flex items-center justify-between p-3 rounded-lg border border-[#E6E6E6] dark:border-slate-700 hover:border-[#4EABBE] transition" data-key="${f.key}">
+                    <span class="font-medium text-[#0F2532] dark:text-slate-200">${f.label}</span>
                     <div class="flex items-center gap-4">
                         <label class="flex items-center gap-2 text-sm cursor-pointer">
                             <input type="checkbox" name="show-${f.key}" ${cfg.show ? 'checked' : ''} ${isCore ? 'checked disabled' : ''}
                                 class="w-4 h-4 rounded border-[#D9D9D9] text-[#4EABBE] focus:ring-[#4EABBE]"/>
-                            <span class="text-[#0F2532]/70">Mostrar</span>
+                            <span class="text-[#0F2532]/70 dark:text-slate-400">Mostrar</span>
                         </label>
                         <label class="flex items-center gap-2 text-sm cursor-pointer">
                             <input type="checkbox" name="req-${f.key}" ${cfg.required ? 'checked' : ''} ${isCore ? 'checked disabled' : ''}
                                 class="w-4 h-4 rounded border-[#D9D9D9] text-[#4EABBE] focus:ring-[#4EABBE]"/>
-                            <span class="text-[#0F2532]/70">Requerido</span>
+                            <span class="text-[#0F2532]/70 dark:text-slate-400">Requerido</span>
                         </label>
                     </div>
                 </div>`;
         }).join('');
 
         modal.innerHTML = `
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-slide-up">
+            <div class="bg-white dark:bg-[#0E1A25] border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden animate-slide-up">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center">
                     <div>
                         <h2 class="text-2xl font-bold">Configuración de Campos</h2>
@@ -665,8 +672,8 @@ function showConfigModal() {
                     </button>
                 </div>
                 <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)] scrollbar-thin">
-                    <div class="bg-[#8BCFDD]/10 border border-[#8BCFDD]/30 rounded-xl p-4 mb-6">
-                        <p class="text-sm text-[#1D5D69]">
+                    <div class="bg-[#8BCFDD]/10 dark:bg-[#0B1721] border border-[#8BCFDD]/30 dark:border-slate-700 rounded-xl p-4 mb-6">
+                        <p class="text-sm text-[#1D5D69] dark:text-slate-200">
                             <strong>Nota:</strong> Los campos "Nombre" y "Apellidos" siempre están visibles y son requeridos.
                         </p>
                     </div>
@@ -674,8 +681,8 @@ function showConfigModal() {
                         ${fieldsHtml}
                     </div>
                 </div>
-                <div class="p-4 border-t border-[#E6E6E6] flex justify-end gap-3 bg-[#F8F7F7]">
-                    <button id="cancelConfig" class="px-5 py-2.5 border border-[#D9D9D9] rounded-xl hover:bg-white font-medium transition">
+                <div class="p-4 border-t border-[#E6E6E6] dark:border-slate-700 flex justify-end gap-3 bg-[#F8F7F7] dark:bg-[#0B1721]">
+                    <button id="cancelConfig" class="px-5 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-white dark:hover:bg-gray-700 text-[#0F2532] dark:text-gray-200 font-medium transition">
                         Cancelar
                     </button>
                     <button id="saveConfig" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold transition">
@@ -832,6 +839,108 @@ function exportPatients() {
 
     URL.revokeObjectURL(url);
     showToast('Archivo CSV descargado', 'success');
+}
+
+/* ============================================================================
+   IMPORT EXCEL
+============================================================================ */
+async function handleImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!window.XLSX) {
+        showToast('Error: Librería Excel no cargada', 'error');
+        return;
+    }
+
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+        if (!rows.length) {
+            showToast('El archivo está vacío', 'warning');
+            return;
+        }
+
+        showToast('Procesando ' + rows.length + ' registros...', 'info');
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Process sequentially
+        for (const row of rows) {
+            try {
+                // Case-insensitive mapping helper
+                const getVal = (keys) => {
+                    for (const k of keys) {
+                        for (const rowKey in row) {
+                            if (rowKey.toLowerCase().trim() === k.toLowerCase()) return row[rowKey];
+                        }
+                    }
+                    return null;
+                };
+
+                const nombre = getVal(['nombre', 'nombres', 'name']);
+                const apellido = getVal(['apellido', 'apellidos', 'lastname']);
+                const telefono = getVal(['telefono', 'tel', 'phone', 'celular', 'movil']);
+                const email = getVal(['email', 'correo', 'mail', 'e-mail']);
+
+                if (!nombre || !apellido) {
+                    errorCount++;
+                    continue;
+                }
+
+                const core = {
+                    nombre: String(nombre).trim(),
+                    apellido: String(apellido).trim(),
+                    telefono: telefono ? String(telefono).trim() : null,
+                    email: email ? String(email).trim() : null,
+                    direccion: getVal(['direccion', 'address', 'domicilio']) || null,
+                    fecha_nacimiento: null
+                };
+
+                // Store extra fields in meta
+                const meta = {};
+                // Optional: map other columns to meta if needed
+
+                await new Promise((resolve, reject) => {
+                    const sql = `INSERT INTO pacientes(nombre, apellido, telefono, email, direccion, fecha_nacimiento, meta, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
+                    const params = [core.nombre, core.apellido, core.telefono, core.email, core.direccion, core.fecha_nacimiento, JSON.stringify(meta)];
+
+                    if (db.run.length >= 3) {
+                        db.run(sql, params, (err) => {
+                            if (err) reject(err);
+                            else resolve();
+                        });
+                    } else {
+                        db.run(sql, params).then(resolve).catch(reject);
+                    }
+                });
+
+                successCount++;
+
+            } catch (e) {
+                console.error('Error importing row', row, e);
+                errorCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            showToast(`Importación completada: ${successCount} importados` + (errorCount ? `, ${errorCount} fallidos` : ''), 'success');
+            loadPatients();
+        } else {
+            showToast(`No se importaron pacientes. Verifique los encabezados (Nombre, Apellido).`, 'warning');
+        }
+
+        event.target.value = ''; // Reset input
+
+    } catch (e) {
+        console.error(e);
+        showToast('Error al procesar archivo: ' + e.message, 'error');
+        event.target.value = '';
+    }
 }
 
 /* ============================================================================

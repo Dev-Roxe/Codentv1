@@ -2,20 +2,6 @@
 import '../components/navbar-component.js';
 import toast from './toast.js';
 
-// Inicializar dark mode desde localStorage
-const initializeDarkMode = () => {
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-
-    // Si está en auto y no hay preferencia guardada, o si es explícitamente dark
-    const root = document.documentElement;
-    if (isDark) {
-        root.classList.add('dark');
-    } else {
-        root.classList.remove('dark');
-    }
-};
-
 const safeParseJSON = (value, fallback = {}) => {
     if (!value) return fallback;
     try {
@@ -24,6 +10,47 @@ const safeParseJSON = (value, fallback = {}) => {
         console.warn('[init] JSON inválido en app_settings:', err);
         return fallback;
     }
+};
+
+const THEME_STORAGE_KEY = 'theme';
+const SETTINGS_STORAGE_KEY = 'app_settings';
+const VALID_THEMES = new Set(['light', 'dark', 'auto']);
+
+const getStoredTheme = () => {
+    const direct = localStorage.getItem(THEME_STORAGE_KEY);
+    if (VALID_THEMES.has(direct)) return direct;
+
+    const settings = safeParseJSON(localStorage.getItem(SETTINGS_STORAGE_KEY), {});
+    const fromSettings = settings?.theme;
+    if (VALID_THEMES.has(fromSettings)) return fromSettings;
+
+    return 'auto';
+};
+
+const prefersDarkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+
+const applyThemePreference = (theme) => {
+    const root = document.documentElement;
+    const isDark = theme === 'dark' || (theme === 'auto' && prefersDarkMedia.matches);
+
+    root.classList.toggle('dark', isDark);
+    root.style.colorScheme = isDark ? 'dark' : 'light';
+    root.dataset.theme = theme;
+
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (e) {
+        // ignore
+    }
+};
+
+// Inicializar dark mode desde storage (theme o app_settings)
+const initializeDarkMode = () => {
+    applyThemePreference(getStoredTheme());
+};
+
+const syncThemeFromStorage = () => {
+    applyThemePreference(getStoredTheme());
 };
 
 const applyFontSize = (fontSize) => {
@@ -430,6 +457,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const settings = initializePreferences();
     setupAutoLock(settings.autoLock);
     startAppointmentReminders();
+
+    // Mantener tema sincronizado con cambios de configuración
+    prefersDarkMedia.addEventListener('change', () => {
+        if (getStoredTheme() === 'auto') {
+            applyThemePreference('auto');
+        }
+    });
+    window.addEventListener('themeChanged', syncThemeFromStorage);
+    window.addEventListener('configurationChanged', (e) => {
+        if (e?.detail?.theme) {
+            applyThemePreference(e.detail.theme);
+        }
+    });
+    window.addEventListener('storage', (e) => {
+        if (e.key === THEME_STORAGE_KEY || e.key === SETTINGS_STORAGE_KEY) {
+            syncThemeFromStorage();
+        }
+    });
 
     // Manejo global de eventos del navbar
     document.addEventListener('navigate', (e) => {

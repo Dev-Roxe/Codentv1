@@ -1,6 +1,6 @@
 import toast from './toast.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const buildDisplayName = (nombre = '', apellido = '') => {
         return [nombre, apellido].filter(Boolean).join(' ').trim() || nombre || 'Usuario';
     };
@@ -29,6 +29,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Si llegamos al login, forzamos estado sin sesión
     clearSessionData();
+
+    const DEV_AUTO_LOGIN_ENABLED = (() => {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('autoLogin') === '1') return true;
+            return localStorage.getItem('dev_auto_login') === '1';
+        } catch (e) {
+            return false;
+        }
+    })();
+    const DEV_AUTO_LOGIN_NAME = 'sonali test';
+    const DEV_AUTO_LOGIN_EMAIL = 'sonali.test@sonalia.local';
+    const DEV_AUTO_LOGIN_ROLE = 'admin';
+
+    const tryAutoLoginSonaliTest = async () => {
+        if (!DEV_AUTO_LOGIN_ENABLED) return false;
+        if (!window.api?.db?.get) return false;
+
+        const queryUserSql = `
+            SELECT
+                id,
+                nombre,
+                COALESCE(apellido, apellidos, '') AS apellido,
+                COALESCE(rol, ?) AS rol,
+                email
+            FROM usuarios
+            WHERE lower(nombre) = lower(?) OR lower(email) = lower(?)
+            LIMIT 1
+        `;
+
+        try {
+            let user = await window.api.db.get(queryUserSql, [
+                DEV_AUTO_LOGIN_ROLE,
+                DEV_AUTO_LOGIN_NAME,
+                DEV_AUTO_LOGIN_EMAIL
+            ]);
+
+            // Create temporary user if it does not exist yet.
+            if (!user && window.api?.db?.run) {
+                try {
+                    await window.api.db.run(
+                        'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
+                        [DEV_AUTO_LOGIN_NAME, DEV_AUTO_LOGIN_EMAIL, '', DEV_AUTO_LOGIN_ROLE]
+                    );
+                } catch (insertError) {
+                    if (window.logToMain?.log) {
+                        window.logToMain.log('No se pudo crear usuario temporal: ' + (insertError?.message || String(insertError)));
+                    }
+                }
+
+                user = await window.api.db.get(queryUserSql, [
+                    DEV_AUTO_LOGIN_ROLE,
+                    DEV_AUTO_LOGIN_NAME,
+                    DEV_AUTO_LOGIN_EMAIL
+                ]);
+            }
+
+            if (!user?.id) return false;
+
+            const displayName = buildDisplayName(user.nombre, user.apellido);
+            localStorage.setItem('sesionActual', JSON.stringify({
+                id: user.id,
+                nombre: user.nombre,
+                apellido: user.apellido || '',
+                rol: user.rol || DEV_AUTO_LOGIN_ROLE,
+                email: user.email || DEV_AUTO_LOGIN_EMAIL
+            }));
+            localStorage.setItem('userName', displayName);
+            localStorage.setItem('sesionLastLogin', new Date().toISOString());
+
+            if (window.logToMain?.log) {
+                window.logToMain.log(`Auto-login temporal activo con ${user.email || user.nombre}`);
+            }
+
+            if (window.api?.openView) {
+                await window.api.openView('pacientes');
+            } else {
+                window.location = '../pacientes.html';
+            }
+
+            return true;
+        } catch (error) {
+            if (window.logToMain?.log) {
+                window.logToMain.log('Error en auto-login temporal: ' + (error?.message || String(error)));
+            }
+            return false;
+        }
+    };
+
+    const autoLoginDone = await tryAutoLoginSonaliTest();
+    if (autoLoginDone) return;
 
     // ============================================================
     // REGULAR LOGIN

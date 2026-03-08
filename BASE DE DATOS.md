@@ -1,3 +1,0 @@
-//SONALIA-SOFTWARE//
-
--

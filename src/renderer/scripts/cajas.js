@@ -1,13 +1,34 @@
-// cajas.js - Gestión de cajas registradoras
+// cajas.js - GestiÃ³n de cajas registradoras
 import toast from './toast.js';
 import '../components/navbar-component.js';
 import { initNavbarListeners, getUserName } from './navigation.js';
 
 let db = (window.api && window.api.db) ? window.api.db : null;
+let cajasReportApi = null;
+
+function resolveCajasReportApi() {
+  if (window.api?.cajasReport) return window.api.cajasReport;
+  if (window.parent && window.parent !== window && window.parent.api?.cajasReport) {
+    return window.parent.api.cajasReport;
+  }
+  return null;
+}
 
 function getSessionUser() {
   try {
-    return JSON.parse(localStorage.getItem('sesionActual')) || {};
+    const localSession = JSON.parse(localStorage.getItem('sesionActual')) || {};
+    if (localSession && typeof localSession === 'object' && Object.keys(localSession).length) {
+      return localSession;
+    }
+
+    if (window.parent && window.parent !== window) {
+      const parentRaw = window.parent.localStorage?.getItem('sesionActual');
+      if (parentRaw) {
+        const parentSession = JSON.parse(parentRaw) || {};
+        if (parentSession && typeof parentSession === 'object') return parentSession;
+      }
+    }
+    return {};
   } catch (e) {
     return {};
   }
@@ -20,7 +41,37 @@ function getCurrentUserName() {
 
 function getCurrentUserId() {
   const session = getSessionUser();
-  return session.id || null;
+  const candidates = [session.id, session.user_id, session.id_usuario, session.usuario_id, session.userId, session.usuarioId];
+  for (const raw of candidates) {
+    const id = Number(raw);
+    if (Number.isInteger(id) && id > 0) return id;
+  }
+  return null;
+}
+
+function getCurrentUserRole() {
+  const session = getSessionUser();
+  return String(session.rol || session.role || '').trim().toLowerCase();
+}
+
+function isAdminUser() {
+  const role = getCurrentUserRole();
+  return ['admin', 'administrador', 'superadmin', 'gerente'].includes(role);
+}
+
+function canManageCaja(caja) {
+  const currentUserId = getCurrentUserId();
+  if (!currentUserId || !caja) return false;
+  return Number(caja.usuario_id) === Number(currentUserId) || isAdminUser();
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function dbAll(sql, params = []) {
@@ -36,6 +87,26 @@ function dbAll(sql, params = []) {
         db.all(sql, params).then(rows => resolve(rows || [])).catch(reject);
       } else {
         resolve([]);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+function dbGet(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (!db) return resolve(null);
+      if (db.get && db.get.length >= 3) {
+        db.get(sql, params, (err, row) => {
+          if (err) return reject(err);
+          resolve(row || null);
+        });
+      } else if (db.get) {
+        db.get(sql, params).then(row => resolve(row || null)).catch(reject);
+      } else {
+        resolve(null);
       }
     } catch (e) {
       reject(e);
@@ -63,15 +134,58 @@ function dbRun(sql, params = []) {
   });
 }
 
+async function writeFinanceAudit(action, entity, entityId = null, payload = null, userId = null) {
+  if (!db) return;
+  const resolvedUserId = Number(userId || getCurrentUserId() || 0) || null;
+  try {
+    await dbRun(
+      `INSERT INTO auditoria_financiera (usuario_id, accion, entidad, entidad_id, payload)
+       VALUES (?, ?, ?, ?, ?)`,
+      [resolvedUserId, action, entity, entityId, payload ? JSON.stringify(payload) : null]
+    );
+  } catch (error) {
+    console.warn('No se pudo registrar auditoria financiera', error && error.message);
+  }
+}
+
 let currentTab = 'abiertas';
+let searchQuery = '';
 let cajas = [];
 let charts = {
   movimientos: null,
   comparacion: null
 };
+let dailyMovements = [];
+let usuariosCatalog = [];
+const advancedState = {
+  filters: {
+    fecha: '',
+    mes: '',
+    caja_id: '',
+    tipo: '',
+    usuario_id: '',
+  },
+  movimientos: [],
+  resumen: null,
+  saldosMetodo: [],
+};
+
+function todayISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function currentMonthISO() {
+  return todayISO().slice(0, 7);
+}
 
 
 document.addEventListener('DOMContentLoaded', async () => {
+  cajasReportApi = resolveCajasReportApi();
+
   // Inicializar navbar
   const navbar = document.querySelector('app-navbar');
   if (navbar) navbar.setAttribute('user-name', getCurrentUserName());
@@ -82,10 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       filterCajas(query);
     },
     onSearchSubmit: (query) => {
-      console.log('Búsqueda:', query);
+      console.log('BÃºsqueda:', query);
     },
     onLogout: () => {
-      if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
+      if (confirm('Â¿EstÃ¡s seguro que deseas cerrar sesiÃ³n?')) {
         localStorage.clear();
         window.location.href = '../login.html';
       }
@@ -94,6 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar cajas
   await loadCajas();
+  await initAdvancedDashboard();
 
   // Event listeners para tabs
   document.querySelectorAll('.tab-button').forEach(tab => {
@@ -103,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Event listener para búsqueda local
+  // Event listener para bÃºsqueda local
   const searchInput = document.getElementById('searchCaja');
   if (searchInput) {
     let debounceTimer;
@@ -124,11 +239,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Renderizar tab inicial
   renderCurrentTab();
 
-  // Inicializar gráficas
+  // Inicializar grÃ¡ficas
   createMovimientosChart();
   createComparacionChart();
 
-  // Observador de cambios de tema para actualizar gráficas
+  // Observador de cambios de tema para actualizar grÃ¡ficas
   setupThemeObserver();
 });
 
@@ -137,11 +252,15 @@ async function loadCajas() {
   try {
     if (!db) {
       cajas = [];
+      dailyMovements = [];
       updateStats();
       createMovimientosChart();
       createComparacionChart();
       return;
     }
+
+    // Cargar movimientos diarios para la grafica
+    await loadDailyMovements();
 
     const sql = `
       SELECT 
@@ -165,13 +284,461 @@ async function loadCajas() {
     updateStats();
     createMovimientosChart();
     createComparacionChart();
+    populateAdvancedCajaFilter();
   } catch (error) {
     console.error('Error cargando cajas:', error);
     cajas = [];
   }
 }
 
-// Actualizar estadísticas
+async function loadDailyMovements() {
+  try {
+    const today = new Date();
+    const endDate = today.toISOString().split('T')[0];
+    const startDateObj = new Date();
+    startDateObj.setDate(today.getDate() - 6);
+    const startDate = startDateObj.toISOString().split('T')[0];
+
+    const sql = `
+      SELECT 
+        date(fecha) as fecha,
+        SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END) as ingresos,
+        SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END) as egresos
+      FROM movimientos_caja
+      WHERE date(fecha) BETWEEN date(?) AND date(?)
+      GROUP BY date(fecha)
+      ORDER BY date(fecha) ASC
+    `;
+    
+    dailyMovements = await dbAll(sql, [startDate, endDate]);
+  } catch (error) {
+    console.error('Error cargando movimientos diarios:', error);
+    dailyMovements = [];
+  }
+}
+
+function getAdvancedFiltersFromUI() {
+  const fecha = (document.getElementById('adv-filter-day')?.value || '').trim();
+  const mes = (document.getElementById('adv-filter-month')?.value || '').trim();
+  return {
+    fecha,
+    mes,
+    caja_id: document.getElementById('adv-filter-caja')?.value || '',
+    tipo: document.getElementById('adv-filter-tipo')?.value || '',
+    usuario_id: document.getElementById('adv-filter-usuario')?.value || '',
+  };
+}
+
+function setAdvancedLoading(isLoading) {
+  const el = document.getElementById('adv-loading');
+  if (!el) return;
+  el.classList.toggle('hidden', !isLoading);
+}
+
+function populateAdvancedCajaFilter() {
+  const select = document.getElementById('adv-filter-caja');
+  if (!select) return;
+  const current = select.value || advancedState.filters.caja_id || '';
+  const seen = new Set();
+  const options = (cajas || [])
+    .filter(item => {
+      if (!item?.id || seen.has(String(item.id))) return false;
+      seen.add(String(item.id));
+      return true;
+    })
+    .map(item => ({
+      value: String(item.id),
+      label: `Caja #${item.id} - ${item.usuario_nombre || 'Usuario'}`,
+    }));
+
+  select.innerHTML = '<option value="">Todas</option>';
+  options.forEach((option) => {
+    const opt = document.createElement('option');
+    opt.value = option.value;
+    opt.textContent = option.label;
+    select.appendChild(opt);
+  });
+
+  if (current && options.some(opt => opt.value === current)) {
+    select.value = current;
+  }
+}
+
+function populateAdvancedUsuarioFilter() {
+  const select = document.getElementById('adv-filter-usuario');
+  if (!select) return;
+  const current = select.value || advancedState.filters.usuario_id || '';
+  select.innerHTML = '<option value="">Todos</option>';
+  (usuariosCatalog || []).forEach((user) => {
+    const opt = document.createElement('option');
+    opt.value = String(user.id);
+    opt.textContent = user.nombre || `Usuario #${user.id}`;
+    select.appendChild(opt);
+  });
+  if (current && (usuariosCatalog || []).some(user => String(user.id) === String(current))) {
+    select.value = String(current);
+  }
+}
+
+async function loadAdvancedUsersCatalog() {
+  if (!db) {
+    usuariosCatalog = [];
+    populateAdvancedUsuarioFilter();
+    return;
+  }
+  try {
+    const rows = await dbAll(`
+      SELECT
+        id,
+        COALESCE(
+          NULLIF(
+            TRIM(COALESCE(nombre, '') || ' ' || COALESCE(apellido, apellidos, '')),
+            ''
+          ),
+          email,
+          ('Usuario #' || id)
+        ) AS nombre
+      FROM usuarios
+      ORDER BY nombre ASC
+    `);
+    usuariosCatalog = rows || [];
+  } catch (error) {
+    console.error('Error cargando usuarios para filtro contable', error);
+    usuariosCatalog = [];
+  }
+  populateAdvancedUsuarioFilter();
+}
+
+function formatOpenCajaList(openBoxes = []) {
+  if (!Array.isArray(openBoxes) || !openBoxes.length) {
+    return '<p>No hay cajas abiertas</p>';
+  }
+  return openBoxes.map((box) => `
+    <p><span class="font-semibold">Caja #${box.id}</span> (${escapeHtml(box.usuario_nombre || 'Usuario')}) - ${formatCurrency(box.saldo_actual || 0)} - ${escapeHtml(box.tiempo_abierta_label || '0h 0m')}</p>
+  `).join('');
+}
+
+function renderAdvancedSummary() {
+  const resumen = advancedState.resumen || {};
+  const day = resumen.day || {};
+  const month = resumen.month || {};
+
+  const dayIncome = document.getElementById('adv-day-income');
+  const dayExpense = document.getElementById('adv-day-expense');
+  const dayNet = document.getElementById('adv-day-net');
+  const monthIncome = document.getElementById('adv-month-income');
+  const monthNet = document.getElementById('adv-month-net');
+  const monthMovements = document.getElementById('adv-month-movements');
+  const openBoxes = document.getElementById('adv-open-boxes');
+
+  if (dayIncome) dayIncome.textContent = `Ingresos: ${formatCurrency(day.ingresos || 0)}`;
+  if (dayExpense) dayExpense.textContent = `Egresos: ${formatCurrency(day.egresos || 0)}`;
+  if (dayNet) dayNet.textContent = `Neto: ${formatCurrency(day.neto || 0)} (${Number(day.movimientos || 0)} movs)`;
+  if (monthIncome) monthIncome.textContent = `Ingresos: ${formatCurrency(month.ingresos || 0)}`;
+  if (monthNet) monthNet.textContent = `Neto: ${formatCurrency(month.neto || 0)}`;
+  if (monthMovements) monthMovements.textContent = `Movimientos: ${Number(month.movimientos || 0)}`;
+  if (openBoxes) openBoxes.innerHTML = formatOpenCajaList(resumen.open_boxes || []);
+}
+
+function renderAdvancedMethodBalances() {
+  const container = document.getElementById('adv-method-balances');
+  if (!container) return;
+  const rows = advancedState.saldosMetodo || [];
+  if (!rows.length) {
+    container.innerHTML = '<span class="px-2 py-1 rounded-lg bg-[#F1F5F9] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200">Sin datos</span>';
+    return;
+  }
+  container.innerHTML = rows.map(item => `
+    <span class="px-2 py-1 rounded-lg bg-[#F1F5F9] dark:bg-gray-700 text-[#0F2532] dark:text-gray-200">
+      ${escapeHtml(item.metodo)}: ${formatCurrency(item.neto || 0)}
+    </span>
+  `).join('');
+}
+
+function renderAdvancedMovementsTable() {
+  const tbody = document.getElementById('adv-mov-table-body');
+  const count = document.getElementById('adv-mov-count');
+  if (!tbody) return;
+
+  const rows = advancedState.movimientos || [];
+  if (count) count.textContent = `${rows.length} registros`;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="px-3 py-6 text-center text-[#0F2532]/60 dark:text-gray-400">Sin movimientos para el filtro seleccionado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map((row, index) => {
+    const isIncome = row.tipo === 'ingreso';
+    return `
+      <tr>
+        <td class="px-3 py-2">${index + 1}</td>
+        <td class="px-3 py-2">${escapeHtml(row.hora || '')}</td>
+        <td class="px-3 py-2">
+          <span class="px-2 py-1 rounded-full text-xs font-semibold ${isIncome ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-300'}">
+            ${isIncome ? 'Ingreso' : 'Egreso'}
+          </span>
+        </td>
+        <td class="px-3 py-2">${escapeHtml(row.concepto || '-')}</td>
+        <td class="px-3 py-2">${escapeHtml(row.paciente_nombre || '-')}</td>
+        <td class="px-3 py-2 font-semibold ${isIncome ? 'text-emerald-600 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-300'}">${isIncome ? '+' : '-'}${formatCurrency(Math.abs(Number(row.monto || 0)))}</td>
+        <td class="px-3 py-2">${escapeHtml(row.metodo || '-')}</td>
+        <td class="px-3 py-2">${escapeHtml(row.usuario_nombre || 'Sistema')}</td>
+        <td class="px-3 py-2">${escapeHtml(row.caja_nombre || `Caja #${row.caja_id || ''}`)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function refreshAdvancedDashboard() {
+  if (!document.getElementById('adv-mov-table-body')) return;
+  if (!cajasReportApi) {
+    renderAdvancedSummary();
+    renderAdvancedMethodBalances();
+    renderAdvancedMovementsTable();
+    return;
+  }
+
+  advancedState.filters = getAdvancedFiltersFromUI();
+  setAdvancedLoading(true);
+  try {
+    const [movementsResult, summaryResult, methodsResult] = await Promise.all([
+      cajasReportApi.getMovimientosAvanzado(advancedState.filters),
+      cajasReportApi.getResumenContable(advancedState.filters),
+      cajasReportApi.getSaldosMetodo(advancedState.filters),
+    ]);
+
+    advancedState.movimientos = movementsResult?.rows || [];
+    advancedState.resumen = summaryResult || null;
+    advancedState.saldosMetodo = methodsResult?.rows || [];
+
+    renderAdvancedSummary();
+    renderAdvancedMethodBalances();
+    renderAdvancedMovementsTable();
+  } catch (error) {
+    console.error('Error cargando dashboard contable avanzado', error);
+    showNotification('Error cargando movimientos contables', 'error');
+  } finally {
+    setAdvancedLoading(false);
+  }
+}
+
+function setupAdvancedDashboardEvents() {
+  const btnApply = document.getElementById('adv-apply-filters');
+  const btnReset = document.getElementById('adv-reset-filters');
+  const btnExportCsv = document.getElementById('adv-export-csv');
+  const btnPrint = document.getElementById('adv-print-report');
+  btnApply?.addEventListener('click', () => {
+    refreshAdvancedDashboard();
+  });
+  btnReset?.addEventListener('click', () => {
+    const dayInput = document.getElementById('adv-filter-day');
+    const monthInput = document.getElementById('adv-filter-month');
+    const cajaInput = document.getElementById('adv-filter-caja');
+    const typeInput = document.getElementById('adv-filter-tipo');
+    const userInput = document.getElementById('adv-filter-usuario');
+
+    if (dayInput) dayInput.value = todayISO();
+    if (monthInput) monthInput.value = currentMonthISO();
+    if (cajaInput) cajaInput.value = '';
+    if (typeInput) typeInput.value = '';
+    if (userInput) userInput.value = '';
+    refreshAdvancedDashboard();
+  });
+  btnExportCsv?.addEventListener('click', exportAdvancedMovementsCsv);
+  btnPrint?.addEventListener('click', printAdvancedReport);
+}
+
+async function initAdvancedDashboard() {
+  const dayInput = document.getElementById('adv-filter-day');
+  const monthInput = document.getElementById('adv-filter-month');
+  if (!dayInput || !monthInput) return;
+
+  if (!dayInput.value) dayInput.value = todayISO();
+  if (!monthInput.value) monthInput.value = currentMonthISO();
+
+  await loadAdvancedUsersCatalog();
+  populateAdvancedCajaFilter();
+  setupAdvancedDashboardEvents();
+  await refreshAdvancedDashboard();
+}
+function toCsvCell(value) {
+  const str = String(value ?? '').replace(/\r?\n/g, ' ').trim();
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+function downloadTextFile(filename, content, mime = 'text/plain;charset=utf-8') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    anchor.remove();
+  }, 0);
+}
+
+function exportAdvancedMovementsCsv() {
+  const rows = advancedState.movimientos || [];
+  if (!rows.length) {
+    showNotification('No hay movimientos para exportar con el filtro actual', 'warning');
+    return;
+  }
+
+  const summary = advancedState.resumen || {};
+  const day = summary.day || {};
+  const month = summary.month || {};
+  const filters = advancedState.filters || {};
+
+  const lines = [
+    ['Reporte', 'Movimientos Contables'].map(toCsvCell).join(','),
+    ['Fecha de generacion', new Date().toLocaleString('es-MX')].map(toCsvCell).join(','),
+    ['Filtro dia', filters.fecha || ''].map(toCsvCell).join(','),
+    ['Filtro mes', filters.mes || ''].map(toCsvCell).join(','),
+    ['Filtro caja', filters.caja_id || 'Todas'].map(toCsvCell).join(','),
+    ['Filtro tipo', filters.tipo || 'Todos'].map(toCsvCell).join(','),
+    ['Filtro usuario', filters.usuario_id || 'Todos'].map(toCsvCell).join(','),
+    ['Ingresos dia', day.ingresos || 0].map(toCsvCell).join(','),
+    ['Egresos dia', day.egresos || 0].map(toCsvCell).join(','),
+    ['Neto dia', day.neto || 0].map(toCsvCell).join(','),
+    ['Ingresos mes', month.ingresos || 0].map(toCsvCell).join(','),
+    ['Neto mes', month.neto || 0].map(toCsvCell).join(','),
+    '',
+    ['#', 'Fecha', 'Hora', 'Tipo', 'Concepto', 'Paciente', 'Monto', 'Metodo', 'Usuario', 'Caja', 'Origen'].map(toCsvCell).join(','),
+  ];
+
+  rows.forEach((row, index) => {
+    lines.push([
+      index + 1,
+      row.fecha || '',
+      row.hora || '',
+      row.tipo || '',
+      row.concepto || '',
+      row.paciente_nombre || '',
+      Number(row.monto || 0).toFixed(2),
+      row.metodo || '',
+      row.usuario_nombre || '',
+      row.caja_nombre || `Caja #${row.caja_id || ''}`,
+      row.origen || '',
+    ].map(toCsvCell).join(','));
+  });
+
+  const baseDate = (filters.fecha || filters.mes || todayISO()).replace(/[^0-9-]/g, '');
+  const filename = `movimientos_caja_${baseDate || 'reporte'}.csv`;
+  downloadTextFile(filename, lines.join('\n'), 'text/csv;charset=utf-8');
+  showNotification('CSV exportado correctamente', 'success');
+}
+
+function buildAdvancedPrintableReportHtml() {
+  const rows = advancedState.movimientos || [];
+  const summary = advancedState.resumen || {};
+  const day = summary.day || {};
+  const month = summary.month || {};
+  const filters = advancedState.filters || {};
+
+  const rowsHtml = rows.length
+    ? rows.map((row, index) => {
+      const isIncome = row.tipo === 'ingreso';
+      const amount = `${isIncome ? '+' : '-'}${formatCurrency(Math.abs(Number(row.monto || 0)))}`;
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${escapeHtml(row.hora || '')}</td>
+          <td>${escapeHtml(isIncome ? 'Ingreso' : 'Egreso')}</td>
+          <td>${escapeHtml(row.concepto || '-')}</td>
+          <td>${escapeHtml(row.paciente_nombre || '-')}</td>
+          <td style="text-align:right; color:${isIncome ? '#047857' : '#BE123C'}; font-weight:700;">${escapeHtml(amount)}</td>
+          <td>${escapeHtml(row.metodo || '-')}</td>
+          <td>${escapeHtml(row.usuario_nombre || 'Sistema')}</td>
+          <td>${escapeHtml(row.caja_nombre || `Caja #${row.caja_id || ''}`)}</td>
+        </tr>
+      `;
+    }).join('')
+    : '<tr><td colspan="9" style="text-align:center; color:#64748B; padding:12px;">Sin movimientos para este filtro</td></tr>';
+
+  return `
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reporte Contable de Cajas</title>
+  <style>
+    body { font-family: Arial, sans-serif; color: #0F2532; margin: 24px; }
+    h1 { margin: 0 0 4px 0; font-size: 22px; color: #1D5D69; }
+    p { margin: 2px 0; font-size: 12px; color: #334155; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+    .card { border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px; }
+    .label { font-size: 11px; color: #64748B; text-transform: uppercase; letter-spacing: .05em; }
+    .value { font-size: 15px; font-weight: 700; margin-top: 3px; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 12px; }
+    th, td { border: 1px solid #E2E8F0; padding: 6px; }
+    th { background: #F8FAFC; text-align: left; color: #1D5D69; }
+    .muted { color: #64748B; }
+  </style>
+</head>
+<body>
+  <h1>Movimientos Contables de Cajas</h1>
+  <p class="muted">Generado: ${escapeHtml(new Date().toLocaleString('es-MX'))}</p>
+  <p class="muted">Filtros: dia ${escapeHtml(filters.fecha || '-')} | mes ${escapeHtml(filters.mes || '-')} | caja ${escapeHtml(filters.caja_id || 'Todas')} | tipo ${escapeHtml(filters.tipo || 'Todos')} | usuario ${escapeHtml(filters.usuario_id || 'Todos')}</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Hoy Ingresos</div>
+      <div class="value">${escapeHtml(formatCurrency(day.ingresos || 0))}</div>
+      <p>Egresos: ${escapeHtml(formatCurrency(day.egresos || 0))}</p>
+      <p>Neto: ${escapeHtml(formatCurrency(day.neto || 0))}</p>
+    </div>
+    <div class="card">
+      <div class="label">Mes Ingresos</div>
+      <div class="value">${escapeHtml(formatCurrency(month.ingresos || 0))}</div>
+      <p>Movimientos: ${escapeHtml(month.movimientos || 0)}</p>
+      <p>Neto: ${escapeHtml(formatCurrency(month.neto || 0))}</p>
+    </div>
+    <div class="card">
+      <div class="label">Registros</div>
+      <div class="value">${rows.length}</div>
+      <p>Documento interno sin CFDI/SAT</p>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Hora</th>
+        <th>Tipo</th>
+        <th>Concepto</th>
+        <th>Paciente</th>
+        <th>Monto</th>
+        <th>Metodo</th>
+        <th>Usuario</th>
+        <th>Caja</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <script>window.print();</script>
+</body>
+</html>
+  `;
+}
+
+function printAdvancedReport() {
+  const popup = window.open('', '_blank');
+  if (!popup) {
+    showNotification('No se pudo abrir la vista de impresion', 'error');
+    return;
+  }
+
+  popup.document.open();
+  popup.document.write(buildAdvancedPrintableReportHtml());
+  popup.document.close();
+}
+
+// Actualizar estadÃ­sticas
 function updateStats() {
   const cajasAbiertas = cajas.filter(c => c.estado === 'abierta').length;
   const totalDia = cajas
@@ -185,7 +752,7 @@ function updateStats() {
   if (statTotalDia) statTotalDia.textContent = formatCurrency(totalDia);
 }
 
-// Obtener colores según el tema
+// Obtener colores segÃºn el tema
 function getChartColors() {
   const isDark = document.documentElement.classList.contains('dark');
   return {
@@ -196,7 +763,7 @@ function getChartColors() {
   };
 }
 
-// Crear gráfica de movimientos diarios
+// Crear grÃ¡fica de movimientos diarios
 function createMovimientosChart() {
   const ctx = document.getElementById('movimientosChart');
   if (!ctx) return;
@@ -207,17 +774,24 @@ function createMovimientosChart() {
 
   const colors = getChartColors();
 
-  // Datos mock - últimos 7 días
+  // Datos reales
   const labels = [];
   const ingresosData = [];
   const egresosData = [];
-
+  
+  // Generar ultimos 7 dias
   for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    labels.push(date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }));
-    ingresosData.push(Math.floor(Math.random() * 30000) + 20000);
-    egresosData.push(Math.floor(Math.random() * 5000) + 1000);
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const label = d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+    
+    labels.push(label);
+    
+    // Buscar datos para este dia
+    const dayData = dailyMovements.find(m => m.fecha === dateStr) || { ingresos: 0, egresos: 0 };
+    ingresosData.push(dayData.ingresos || 0);
+    egresosData.push(dayData.egresos || 0);
   }
 
   const data = {
@@ -296,26 +870,33 @@ function createMovimientosChart() {
   });
 }
 
-// Crear gráfica de comparación de cajas
+// Crear grÃ¡fica de comparaciÃ³n de cajas
 function createComparacionChart() {
-  const ctx = document.getElementById('comparacionChart');
-  if (!ctx) return;
+  const wrapper = document.getElementById('comparacionChartWrapper');
+  if (!wrapper) return;
+  let ctx = document.getElementById('comparacionChart');
 
   if (charts.comparacion) {
     charts.comparacion.destroy();
+    charts.comparacion = null;
   }
 
   const colors = getChartColors();
   const cajasAbiertas = cajas.filter(c => c.estado === 'abierta');
 
   if (cajasAbiertas.length === 0) {
-    // Mostrar mensaje si no hay cajas abiertas
-    ctx.parentElement.innerHTML = `
+    wrapper.innerHTML = `
       <div class="flex items-center justify-center h-full text-[#0F2532]/60 dark:text-gray-400">
         <p>No hay cajas abiertas para comparar</p>
       </div>
     `;
     return;
+  }
+
+  if (!ctx) {
+    wrapper.innerHTML = '<canvas id="comparacionChart"></canvas>';
+    ctx = document.getElementById('comparacionChart');
+    if (!ctx) return;
   }
 
   const labels = cajasAbiertas.map(c => c.usuario_nombre.split(' ')[0]);
@@ -369,7 +950,7 @@ function createComparacionChart() {
   });
 }
 
-// Actualizar tema de las gráficas
+// Actualizar tema de las grÃ¡ficas
 function updateChartsTheme() {
   createMovimientosChart();
   createComparacionChart();
@@ -423,23 +1004,33 @@ function renderCurrentTab() {
       filteredCajas = cajas.filter(c => c.estado === 'cerrada');
       break;
     case 'mi-caja':
-      // En producción, filtrar por usuario actual
-      const currentUser = getCurrentUserName();
+      // En producciÃ³n, filtrar por usuario actual
+      const currentUserId = getCurrentUserId();
       filteredCajas = cajas.filter(c =>
-        c.usuario_nombre.includes(currentUser) && c.estado === 'abierta'
+        Number(c.usuario_id) === Number(currentUserId) && c.estado === 'abierta'
       );
       break;
   }
 
+  const search = String(searchQuery || '').trim().toLowerCase();
+  if (search) {
+    filteredCajas = filteredCajas.filter(c =>
+      String(c.usuario_nombre || '').toLowerCase().includes(search) ||
+      String(c.notas || '').toLowerCase().includes(search) ||
+      String(c.id || '').includes(search)
+    );
+  }
+
   if (filteredCajas.length === 0) {
+    const isSearching = !!search;
     container.innerHTML = `
       <div class="text-center py-16">
         <svg class="w-20 h-20 mx-auto text-[#D9D9D9] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
         </svg>
-        <p class="text-[#0F2532]/60 text-lg font-medium">No hay cajas ${currentTab === 'abiertas' ? 'abiertas' : currentTab === 'cerradas' ? 'cerradas' : 'asignadas'}</p>
+        <p class="text-[#0F2532]/60 text-lg font-medium">${isSearching ? 'No se encontraron cajas con ese filtro' : `No hay cajas ${currentTab === 'abiertas' ? 'abiertas' : currentTab === 'cerradas' ? 'cerradas' : 'asignadas'}`}</p>
         <p class="text-[#0F2532]/40 text-sm mt-2">
-          ${currentTab === 'abiertas' ? 'Haz clic en "Abrir Caja" para comenzar' : 'No se encontraron registros'}
+          ${isSearching ? 'Prueba con otro nombre, nota o ID de caja' : currentTab === 'abiertas' ? 'Haz clic en "Abrir Caja" para comenzar' : 'No se encontraron registros'}
         </p>
       </div>
     `;
@@ -475,6 +1066,7 @@ function renderCurrentTab() {
 // Renderizar fila de caja
 function renderCajaRow(caja) {
   const totalAcumulado = caja.saldo_inicial + caja.total_movimientos;
+  const canManage = canManageCaja(caja);
   const fechaApertura = new Date(caja.fecha_apertura).toLocaleString('es-ES', {
     day: '2-digit',
     month: 'short',
@@ -499,11 +1091,11 @@ function renderCajaRow(caja) {
       <td class="px-6 py-4">
         <div class="flex items-center">
           <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#4EABBE] to-[#1D5D69] flex items-center justify-center text-white font-bold mr-3">
-            ${caja.usuario_nombre.charAt(0)}
+            ${escapeHtml(caja.usuario_nombre.charAt(0))}
           </div>
           <div>
-            <div class="font-semibold text-[#0F2532]">${caja.usuario_nombre}</div>
-            ${caja.notas ? `<div class="text-xs text-[#0F2532]/60">${caja.notas}</div>` : ''}
+            <div class="font-semibold text-[#0F2532]">${escapeHtml(caja.usuario_nombre)}</div>
+            ${caja.notas ? `<div class="text-xs text-[#0F2532]/60">${escapeHtml(caja.notas)}</div>` : ''}
           </div>
         </div>
       </td>
@@ -528,7 +1120,7 @@ function renderCajaRow(caja) {
           </svg>
           Ver Detalle
         </button>
-        ${caja.estado === 'abierta' ? `
+        ${caja.estado === 'abierta' && canManage ? `
           <button 
             class="btn-cerrar-caja ml-2 inline-flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-medium text-sm"
             data-caja-id="${caja.id}"
@@ -565,21 +1157,9 @@ function attachRowEventListeners() {
   });
 }
 
-// Filtrar cajas por búsqueda
+// Filtrar cajas por bÃºsqueda
 function filterCajas(query) {
-  if (!query || query.trim() === '') {
-    renderCurrentTab();
-    return;
-  }
-
-  const searchLower = query.toLowerCase();
-  const filtered = cajas.filter(c =>
-    c.usuario_nombre.toLowerCase().includes(searchLower) ||
-    (c.notas && c.notas.toLowerCase().includes(searchLower))
-  );
-
-  // Renderizar filtrados (simplificado por ahora)
-  console.log('Cajas filtradas:', filtered);
+  searchQuery = query || '';
   renderCurrentTab();
 }
 
@@ -588,16 +1168,16 @@ function showAbrirCajaModal() {
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in';
   overlay.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-in">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-in">
       <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
         <h3 class="text-2xl font-bold">Abrir Nueva Caja</h3>
         <p class="text-white/80 text-sm mt-1">Registra la apertura de caja</p>
       </div>
       <form id="formAbrirCaja" class="p-6 space-y-4">
         <div>
-          <label class="block text-sm font-semibold text-[#0F2532] mb-2">Saldo Inicial *</label>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">Saldo Inicial *</label>
           <div class="relative">
-            <span class="absolute left-4 top-3 text-[#0F2532]/60 font-medium">$</span>
+            <span class="absolute left-4 top-3 text-[#0F2532]/60 dark:text-gray-400 font-medium">$</span>
             <input 
               type="number" 
               id="saldoInicial" 
@@ -605,24 +1185,24 @@ function showAbrirCajaModal() {
               min="0"
               step="0.01"
               placeholder="0.00"
-              class="w-full pl-8 pr-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+              class="w-full pl-8 pr-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"
             />
           </div>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-[#0F2532] mb-2">Notas (opcional)</label>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">Notas (opcional)</label>
           <textarea 
             id="notasCaja" 
             rows="3"
             placeholder="Ej: Caja principal, Caja 2..."
-            class="w-full px-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+            class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"
           ></textarea>
         </div>
         <div class="flex gap-3 pt-4">
           <button 
             type="button" 
             id="btnCancelarAbrir" 
-            class="flex-1 py-3 border-2 border-[#D9D9D9] rounded-xl hover:bg-[#F8F7F7] font-semibold text-[#0F2532] transition"
+            class="flex-1 py-3 border-2 border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 font-semibold text-[#0F2532] dark:text-white transition"
           >
             Cancelar
           </button>
@@ -660,13 +1240,36 @@ function showAbrirCajaModal() {
         return;
       }
 
-      await dbRun(
+      const cajaAbierta = await dbGet(
+        'SELECT id FROM cajas WHERE usuario_id = ? AND estado = ? ORDER BY fecha_apertura DESC LIMIT 1',
+        [usuarioId, 'abierta']
+      );
+      if (cajaAbierta) {
+        showNotification('Ya tienes una caja abierta. Debes cerrarla antes de abrir otra.', 'warning');
+        return;
+      }
+
+      const insertResult = await dbRun(
         'INSERT INTO cajas (usuario_id, saldo_inicial, notas, estado) VALUES (?, ?, ?, ?)',
         [usuarioId, saldoInicial, notas || null, 'abierta']
+      );
+      const nuevaCajaId = Number(insertResult?.lastID || 0) || null;
+      await writeFinanceAudit(
+        'abrir_caja',
+        'caja',
+        nuevaCajaId,
+        {
+          caja_id: nuevaCajaId,
+          saldo_inicial: saldoInicial,
+          notas: notas || null,
+          origen: 'cajas_ui',
+        },
+        usuarioId
       );
 
       await loadCajas();
       renderCurrentTab();
+      await refreshAdvancedDashboard();
 
       overlay.remove();
 
@@ -674,7 +1277,12 @@ function showAbrirCajaModal() {
       showNotification('Caja abierta exitosamente', 'success');
     } catch (error) {
       console.error('Error abriendo caja:', error);
-      showNotification('Error al abrir la caja', 'error');
+      const msg = String(error?.message || '');
+      if (msg.includes('idx_cajas_open_user_unique') || msg.includes('cajas.usuario_id')) {
+        showNotification('Ya existe una caja abierta para este usuario.', 'warning');
+      } else {
+        showNotification('Error al abrir la caja', 'error');
+      }
     }
   });
 }
@@ -683,6 +1291,10 @@ function showAbrirCajaModal() {
 function showCerrarCajaModal(cajaId) {
   const caja = cajas.find(c => c.id == cajaId);
   if (!caja) return;
+  if (!canManageCaja(caja)) {
+    showNotification('No tienes permisos para cerrar esta caja', 'error');
+    return;
+  }
 
   const totalAcumulado = caja.saldo_inicial + caja.total_movimientos;
   const movimientosClass = caja.total_movimientos >= 0 ? 'text-green-600' : 'text-red-600';
@@ -690,25 +1302,25 @@ function showCerrarCajaModal(cajaId) {
   const overlay = document.createElement('div');
   overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in';
   overlay.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-in">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-in">
       <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-2xl">
         <h3 class="text-2xl font-bold">Cerrar Caja</h3>
-        <p class="text-white/80 text-sm mt-1">${caja.usuario_nombre}</p>
+        <p class="text-white/80 text-sm mt-1">${escapeHtml(caja.usuario_nombre)}</p>
       </div>
       <div class="p-6 space-y-4">
         <div class="bg-gradient-to-br from-[#4EABBE]/10 to-[#1D5D69]/10 p-4 rounded-xl">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-[#0F2532]/60 text-sm">Saldo Inicial</span>
-            <span class="font-bold text-[#0F2532]">${formatCurrency(caja.saldo_inicial)}</span>
+            <span class="text-[#0F2532]/60 dark:text-gray-400 text-sm">Saldo Inicial</span>
+            <span class="font-bold text-[#0F2532] dark:text-white">${formatCurrency(caja.saldo_inicial)}</span>
           </div>
           <div class="flex justify-between items-center mb-2">
-            <span class="text-[#0F2532]/60 text-sm">Movimientos</span>
+            <span class="text-[#0F2532]/60 dark:text-gray-400 text-sm">Movimientos</span>
             <span class="font-bold ${movimientosClass}">${formatCurrency(caja.total_movimientos)}</span>
           </div>
-          <div class="border-t border-[#0F2532]/20 pt-2 mt-2">
+          <div class="border-t border-[#0F2532]/20 dark:border-gray-600 pt-2 mt-2">
             <div class="flex justify-between items-center">
-              <span class="text-[#0F2532] font-semibold">Total Esperado</span>
-              <span class="font-bold text-2xl text-[#1D5D69]">${formatCurrency(totalAcumulado)}</span>
+              <span class="text-[#0F2532] dark:text-white font-semibold">Total Esperado</span>
+              <span class="font-bold text-2xl text-[#1D5D69] dark:text-[#4EABBE]">${formatCurrency(totalAcumulado)}</span>
             </div>
           </div>
         </div>
@@ -757,7 +1369,7 @@ function showCerrarCajaModal(cajaId) {
   overlay.querySelector('#btnCancelarCerrar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
-  // Botón de arqueo
+  // BotÃ³n de arqueo
   overlay.querySelector('#btnArqueoCaja').addEventListener('click', () => {
     overlay.remove();
     showArqueoCajaModal(cajaId, totalAcumulado);
@@ -794,7 +1406,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl my-8 animate-slide-in">
       <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
         <h3 class="text-2xl font-bold">Arqueo de Caja #${caja.id}</h3>
-        <p class="text-white/80 text-sm mt-1">${caja.usuario_nombre}</p>
+        <p class="text-white/80 text-sm mt-1">${escapeHtml(caja.usuario_nombre)}</p>
       </div>
       
       <div class="p-6 max-h-[70vh] overflow-y-auto">
@@ -904,7 +1516,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
 
   document.body.appendChild(overlay);
 
-  // Función para calcular totales
+  // FunciÃ³n para calcular totales
   function calcularTotales() {
     let totalContado = 0;
     const inputs = overlay.querySelectorAll('.denominacion-input');
@@ -914,7 +1526,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
       const valor = parseFloat(input.dataset.valor);
       const subtotal = cantidad * valor;
 
-      // Actualizar subtotal de la denominación
+      // Actualizar subtotal de la denominaciÃ³n
       const subtotalElement = input.parentElement.querySelector('.subtotal-denominacion');
       subtotalElement.textContent = formatCurrency(subtotal);
 
@@ -974,7 +1586,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
     // Confirmar si hay diferencia significativa
     if (Math.abs(diferencia) > 50) {
       const confirmClose = confirm(
-        `Hay una diferencia de ${formatCurrency(Math.abs(diferencia))} ${diferencia > 0 ? 'a favor' : 'en contra'}.\n\n¿Deseas cerrar la caja de todas formas?`
+        `Hay una diferencia de ${formatCurrency(Math.abs(diferencia))} ${diferencia > 0 ? 'a favor' : 'en contra'}.\n\nÂ¿Deseas cerrar la caja de todas formas?`
       );
       if (!confirmClose) return;
     }
@@ -1003,13 +1615,41 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
 
     // Cerrar caja con arqueo
     try {
-      await dbRun(
-        'UPDATE cajas SET estado = ?, fecha_cierre = CURRENT_TIMESTAMP, saldo_final = ?, arqueo = ? WHERE id = ?',
-        ['cerrada', totalContado, JSON.stringify(arqueo), cajaId]
+      const usuarioId = getCurrentUserId();
+      if (!usuarioId) {
+        showNotification('No hay usuario en sesion', 'error');
+        return;
+      }
+
+      const updateResult = await dbRun(
+        `UPDATE cajas
+         SET estado = ?, fecha_cierre = CURRENT_TIMESTAMP, saldo_final = ?, arqueo = ?
+         WHERE id = ?
+           AND estado = 'abierta'
+           AND (usuario_id = ? OR ? = 1)`,
+        ['cerrada', totalContado, JSON.stringify(arqueo), cajaId, usuarioId, isAdminUser() ? 1 : 0]
+      );
+      const changes = Number(updateResult?.changes || 0);
+      if (!changes) {
+        throw new Error('No autorizado o la caja ya fue cerrada');
+      }
+      await writeFinanceAudit(
+        'cerrar_caja',
+        'caja',
+        Number(cajaId),
+        {
+          caja_id: Number(cajaId),
+          saldo_final: totalContado,
+          diferencia,
+          arqueo,
+          origen: 'cajas_ui',
+        },
+        usuarioId
       );
 
       await loadCajas();
       renderCurrentTab();
+      await refreshAdvancedDashboard();
       overlay.remove();
 
       showNotification('Caja cerrada exitosamente con arqueo completo', 'success');
@@ -1063,7 +1703,7 @@ async function showDetalleCaja(cajaId) {
         <div class="flex items-center justify-between">
           <div>
             <h3 class="text-3xl font-bold">Detalle de Caja #${caja.id}</h3>
-            <p class="text-white/80 text-sm mt-1">${caja.usuario_nombre}</p>
+            <p class="text-white/80 text-sm mt-1">${escapeHtml(caja.usuario_nombre)}</p>
           </div>
           <button id="btnCloseDetail" class="text-white/80 hover:text-white transition p-2 rounded-lg hover:bg-white/10">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1095,9 +1735,9 @@ async function showDetalleCaja(cajaId) {
           </div>
         </div>
 
-        <!-- Información de la caja -->
+        <!-- InformaciÃ³n de la caja -->
         <div class="bg-white dark:bg-gray-700 rounded-xl p-4 mb-6">
-          <h4 class="font-bold text-lg text-[#0F2532] dark:text-white mb-3">Información</h4>
+          <h4 class="font-bold text-lg text-[#0F2532] dark:text-white mb-3">InformaciÃ³n</h4>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <p class="text-sm text-[#0F2532]/60 dark:text-gray-400">Fecha de apertura</p>
@@ -1118,7 +1758,7 @@ async function showDetalleCaja(cajaId) {
             ${caja.notas ? `
             <div class="col-span-2">
               <p class="text-sm text-[#0F2532]/60 dark:text-gray-400">Notas</p>
-              <p class="font-medium text-[#0F2532] dark:text-white">${caja.notas}</p>
+              <p class="font-medium text-[#0F2532] dark:text-white">${escapeHtml(caja.notas)}</p>
             </div>
             ` : ''}
           </div>
@@ -1128,7 +1768,7 @@ async function showDetalleCaja(cajaId) {
         <div class="bg-white dark:bg-gray-700 rounded-xl p-4">
           <div class="flex items-center justify-between mb-4">
             <h4 class="font-bold text-lg text-[#0F2532] dark:text-white">Historial de Movimientos</h4>
-            ${caja.estado === 'abierta' ? `
+            ${caja.estado === 'abierta' && canManageCaja(caja) ? `
               <button id="btnNuevoMovimiento" class="action-button text-sm py-2 px-4">
                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -1151,8 +1791,8 @@ async function showDetalleCaja(cajaId) {
                     </svg>
                   </div>
                   <div>
-                    <p class="font-semibold text-[#0F2532] dark:text-white">${mov.concepto}</p>
-                    <p class="text-xs text-[#0F2532]/60 dark:text-gray-400">${new Date(mov.fecha).toLocaleString('es-ES')} • ${mov.usuario}</p>
+                    <p class="font-semibold text-[#0F2532] dark:text-white">${escapeHtml(mov.concepto)}</p>
+                    <p class="text-xs text-[#0F2532]/60 dark:text-gray-400">${new Date(mov.fecha).toLocaleString('es-ES')} - ${escapeHtml(mov.usuario)}</p>
                   </div>
                 </div>
                 <div class="text-right">
@@ -1186,7 +1826,7 @@ async function showDetalleCaja(cajaId) {
 
   overlay.querySelector('#btnExportarReporte')?.addEventListener('click', () => {
     showNotification('Exportando reporte...', 'info');
-    // Simulación de exportación
+    // SimulaciÃ³n de exportaciÃ³n
     setTimeout(() => {
       showNotification('Reporte exportado exitosamente', 'success');
     }, 1500);
@@ -1232,6 +1872,18 @@ function showNuevoMovimientoModal(cajaId) {
             <input type="number" id="montoMovimiento" required min="0" step="0.01" placeholder="0.00"
               class="w-full pl-8 pr-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"/>
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">MÃ©todo</label>
+          <select id="metodoMovimiento"
+            class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
+            <option value="">No especificado</option>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Cheque">Cheque</option>
+            <option value="Otro">Otro</option>
+          </select>
         </div>
         <div>
           <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">Concepto *</label>
@@ -1283,14 +1935,10 @@ function showNuevoMovimientoModal(cajaId) {
     e.preventDefault();
     const montoRaw = parseFloat(document.getElementById('montoMovimiento').value);
     const concepto = document.getElementById('conceptoMovimiento').value.trim();
+    const metodo = document.getElementById('metodoMovimiento')?.value || null;
 
     if (!db) {
       showNotification('DB no disponible', 'error');
-      return;
-    }
-    const caja = cajas.find(c => c.id == cajaId);
-    if (!caja || caja.estado !== 'abierta') {
-      showNotification('La caja esta cerrada', 'error');
       return;
     }
     if (!Number.isFinite(montoRaw) || montoRaw <= 0) {
@@ -1304,15 +1952,51 @@ function showNuevoMovimientoModal(cajaId) {
 
     const monto = Math.abs(montoRaw);
     const usuarioId = getCurrentUserId();
+    if (!usuarioId) {
+      showNotification('No hay usuario en sesion', 'error');
+      return;
+    }
 
     try {
-      await dbRun(
-        'INSERT INTO movimientos_caja (caja_id, tipo, monto, concepto, usuario_id) VALUES (?, ?, ?, ?, ?)',
-        [cajaId, tipoSeleccionado, monto, concepto, usuarioId]
+      const cajaActual = await dbGet(
+        'SELECT id, usuario_id, estado FROM cajas WHERE id = ? LIMIT 1',
+        [cajaId]
+      );
+      if (!cajaActual || cajaActual.estado !== 'abierta') {
+        showNotification('La caja esta cerrada', 'error');
+        return;
+      }
+      if (!canManageCaja(cajaActual)) {
+        showNotification('No tienes permisos para registrar movimientos en esta caja', 'error');
+        return;
+      }
+
+      const insertResult = await dbRun(
+        `INSERT INTO movimientos_caja
+         (caja_id, tipo, monto, concepto, usuario_id, pago_id, paciente_id, metodo, origen)
+         VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, 'manual')`,
+        [cajaId, tipoSeleccionado, monto, concepto, usuarioId, metodo]
+      );
+      const movimientoId = Number(insertResult?.lastID || 0) || null;
+      await writeFinanceAudit(
+        'movimiento_caja_manual',
+        'movimiento_caja',
+        movimientoId,
+        {
+          movimiento_id: movimientoId,
+          caja_id: Number(cajaId),
+          tipo: tipoSeleccionado,
+          monto,
+          concepto,
+          metodo: metodo || null,
+          origen: 'cajas_ui',
+        },
+        usuarioId
       );
 
       await loadCajas();
       renderCurrentTab();
+      await refreshAdvancedDashboard();
       overlay.remove();
       showNotification(`${tipoSeleccionado === 'ingreso' ? 'Ingreso' : 'Egreso'} registrado exitosamente`, 'success');
 
@@ -1326,7 +2010,7 @@ function showNuevoMovimientoModal(cajaId) {
   });
 }
 
-// Notificación toast mejorada
+// NotificaciÃ³n toast mejorada
 function showNotification(message, type = 'info') {
   toast.show(message, type);
 }
@@ -1355,3 +2039,4 @@ function formatCurrency(amount) {
         currency
     }).format(amount);
   }
+

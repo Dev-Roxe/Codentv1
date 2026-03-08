@@ -48,18 +48,25 @@ function respondDbMessage(event, type, requestId, payload) {
   const message = { type: `${type}-response`, requestId, ...payload };
   if (event && event.source && typeof event.source.postMessage === 'function') {
     event.source.postMessage(message, '*');
-    return;
-  }
-  for (let i = 0; i < window.frames.length; i += 1) {
-    try {
-      window.frames[i].postMessage(message, '*');
-    } catch (e) {
-      // Ignore cross-origin or inaccessible frames.
-    }
   }
 }
 
+function isTrustedDbMessageEvent(event) {
+  const origin = event?.origin;
+  if (origin && origin !== 'null' && origin !== 'file://' && origin !== window.location.origin) {
+    return false;
+  }
+
+  const source = event?.source;
+  if (!source) return false;
+  for (let i = 0; i < window.frames.length; i += 1) {
+    if (window.frames[i] === source) return true;
+  }
+  return false;
+}
+
 function handleDbMessage(event) {
+  if (!isTrustedDbMessageEvent(event)) return;
   const data = event && event.data;
   if (!data || typeof data !== 'object') return;
   const { type, requestId, sql, params } = data;
@@ -150,6 +157,9 @@ function switchFrame(name) {
       frame.dataset.loaded = 'true';
 
       console.log(`Loading iframe ${name} with URL:`, frame.src);
+
+      // Al cargar, sincroniza el tema con el iframe
+      frame.addEventListener('load', () => syncFrameTheme(frame));
     }
 
     frame.classList.remove('hidden');
@@ -180,6 +190,26 @@ function switchFrame(name) {
       btn.classList.add(...inactiveClasses);
     }
   });
+}
+
+function getCurrentTheme() {
+  const stored = localStorage.getItem('theme');
+  if (stored === 'dark') return 'dark';
+  if (stored === 'light') return 'light';
+  // auto
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function syncFrameTheme(frame) {
+  const theme = getCurrentTheme();
+  try {
+    const doc = frame?.contentDocument || frame?.contentWindow?.document;
+    if (!doc) return;
+    if (theme === 'dark') doc.documentElement.classList.add('dark');
+    else doc.documentElement.classList.remove('dark');
+  } catch (e) {
+    console.warn('No pude sincronizar tema con iframe', e);
+  }
 }
 
 function calculateAge(fechaNacimiento) {
@@ -262,6 +292,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('storage', (e) => {
   if (e.key === 'theme') {
     console.log('Theme changed to:', e.newValue);
+    document.querySelectorAll('.tab-frame').forEach(frame => syncFrameTheme(frame));
     // Reload all iframes to apply new theme
     document.querySelectorAll('.tab-frame').forEach(frame => {
       if (frame.src && frame.dataset.loaded === 'true') {
@@ -274,6 +305,7 @@ window.addEventListener('storage', (e) => {
 // Also listen for custom theme change event (for same-window changes)
 window.addEventListener('themeChanged', () => {
   console.log('Theme changed (custom event)');
+  document.querySelectorAll('.tab-frame').forEach(frame => syncFrameTheme(frame));
   document.querySelectorAll('.tab-frame').forEach(frame => {
     if (frame.src && frame.dataset.loaded === 'true') {
       frame.contentWindow.location.reload();

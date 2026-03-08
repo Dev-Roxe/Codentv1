@@ -8,6 +8,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; object-src 'none'; base-uri 'self';" />
   <title>Planes de Tratamiento</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
@@ -17,10 +19,1161 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+  <style>
+    /* === GEO CÍRCULO / DIAGNÓSTICOS === */
+    .geo-mini {
+      margin-top: -6px;
+      pointer-events: none;
+    }
+
+    .geo-mini.geo-mini-selectable {
+      pointer-events: auto;
+    }
+
+    .geo-svg {
+      width: 54px;
+      height: 54px;
+    }
+
+    .geo-circle {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+      stroke-width: 1.2;
+      transition: all .16s ease;
+    }
+
+    :root {
+      --tooth-w: clamp(62px, 4.8vw, 88px);
+      --tooth-h: calc(var(--tooth-w) * 1.38);
+      --tooth-gap: clamp(8px, 1vw, 12px);
+    }
+
+    .odonto-tooth {
+      min-width: var(--tooth-w);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tooth-btn {
+      width: var(--tooth-w);
+      height: var(--tooth-h);
+    }
+
+    .geo-sector {
+      fill: #ffffff;
+      stroke: #94a3b8;
+      stroke-width: 0.6;
+      transition: all .12s ease;
+    }
+
+    .geo-mini-selectable .geo-sector {
+      cursor: pointer;
+    }
+
+    .geo-mini-selectable .geo-sector:hover {
+      fill: #dff4f8;
+      stroke: #4EABBE;
+    }
+
+    .geo-circle-selected {
+      stroke: #4EABBE !important;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 0 10px rgba(78, 171, 190, 0.28));
+    }
+
+    .geo-sector-target {
+      stroke: #0F2532 !important;
+      stroke-width: 1.4;
+      filter: drop-shadow(0 0 8px rgba(15, 37, 50, 0.22));
+      opacity: 1 !important;
+    }
+
+    .geo-cross {
+      display: none;
+    }
+
+    .tooth-absent .geo-sector {
+      fill: #f3f4f6;
+    }
+
+    .tooth-absent .geo-cross {
+      display: block;
+    }
+
+    .tooth-crown-ok .geo-circle {
+      stroke: #3b82f6;
+      stroke-width: 2.6;
+    }
+
+    .tooth-crown-bad .geo-circle {
+      stroke: #ef4444;
+      stroke-width: 2.6;
+    }
+
+    .state-caries {
+      fill: #ef4444 !important;
+    }
+
+    .state-rest-ok {
+      fill: #3b82f6 !important;
+    }
+
+    .state-rest-bad {
+      fill: #f97316 !important;
+    }
+
+    .state-sealant {
+      fill: #facc15 !important;
+    }
+
+    .state-amalgam {
+      fill: #1f2937 !important;
+    }
+
+    .state-endo {
+      fill: #a855f7 !important;
+    }
+
+    .state-implante {
+      fill: #059669 !important;
+    }
+
+    .state-perno {
+      fill: #0f172a !important;
+    }
+
+    .state-fractura {
+      fill: #f59e0b !important;
+    }
+
+    .state-pulpar {
+      fill: #f87171 !important;
+    }
+
+    .state-mov {
+      fill: #0ea5e9 !important;
+    }
+
+    .state-resto {
+      fill: #0f172a !important;
+    }
+
+    .state-erup {
+      fill: #e5e7eb !important;
+      stroke: #cbd5e1;
+      stroke-dasharray: 4 3;
+    }
+
+    /* Custom Scrollbar for mini odonto */
+    .mini-odonto-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    #mini-odonto-content {
+      min-width: max-content;
+    }
+
+    @media (min-width: 1280px) {
+      .mini-odonto-scroll {
+        overflow-x: visible;
+      }
+
+      #mini-odonto-content {
+        min-width: 100%;
+      }
+    }
+
+    @media (max-width: 1279px) {
+      :root {
+        --tooth-w: clamp(56px, 7.2vw, 74px);
+      }
+    }
+  </style>
+  <style>
+    :root {
+      --tooth-w: clamp(54px, 4.7vw, 66px);
+      --tooth-h: calc(var(--tooth-w) * 1.48);
+      --tooth-gap: clamp(12px, 1.45vw, 18px);
+    }
+
+    .odonto-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      width: max-content;
+      min-width: 100%;
+      box-sizing: border-box;
+      gap: var(--tooth-gap);
+      padding: 14px 28px 18px;
+      overflow-x: auto;
+      scroll-snap-type: x proximity;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(78, 171, 190, 0.78) rgba(139, 207, 221, 0.14);
+      scrollbar-gutter: stable both-edges;
+    }
+
+    .odonto-row::-webkit-scrollbar {
+      height: 12px;
+    }
+
+    .odonto-row::-webkit-scrollbar-track {
+      background: rgba(139, 207, 221, 0.14);
+      border-radius: 999px;
+      margin: 0 14px;
+    }
+
+    .odonto-row::-webkit-scrollbar-thumb {
+      background: linear-gradient(90deg, #8BCFDD, #4EABBE);
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.88);
+    }
+
+    .odonto-row-top {
+      padding-top: 86px;
+    }
+
+    .odonto-row-bottom {
+      padding-bottom: 84px;
+    }
+
+    .odonto-tooth {
+      position: relative;
+      min-width: calc(var(--tooth-w) + 10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      scroll-snap-align: center;
+    }
+
+    .odonto-tooth-upper {
+      padding-top: 6px;
+    }
+
+    .odonto-tooth-lower {
+      padding-bottom: 6px;
+    }
+
+    .tooth-btn {
+      width: var(--tooth-w);
+      height: var(--tooth-h);
+      display: block;
+      overflow: hidden;
+      border: 2.5px solid #CBD5E1;
+      border-radius: 24px;
+      background: #ffffff;
+      box-shadow: none;
+      transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+    }
+
+    .dark .tooth-btn {
+      background: #ffffff;
+    }
+
+    .tooth-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      padding: 3px;
+      background: #ffffff;
+      box-shadow: none;
+    }
+
+    .dark .tooth-shell {
+      background: #ffffff;
+    }
+
+    .mini-tooth-btn:hover {
+      transform: translateY(-6px);
+    }
+
+    .mini-tooth-btn.cursor-not-allowed:hover {
+      transform: none;
+    }
+
+    .mini-tooth-btn:active {
+      transform: translateY(0);
+    }
+
+    .tooth-number-badge {
+      min-width: 30px;
+      height: 22px;
+      padding: 0 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      color: rgba(15, 37, 50, 0.76);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(139, 207, 221, 0.26);
+      box-shadow: 0 6px 14px rgba(15, 37, 50, 0.08);
+    }
+
+    .dark .tooth-number-badge {
+      color: rgba(15, 37, 50, 0.84);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .tooth-quick-tag-slot {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: calc(var(--tooth-w) + 18px);
+    }
+
+    .tooth-quick-tag {
+      max-width: 100%;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 37, 50, 0.08);
+      background: var(--dx-glow, rgba(78, 171, 190, 0.12));
+      color: var(--dx-color, #1D5D69);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 6px 14px rgba(15, 37, 50, 0.08);
+    }
+
+    .geo-mini {
+      position: relative;
+      margin-top: 8px;
+    }
+
+    .geo-mini.geo-mini-selectable {
+      pointer-events: auto;
+    }
+
+    .geo-svg {
+      width: clamp(56px, 4.1vw, 68px);
+      height: clamp(56px, 4.1vw, 68px);
+    }
+
+    .geo-circle {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+      stroke-width: 1.2;
+      transition: all .16s ease;
+    }
+
+    .geo-sector {
+      fill: #ffffff;
+      stroke: #94a3b8;
+      stroke-width: 0.6;
+      transition: all .12s ease;
+    }
+
+    .geo-mini-selectable .geo-sector {
+      cursor: pointer;
+    }
+
+    .geo-mini-selectable .geo-sector:hover {
+      fill: #e5e7eb;
+    }
+
+    .geo-circle-selected {
+      stroke: #4EABBE !important;
+      stroke-width: 2.8;
+      filter: drop-shadow(0 0 10px rgba(78, 171, 190, 0.28));
+    }
+
+    .geo-sector-target {
+      stroke: #0F2532 !important;
+      stroke-width: 1.4;
+      filter: drop-shadow(0 0 8px rgba(15, 37, 50, 0.22));
+      opacity: 1 !important;
+    }
+
+    .geo-cross {
+      display: none;
+    }
+
+    .tooth-absent .geo-sector {
+      fill: #f3f4f6;
+      pointer-events: none;
+    }
+
+    .tooth-absent .geo-cross {
+      display: block;
+    }
+
+    .tooth-crown-ok .geo-circle {
+      stroke: #3b82f6;
+      stroke-width: 2.6;
+    }
+
+    .tooth-crown-bad .geo-circle {
+      stroke: #ef4444;
+      stroke-width: 2.6;
+    }
+
+    .state-caries {
+      fill: #ef4444 !important;
+    }
+
+    .state-rest-ok {
+      fill: #3b82f6 !important;
+    }
+
+    .state-rest-bad {
+      fill: #f97316 !important;
+    }
+
+    .state-sealant {
+      fill: #facc15 !important;
+    }
+
+    .state-amalgam {
+      fill: #1f2937 !important;
+    }
+
+    .state-endo {
+      fill: #a855f7 !important;
+    }
+
+    .state-implante {
+      fill: #059669 !important;
+    }
+
+    .state-perno {
+      fill: #0f172a !important;
+    }
+
+    .state-fractura {
+      fill: #f59e0b !important;
+    }
+
+    .state-pulpar {
+      fill: #f87171 !important;
+    }
+
+    .state-mov {
+      fill: #0ea5e9 !important;
+    }
+
+    .state-resto {
+      fill: #0f172a !important;
+    }
+
+    .state-erup {
+      fill: #e5e7eb !important;
+      stroke: #cbd5e1;
+      stroke-dasharray: 4 3;
+    }
+
+    .geo-circle,
+    .geo-sector {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .geo-dx-count {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--dx-color, #4EABBE);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      box-shadow: 0 0 0 2px #fff, 0 0 12px var(--dx-glow, rgba(78, 171, 190, 0.28));
+      z-index: 3;
+    }
+
+    .mini-odonto-scroll {
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    #mini-odonto-content {
+      width: max-content;
+      min-width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    @media (min-width: 1280px) {
+      .mini-odonto-scroll {
+        overflow-x: visible;
+      }
+
+      #mini-odonto-content {
+        width: 100%;
+        min-width: 100%;
+      }
+    }
+
+    .tooth-dx-hud {
+      position: absolute;
+      top: 18px;
+      right: -6px;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .tooth-dx-counter {
+      display: none;
+    }
+
+    .tooth-dx-popover {
+      position: absolute;
+      left: 50%;
+      min-width: 200px;
+      max-width: 260px;
+      max-height: 180px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(139, 207, 221, 0.32);
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 16px 36px rgba(15, 37, 50, 0.16);
+      opacity: 0;
+      transform: translate(-50%, 8px) scale(.98);
+      transition: opacity .18s ease, transform .18s ease;
+      backdrop-filter: blur(12px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(78, 171, 190, 0.7) rgba(139, 207, 221, 0.14);
+      z-index: 30;
+    }
+
+    .tooth-dx-popover::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .tooth-dx-popover::-webkit-scrollbar-track {
+      background: rgba(139, 207, 221, 0.14);
+      border-radius: 999px;
+    }
+
+    .tooth-dx-popover::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, #8BCFDD, #4EABBE);
+      border-radius: 999px;
+    }
+
+    .dark .tooth-dx-popover {
+      background: rgba(255, 255, 255, 0.98);
+      color: #0F2532;
+    }
+
+    .odonto-tooth:hover .tooth-dx-popover,
+    .odonto-tooth:focus-within .tooth-dx-popover {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+
+    .tooth-dx-popover-top {
+      bottom: calc(100% + 8px);
+    }
+
+    .tooth-dx-popover-bottom {
+      top: calc(100% + 8px);
+    }
+
+    .tooth-dx-popover-title {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #1D5D69;
+    }
+
+    .tooth-dx-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .tooth-dx-item + .tooth-dx-item {
+      margin-top: 5px;
+    }
+
+    .tooth-dx-chip {
+      flex: 0 0 auto;
+      min-width: 48px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--dx-color, #4EABBE);
+      background: var(--dx-glow, rgba(78, 171, 190, 0.14));
+    }
+
+    .tooth-dx-text {
+      color: #0F2532;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .geo-sector,
+    .geo-circle,
+    .geo-cross,
+    .geo-dx-count,
+    .tooth-quick-tag {
+      transition: opacity .22s ease, box-shadow .22s ease, filter .22s ease, transform .22s ease;
+      will-change: opacity, transform, box-shadow, filter;
+    }
+
+    @keyframes dxSoftPulse {
+      0%,
+      100% {
+        opacity: .96;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .78;
+        transform: scale(1.06);
+      }
+    }
+
+    @keyframes dxAlertPulse {
+      0%,
+      100% {
+        opacity: .96;
+        filter: drop-shadow(0 0 0 transparent);
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .72;
+        filter: drop-shadow(0 0 5px var(--dx-color, #4EABBE));
+        transform: scale(1.08);
+      }
+    }
+
+    @keyframes dxRingBreathe {
+      0%,
+      100% {
+        opacity: .34;
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0), 0 0 8px var(--dx-glow, rgba(78, 171, 190, 0.18));
+      }
+
+      50% {
+        opacity: .62;
+        box-shadow: 0 0 0 rgba(0, 0, 0, 0), 0 0 16px var(--dx-glow, rgba(78, 171, 190, 0.28));
+      }
+    }
+
+    @keyframes dxRingAlert {
+      0%,
+      100% {
+        opacity: .92;
+      }
+
+      50% {
+        opacity: .52;
+      }
+    }
+
+    @keyframes dxClinicalFade {
+      0%,
+      100% {
+        opacity: .88;
+      }
+
+      50% {
+        opacity: .5;
+      }
+    }
+
+    .geo-mini.tooth-crown-ok .geo-circle {
+      animation: dxRingBreathe 4.6s ease-in-out infinite;
+    }
+
+    .geo-mini.tooth-crown-bad .geo-circle {
+      animation: dxRingAlert 2.4s ease-in-out infinite;
+    }
+
+    .geo-mini.tooth-absent .geo-cross {
+      animation: dxClinicalFade 3.2s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .geo-sector.state-caries,
+    .odonto-tooth:focus-within .geo-sector.state-caries {
+      animation: dxAlertPulse 1.5s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .geo-dx-count,
+    .odonto-tooth:hover .tooth-quick-tag,
+    .odonto-tooth:focus-within .geo-dx-count,
+    .odonto-tooth:focus-within .tooth-quick-tag {
+      animation: dxSoftPulse 2.2s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .geo-sector,
+      .geo-circle,
+      .geo-cross,
+      .geo-dx-count,
+      .tooth-quick-tag {
+        animation: none !important;
+        transition: none !important;
+      }
+
+      .tooth-dx-popover {
+        transition: opacity .01s linear !important;
+      }
+    }
+  </style>
+  <style>
+    .tooth-dx-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .tooth-dx-frame {
+      position: absolute;
+      inset: 5px;
+      border: 1.5px solid var(--dx-color, #4EABBE);
+      border-radius: 16px;
+      opacity: .24;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.82);
+    }
+
+    .tooth-dx-frame.dxfx-absent {
+      border-style: dashed;
+      opacity: .34;
+    }
+
+    .tooth-dx-surface-map {
+      position: absolute;
+      inset: 8px 9px 10px;
+      z-index: 1;
+    }
+
+    .tooth-dx-surface {
+      position: absolute;
+      background: var(--dx-color, #4EABBE);
+      opacity: .72;
+      mix-blend-mode: multiply;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.86), 0 2px 6px rgba(15, 37, 50, 0.08);
+    }
+
+    .dxsurface-rest-ok,
+    .dxsurface-sealant,
+    .dxsurface-amalgam {
+      opacity: .58;
+    }
+
+    .dxsurface-rest-bad {
+      background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0 4px, rgba(255, 255, 255, 0) 4px 8px);
+    }
+
+    .dxsurface-sealant {
+      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0));
+    }
+
+    .dxsurface-amalgam {
+      background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(15, 37, 50, 0.08));
+    }
+
+    .tooth-dx-surface-vestibular {
+      top: 3%;
+      left: 23%;
+      right: 23%;
+      height: 16%;
+      border-radius: 999px 999px 16px 16px;
+    }
+
+    .tooth-dx-surface-lingual {
+      bottom: 5%;
+      left: 23%;
+      right: 23%;
+      height: 16%;
+      border-radius: 16px 16px 999px 999px;
+    }
+
+    .tooth-dx-surface-mesial {
+      top: 22%;
+      bottom: 22%;
+      left: 8%;
+      width: 16%;
+      border-radius: 999px 16px 16px 999px;
+    }
+
+    .tooth-dx-surface-distal {
+      top: 22%;
+      bottom: 22%;
+      right: 8%;
+      width: 16%;
+      border-radius: 16px 999px 999px 16px;
+    }
+
+    .tooth-dx-surface-oclusal {
+      top: 35%;
+      left: 32%;
+      width: 36%;
+      height: 26%;
+      border-radius: 42%;
+    }
+
+    .tooth-dx-crown {
+      position: absolute;
+      top: 7%;
+      left: 18%;
+      right: 18%;
+      height: 24%;
+      z-index: 4;
+      border: 2px solid var(--dx-color, #FBBF24);
+      border-bottom-width: 3px;
+      border-radius: 18px 18px 12px 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), var(--dx-glow, rgba(251, 191, 36, 0.22)));
+      box-shadow: 0 4px 10px rgba(15, 37, 50, 0.10), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+    }
+
+    .tooth-dx-crown.dxfx-crown-bad {
+      border-style: dashed;
+    }
+
+    .tooth-dx-crown-band {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 14%;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--dx-color, #FBBF24);
+      opacity: .88;
+    }
+
+    .tooth-dx-implant,
+    .tooth-dx-post,
+    .tooth-dx-endo,
+    .tooth-dx-fracture,
+    .tooth-dx-mobility {
+      position: absolute;
+      z-index: 4;
+    }
+
+    .tooth-dx-implant {
+      left: 50%;
+      top: 14%;
+      bottom: 12%;
+      width: 18px;
+      transform: translateX(-50%);
+    }
+
+    .tooth-dx-implant-cap {
+      position: absolute;
+      top: 2px;
+      left: 1px;
+      right: 1px;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 2px solid var(--dx-color, #059669);
+    }
+
+    .tooth-dx-implant-body {
+      position: absolute;
+      top: 16px;
+      bottom: 12px;
+      left: 50%;
+      width: 7px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: repeating-linear-gradient(180deg, var(--dx-color, #059669) 0 4px, rgba(255, 255, 255, 0.18) 4px 7px);
+      box-shadow: 0 0 8px var(--dx-glow, rgba(5, 150, 105, 0.22));
+    }
+
+    .tooth-dx-implant-tip {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 12px;
+      height: 14px;
+      transform: translateX(-50%);
+      clip-path: polygon(50% 100%, 0 0, 100% 0);
+      background: var(--dx-color, #059669);
+      opacity: .88;
+    }
+
+    .tooth-dx-post {
+      left: 50%;
+      top: 14%;
+      bottom: 12%;
+      width: 14px;
+      transform: translateX(-50%);
+    }
+
+    .tooth-dx-post-core {
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      width: 14px;
+      height: 14px;
+      transform: translateX(-50%);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 2px solid var(--dx-color, #0f172a);
+    }
+
+    .tooth-dx-post-pin {
+      position: absolute;
+      top: 20px;
+      bottom: 4px;
+      left: 50%;
+      width: 4px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: var(--dx-color, #0f172a);
+      box-shadow: 0 0 8px var(--dx-glow, rgba(15, 23, 42, 0.16));
+    }
+
+    .tooth-dx-endo {
+      left: 50%;
+      top: 16%;
+      bottom: 14%;
+      width: 10px;
+      transform: translateX(-50%);
+      z-index: 3;
+    }
+
+    .tooth-dx-endo-line {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), var(--dx-color, #A855F7));
+      box-shadow: 0 0 10px var(--dx-glow, rgba(168, 85, 247, 0.24));
+    }
+
+    .tooth-dx-endo-node {
+      position: absolute;
+      top: 4px;
+      left: 50%;
+      width: 12px;
+      height: 12px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      border: 2px solid var(--dx-color, #A855F7);
+    }
+
+    .tooth-dx-fracture {
+      inset: 10px 18px 12px;
+    }
+
+    .tooth-dx-fracture-a,
+    .tooth-dx-fracture-b {
+      position: absolute;
+      width: 3px;
+      border-radius: 999px;
+      background: var(--dx-color, #f59e0b);
+      box-shadow: 0 0 8px var(--dx-glow, rgba(245, 158, 11, 0.24));
+    }
+
+    .tooth-dx-fracture-a {
+      top: 10%;
+      left: 54%;
+      height: 54%;
+      transform: rotate(18deg);
+      transform-origin: top center;
+    }
+
+    .tooth-dx-fracture-b {
+      top: 42%;
+      left: 38%;
+      height: 26%;
+      transform: rotate(-48deg);
+      transform-origin: top center;
+    }
+
+    .tooth-dx-pulp {
+      position: absolute;
+      left: 50%;
+      top: 42%;
+      width: 20px;
+      height: 20px;
+      transform: translate(-50%, -50%);
+      z-index: 4;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0 28%, var(--dx-color, #f87171) 62%, rgba(248, 113, 113, 0.10) 100%);
+      box-shadow: 0 0 18px var(--dx-glow, rgba(248, 113, 113, 0.24));
+    }
+
+    .tooth-dx-root-stub {
+      position: absolute;
+      left: 28%;
+      right: 28%;
+      bottom: 15%;
+      height: 14%;
+      z-index: 4;
+      border-radius: 12px 12px 18px 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), var(--dx-color, #0f172a));
+      box-shadow: 0 6px 12px rgba(15, 37, 50, 0.10);
+    }
+
+    .tooth-dx-eruption {
+      position: absolute;
+      inset: 10px;
+      z-index: 2;
+      border-radius: 18px;
+      border: 1px dashed var(--dx-color, #cbd5e1);
+      background: repeating-linear-gradient(135deg, rgba(203, 213, 225, 0.05) 0 6px, rgba(203, 213, 225, 0.22) 6px 12px);
+      opacity: .50;
+    }
+
+    .tooth-dx-mobility {
+      inset: 18px 10px;
+    }
+
+    .tooth-dx-mobility-bar {
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 3px;
+      background: var(--dx-color, #0ea5e9);
+      border-radius: 999px;
+      box-shadow: 0 0 8px var(--dx-glow, rgba(14, 165, 233, 0.20));
+    }
+
+    .tooth-dx-mobility-bar.left {
+      left: 0;
+      transform: translateY(-50%) rotate(-18deg);
+    }
+
+    .tooth-dx-mobility-bar.right {
+      right: 0;
+      transform: translateY(-50%) rotate(18deg);
+    }
+
+    @keyframes dxLineGlow {
+      0%, 100% { opacity: .86; filter: drop-shadow(0 0 0 transparent); }
+      50% { opacity: 1; filter: drop-shadow(0 0 6px var(--dx-color, #4EABBE)); }
+    }
+
+    @keyframes dxFreshFlash {
+      0% { opacity: .15; filter: drop-shadow(0 0 0 transparent); }
+      35% { opacity: 1; filter: drop-shadow(0 0 8px var(--dx-color, #4EABBE)); }
+      100% { opacity: 1; filter: drop-shadow(0 0 0 transparent); }
+    }
+
+    @keyframes dxMobilityLeft {
+      0%, 100% { transform: translateY(-50%) rotate(-18deg) translateX(0); }
+      25% { transform: translateY(-50%) rotate(-18deg) translateX(.8px); }
+      50% { transform: translateY(-50%) rotate(-18deg) translateX(-.8px); }
+      75% { transform: translateY(-50%) rotate(-18deg) translateX(.6px); }
+    }
+
+    @keyframes dxMobilityRight {
+      0%, 100% { transform: translateY(-50%) rotate(18deg) translateX(0); }
+      25% { transform: translateY(-50%) rotate(18deg) translateX(.8px); }
+      50% { transform: translateY(-50%) rotate(18deg) translateX(-.8px); }
+      75% { transform: translateY(-50%) rotate(18deg) translateX(.6px); }
+    }
+
+    .tooth-dx-frame,
+    .tooth-dx-surface,
+    .tooth-dx-crown,
+    .tooth-dx-implant-body,
+    .tooth-dx-post-pin,
+    .tooth-dx-endo-line,
+    .tooth-dx-fracture,
+    .tooth-dx-pulp,
+    .tooth-dx-root-stub,
+    .tooth-dx-eruption,
+    .tooth-dx-mobility-bar,
+    .dx-feedback-fresh {
+      transition: opacity .22s ease, box-shadow .22s ease, filter .22s ease, transform .22s ease;
+      will-change: opacity, transform, box-shadow, filter;
+    }
+
+    .tooth-dx-crown.dxfx-crown-ok,
+    .tooth-dx-crown.dxfx-corona {
+      animation: dxRingBreathe 4.6s ease-in-out infinite;
+    }
+
+    .tooth-dx-crown.dxfx-crown-bad {
+      animation: dxRingAlert 2.4s ease-in-out infinite;
+    }
+
+    .tooth-dx-frame.dxfx-absent {
+      animation: dxClinicalFade 3.2s ease-in-out infinite;
+    }
+
+    .tooth-dx-implant-body,
+    .tooth-dx-post-pin,
+    .tooth-dx-endo-line {
+      animation: dxLineGlow 3.8s ease-in-out infinite;
+    }
+
+    .tooth-dx-eruption.dxfx-erupcion {
+      animation: dxClinicalFade 3.2s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .tooth-dx-pulp.dxfx-pulpar,
+    .odonto-tooth:focus-within .tooth-dx-pulp.dxfx-pulpar {
+      animation: dxAlertPulse 1.7s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .tooth-dx-root-stub.dxfx-resto,
+    .odonto-tooth:focus-within .tooth-dx-root-stub.dxfx-resto,
+    .odonto-tooth:hover .tooth-dx-fracture.dxfx-fractura,
+    .odonto-tooth:focus-within .tooth-dx-fracture.dxfx-fractura {
+      animation: dxAlertPulse 1.8s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .tooth-dx-mobility-bar.left,
+    .odonto-tooth:focus-within .tooth-dx-mobility-bar.left {
+      animation: dxMobilityLeft 1.9s ease-in-out infinite;
+    }
+
+    .odonto-tooth:hover .tooth-dx-mobility-bar.right,
+    .odonto-tooth:focus-within .tooth-dx-mobility-bar.right {
+      animation: dxMobilityRight 1.9s ease-in-out infinite;
+    }
+
+    .dx-feedback-fresh {
+      animation: dxFreshFlash .95s ease-out 2 !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tooth-dx-frame,
+      .tooth-dx-surface,
+      .tooth-dx-crown,
+      .tooth-dx-implant-body,
+      .tooth-dx-post-pin,
+      .tooth-dx-endo-line,
+      .tooth-dx-fracture,
+      .tooth-dx-pulp,
+      .tooth-dx-root-stub,
+      .tooth-dx-eruption,
+      .tooth-dx-mobility-bar,
+      .dx-feedback-fresh {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
-  <main class="max-w-5xl mx-auto p-6 space-y-6">
+  <main class="max-w-[96rem] mx-auto p-6 space-y-6">
     <header class="space-y-1">
       <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
       <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Planes de Tratamiento</h1>
@@ -40,6 +1193,38 @@
         </button>
       </div>
 
+      <!-- Mini Odontograma Interactivo -->
+      <div id="mini-odonto-container"
+        class="bg-white dark:bg-[#0E1A25] rounded-3xl p-6 border border-[#8BCFDD]/30 dark:border-slate-800 shadow-sm relative">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Odontograma</h3>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>
+              Caries/Pendiente</span>
+            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>
+              Realizado</span>
+            <span class="flex items-center gap-1 ml-2 text-gray-400 font-normal">(Click en una cara o en la pieza
+              para planificar)</span>
+          </div>
+        </div>
+
+        <div id="mini-odonto-selection"
+          class="mb-4 rounded-2xl border border-[#8BCFDD]/25 bg-[#8BCFDD]/10 dark:border-slate-700 dark:bg-slate-800/40 px-4 py-3 text-sm text-[#0F2532] dark:text-slate-200">
+          Selecciona una cara desde el círculo o toda la pieza desde el diente para crear el plan.
+        </div>
+
+        <div class="mini-odonto-scroll relative w-full pb-2">
+          <div id="mini-odonto-content" class="w-full flex flex-col gap-6 items-center justify-center p-4">
+            <!-- Se inyectan filas aquí -->
+          </div>
+
+          <div id="odonto-loading"
+            class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm z-10 hidden">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4EABBE]"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Lista de Planes Pendientes -->
       <div id="planes-pendientes-list" class="space-y-4">
         <!-- Se cargarán dinámicamente -->
@@ -54,7 +1239,8 @@
       class="bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/60 dark:border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl shadow-[#8BCFDD]/30 my-8">
       <div class="flex justify-between items-start mb-6">
         <div>
-          <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400" id="modal-plan-subtitle">Seleccionar</p>
+          <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400" id="modal-plan-subtitle">
+            Seleccionar</p>
           <h3 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Plan de Tratamiento</h3>
         </div>
         <button id="close-modal-plan"
@@ -65,6 +1251,8 @@
 
       <form id="form-plan" class="space-y-5">
         <input type="hidden" id="plan-id" name="id">
+        <input type="hidden" id="plan-diente" name="diente">
+        <input type="hidden" id="plan-caras" name="caras">
 
         <!-- Seleccionar Tratamiento del Catálogo -->
         <div>
@@ -79,29 +1267,172 @@
         </div>
 
         <!-- Información del Tratamiento (lectura) -->
-        <div id="tratamiento-info" class="hidden bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700">
+        <div id="tratamiento-info"
+          class="hidden bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700">
           <div class="grid gap-3 text-sm">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Descripción</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Descripción
+              </p>
               <p id="info-descripcion" class="text-[#0F2532] dark:text-slate-100"></p>
             </div>
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo Base</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo
+                  Base</p>
                 <p id="info-costo-base" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
               </div>
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Medicina</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Medicina
+                </p>
                 <p id="info-costo-medicina" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
               </div>
               <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Miscelánea</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">
+                  Miscelánea</p>
                 <p id="info-costo-miscelanea" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
               </div>
             </div>
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo Total Estimado</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Costo Total
+                Estimado</p>
               <p id="info-costo-total" class="text-lg font-bold text-[#4EABBE] dark:text-[#8BCFDD]">$0.00</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Descuento
+                </p>
+                <p id="info-descuento-monto" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Impuesto
+                </p>
+                <p id="info-impuesto-monto" class="font-mono text-[#0F2532] dark:text-slate-100">$0.00</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Total
+                  Final</p>
+                <p id="info-total-final" class="text-lg font-bold text-emerald-600 dark:text-emerald-400">$0.00</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="plan-target-summary"
+          class="hidden bg-[#0F2532]/5 dark:bg-slate-800/50 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">Pieza objetivo</p>
+              <p id="plan-target-title" class="text-base font-bold text-[#0F2532] dark:text-white"></p>
+              <p id="plan-target-detail" class="text-sm text-[#0F2532]/70 dark:text-slate-300 mt-1"></p>
+            </div>
+            <button type="button" id="clear-plan-target"
+              class="px-3 py-1.5 rounded-lg border border-[#8BCFDD]/40 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-[#0F2532] dark:text-slate-100 hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition">
+              Quitar selección
+            </button>
+          </div>
+        </div>
+
+        <!-- Descuento -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Tipo de Descuento
+            </label>
+            <select id="plan-descuento-tipo" name="descuento_tipo"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+              <option value="ninguno">Sin descuento</option>
+              <option value="porcentaje">Porcentaje</option>
+              <option value="monto_fijo">Monto fijo</option>
+            </select>
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Valor del Descuento
+            </label>
+            <input type="number" id="plan-descuento-valor" name="descuento_valor" min="0" step="0.01" value="0"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+          </div>
+        </div>
+
+        <!-- Impuesto -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Tipo de Impuesto
+            </label>
+            <select id="plan-impuesto-tipo" name="impuesto_tipo"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+              <option value="ninguno">Sin impuesto</option>
+              <option value="porcentaje">Porcentaje</option>
+              <option value="monto_fijo">Monto fijo</option>
+            </select>
+          </div>
+          <div>
+            <label
+              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+              Valor del Impuesto
+            </label>
+            <input type="number" id="plan-impuesto-valor" name="impuesto_valor" min="0" step="0.01" value="0"
+              class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+          </div>
+        </div>
+
+        <!-- Financiamiento -->
+        <div
+          class="bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700 space-y-4">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" id="plan-financiar" class="w-4 h-4 rounded border-[#8BCFDD] text-[#4EABBE]" />
+            <span class="text-sm font-semibold text-[#0F2532] dark:text-slate-100">Crear plan de cobro en cuotas</span>
+          </label>
+
+          <div id="financing-fields" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Anticipo
+              </label>
+              <input type="number" id="plan-anticipo" min="0" step="0.01" value="0"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Número de Cuotas
+              </label>
+              <input type="number" id="plan-numero-cuotas" min="1" step="1" value="1"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+            </div>
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Frecuencia
+              </label>
+              <select id="plan-frecuencia"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
+                <option value="semanal">Semanal</option>
+                <option value="quincenal">Quincenal</option>
+                <option value="mensual" selected>Mensual</option>
+                <option value="semestral">Semestral</option>
+              </select>
+            </div>
+            <div>
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Interés %
+              </label>
+              <input type="number" id="plan-interes" min="0" step="0.01" value="0"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
+            </div>
+            <div class="md:col-span-2">
+              <label
+                class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+                Primer Vencimiento
+              </label>
+              <input type="date" id="plan-primer-vencimiento"
+                class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
             </div>
           </div>
         </div>
@@ -135,6 +1466,46 @@
             placeholder="Describe el problema diagnosticado, recomendaciones especiales..."></textarea>
         </div>
 
+        <div id="plan-version-reason-wrapper" class="hidden">
+          <label
+            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
+            Motivo de cambio comercial
+          </label>
+          <input type="text" id="plan-version-reason"
+            class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
+            placeholder="Ejemplo: ajuste de costo, promocion, cambio de alcance..." />
+        </div>
+
+        <div id="plan-versiones-wrapper"
+          class="hidden bg-[#0F2532]/5 dark:bg-slate-800/50 rounded-xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700 space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400">
+              Historial de Versiones Comerciales
+            </p>
+            <span id="plan-version-actual-badge"
+              class="px-3 py-1 rounded-full text-xs font-bold bg-[#8BCFDD]/20 text-[#1D5D69] dark:text-[#8BCFDD]">
+              v1
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-xs">
+              <thead>
+                <tr class="text-left text-[#1D5D69] dark:text-slate-400">
+                  <th class="py-2 pr-3 font-semibold">Version</th>
+                  <th class="py-2 pr-3 font-semibold">Fecha</th>
+                  <th class="py-2 pr-3 font-semibold">Usuario</th>
+                  <th class="py-2 pr-3 font-semibold">Motivo</th>
+                  <th class="py-2 font-semibold">Total</th>
+                </tr>
+              </thead>
+              <tbody id="plan-versiones-list"></tbody>
+            </table>
+          </div>
+          <p id="plan-versiones-empty" class="hidden text-xs text-[#0F2532]/70 dark:text-slate-300">
+            Sin historial de versiones comerciales registrado.
+          </p>
+        </div>
+
         <!-- Fecha Estimada de Inicio -->
         <div>
           <label
@@ -163,7 +1534,10 @@
   <!-- Toast Container -->
   <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
+  <!-- Scripts -->
+  <script src="../scripts/odonto-render.js"></script>
   <script src="../scripts/tratamientos.js"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

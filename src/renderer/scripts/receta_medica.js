@@ -30,6 +30,10 @@ const dbMessageTarget = (() => {
 
 let dbRequestSeq = 0;
 
+function isTrustedMessageOrigin(event) {
+    return !event?.origin || event.origin === 'null' || event.origin === 'file://' || event.origin === window.location.origin;
+}
+
 function dbBridge(type, sql, params = []) {
     return new Promise((resolve, reject) => {
         if (!dbMessageTarget) {
@@ -42,6 +46,7 @@ function dbBridge(type, sql, params = []) {
 
         const handleMessage = (event) => {
             const data = event && event.data;
+            if (event.source !== dbMessageTarget || !isTrustedMessageOrigin(event)) return;
             if (!data || data.type !== `${type}-response` || data.requestId !== requestId) return;
             window.removeEventListener('message', handleMessage);
             if (timeoutId) clearTimeout(timeoutId);

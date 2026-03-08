@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --input-text-color: #0F2532;
+    --input-placeholder-color: #9CA3AF;
+  }
+
+  :root.dark {
+    color-scheme: dark;
+    --input-text-color: #F1F5F9;
+    --input-placeholder-color: #9CA3AF;
+  }
+
+  input,
+  textarea,
+  select {
+    color: var(--input-text-color);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--input-placeholder-color);
+  }
+}

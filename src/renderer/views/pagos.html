@@ -1,13 +1,11 @@
 <!DOCTYPE html>
-<!--
-  Pestaña Pagos: Gestión de pagos y recaudación del paciente.
-  Muestra historial de pagos, balance pendiente y permite registrar nuevos pagos.
--->
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; object-src 'none'; base-uri 'self';" />
     <title>Pagos y Recaudación</title>
     <link rel="stylesheet" href="../styles/output.css" />
     <script>
@@ -20,194 +18,163 @@
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
-    <main class="max-w-6xl mx-auto p-6 space-y-6">
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
         <header class="space-y-1">
             <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
-            <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Pagos y Recaudación</h1>
-            <p class="text-sm text-[#0F2532] dark:text-slate-400">Gestiona los pagos del paciente y visualiza el
-                historial de recaudación.</p>
+            <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Cobros, Cuotas y Devoluciones</h1>
+            <p class="text-sm text-[#0F2532] dark:text-slate-400">Controla el saldo del paciente, pagos aplicados, cuotas pendientes y devoluciones.</p>
         </header>
 
-        <!-- Resumen de Pagos -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- Total Recaudado -->
-            <div
-                class="bg-gradient-to-br from-green-500/10 to-green-600/5 dark:from-green-500/20 dark:to-green-600/10 border border-green-500/30 dark:border-green-500/20 rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-semibold uppercase tracking-[0.1em] text-green-700 dark:text-green-400">Total
-                        Recaudado</p>
-                    <svg class="w-8 h-8 text-green-500 dark:text-green-400" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <p id="total-recaudado" class="text-3xl font-bold text-green-600 dark:text-green-400">$0.00</p>
-                <p id="total-pagos-count" class="text-xs text-green-600/70 dark:text-green-400/70 mt-1">0 pagos
-                    registrados</p>
-            </div>
+        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <article class="rounded-2xl border border-[#8BCFDD]/40 bg-white dark:bg-[#0E1A25] p-5 shadow-sm">
+                <p class="text-xs uppercase tracking-[0.12em] text-[#1D5D69] dark:text-slate-400">Total Planificado</p>
+                <p id="summary-total-planned" class="mt-2 text-3xl font-bold text-[#1D5D69] dark:text-white">$0.00</p>
+                <p id="summary-plans-count" class="mt-1 text-xs text-[#0F2532]/60 dark:text-slate-400">0 planes</p>
+            </article>
 
-            <!-- Costo Total Tratamientos -->
-            <div
-                class="bg-gradient-to-br from-blue-500/10 to-blue-600/5 dark:from-blue-500/20 dark:to-blue-600/10 border border-blue-500/30 dark:border-blue-500/20 rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-semibold uppercase tracking-[0.1em] text-blue-700 dark:text-blue-400">Costo
-                        Tratamientos</p>
-                    <svg class="w-8 h-8 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-                <p id="costo-tratamientos" class="text-3xl font-bold text-blue-600 dark:text-blue-400">$0.00</p>
-                <p id="tratamientos-count" class="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">0 tratamientos
-                </p>
-            </div>
+            <article class="rounded-2xl border border-emerald-500/30 bg-emerald-50/60 dark:bg-emerald-900/10 p-5 shadow-sm">
+                <p class="text-xs uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-400">Cobrado Neto</p>
+                <p id="summary-net-paid" class="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">$0.00</p>
+                <p id="summary-refunds-info" class="mt-1 text-xs text-emerald-700/70 dark:text-emerald-300/70">Devoluciones: $0.00</p>
+            </article>
 
-            <!-- Balance Pendiente -->
-            <div
-                class="bg-gradient-to-br from-amber-500/10 to-amber-600/5 dark:from-amber-500/20 dark:to-amber-600/10 border border-amber-500/30 dark:border-amber-500/20 rounded-2xl p-5">
-                <div class="flex items-center justify-between mb-2">
-                    <p class="text-xs font-semibold uppercase tracking-[0.1em] text-amber-700 dark:text-amber-400">
-                        Balance Pendiente</p>
-                    <svg class="w-8 h-8 text-amber-500 dark:text-amber-400" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-                <p id="balance-pendiente" class="text-3xl font-bold text-amber-600 dark:text-amber-400">$0.00</p>
-                <p class="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">Por cobrar</p>
-            </div>
-        </div>
+            <article class="rounded-2xl border border-amber-500/30 bg-amber-50/60 dark:bg-amber-900/10 p-5 shadow-sm">
+                <p class="text-xs uppercase tracking-[0.12em] text-amber-700 dark:text-amber-400">Saldo Pendiente</p>
+                <p id="summary-pending" class="mt-2 text-3xl font-bold text-amber-600 dark:text-amber-400">$0.00</p>
+                <p id="summary-payments-count" class="mt-1 text-xs text-amber-700/70 dark:text-amber-300/70">0 movimientos</p>
+            </article>
 
-        <!-- Botón Nuevo Pago -->
-        <div class="flex justify-end">
-            <button type="button" id="btn-nuevo-pago"
-                class="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] focus:outline-none focus:ring-4 focus:ring-[#8BCFDD]/50 transition shadow-lg shadow-[#4EABBE]/30">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span>Registrar Pago</span>
+            <article class="rounded-2xl border border-rose-500/30 bg-rose-50/60 dark:bg-rose-900/10 p-5 shadow-sm">
+                <p class="text-xs uppercase tracking-[0.12em] text-rose-700 dark:text-rose-400">Vencido</p>
+                <p id="summary-overdue" class="mt-2 text-3xl font-bold text-rose-600 dark:text-rose-400">$0.00</p>
+                <p id="summary-overdue-count" class="mt-1 text-xs text-rose-700/70 dark:text-rose-300/70">0 cuotas vencidas</p>
+            </article>
+        </section>
+
+        <div class="flex flex-wrap justify-end gap-3">
+            <button id="btn-refresh-finanzas"
+                class="px-4 py-3 rounded-xl border border-[#8BCFDD] dark:border-slate-700 text-sm font-semibold hover:border-[#4EABBE] transition">
+                Actualizar
+            </button>
+            <button id="btn-nueva-devolucion"
+                class="px-5 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition">
+                Registrar devolución
+            </button>
+            <button id="btn-nuevo-pago"
+                class="px-6 py-3 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-sm font-semibold text-white shadow-lg shadow-[#4EABBE]/30 transition">
+                Registrar pago
             </button>
         </div>
 
-        <!-- Recaudación por Cita -->
-        <section
-            class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 dark:bg-[#0E1A25] dark:border-slate-800">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Recaudación por Cita</h2>
-                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Tratamientos y recetas agrupados por visita
-                    </p>
+        <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <article class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Planes y saldos</h2>
+                        <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Balance por tratamiento, descuento y forma de cobro.</p>
+                    </div>
                 </div>
-                <button id="refresh-citas"
-                    class="px-3 py-1.5 rounded-lg text-xs bg-[#4EABBE]/20 text-[#4EABBE] hover:bg-[#4EABBE]/30 transition">
-                    Actualizar
-                </button>
-            </div>
-            <div id="citas-list" class="space-y-4">
-                <!-- Se cargarán dinámicamente las citas -->
-            </div>
+                <div id="plans-list" class="space-y-4"></div>
+            </article>
+
+            <article class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
+                <div class="flex items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Cuotas y vencimientos</h2>
+                        <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Aplica pagos a cuotas y envía recordatorios de cobranza.</p>
+                    </div>
+                </div>
+                <div id="installments-list" class="space-y-3"></div>
+            </article>
         </section>
 
-        <!-- Historial de Pagos -->
-        <section
-            class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-5 dark:bg-[#0E1A25] dark:border-slate-800">
-            <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white mb-4">Historial de Pagos</h2>
-            <div id="pagos-list" class="space-y-3">
-                <!-- Se cargarán dinámicamente -->
+        <section class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Historial financiero</h2>
+                    <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Pagos y devoluciones registrados en caja.</p>
+                </div>
             </div>
+            <div id="payments-list" class="space-y-3"></div>
         </section>
     </main>
 
-    <!-- Modal para Nuevo Pago -->
     <div id="modal-pago"
-        class="fixed inset-0 bg-[#0F2532]/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
-        <div
-            class="bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/60 dark:border-slate-800 rounded-3xl w-full max-w-lg p-6 shadow-2xl shadow-[#8BCFDD]/30">
-            <div class="flex justify-between items-start mb-6">
+        class="fixed inset-0 hidden items-center justify-center bg-[#0F2532]/70 backdrop-blur-sm z-50 p-4">
+        <div class="w-full max-w-xl rounded-3xl border border-[#8BCFDD]/60 bg-white dark:bg-[#0E1A25] p-6 shadow-2xl shadow-[#8BCFDD]/30">
+            <div class="flex items-start justify-between gap-4 mb-6">
                 <div>
-                    <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Registrar</p>
-                    <h3 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo Pago</h3>
+                    <p id="modal-pago-etiqueta" class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Registrar</p>
+                    <h3 id="modal-pago-titulo" class="text-2xl font-bold text-[#1D5D69] dark:text-white">Nuevo pago</h3>
                 </div>
                 <button id="close-modal-pago"
-                    class="text-slate-400 hover:text-[#0F2532] dark:hover:text-slate-100 text-2xl leading-none transition">
-                    &times;
-                </button>
+                    class="text-2xl leading-none text-slate-400 hover:text-[#0F2532] dark:hover:text-white transition">&times;</button>
             </div>
 
             <form id="form-pago" class="space-y-5">
-                <!-- Monto -->
+                <input type="hidden" id="movement-type" value="payment" />
+
                 <div>
-                    <label
-                        class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
-                        Monto *
-                    </label>
-                    <input type="number" id="pago-monto" name="monto" step="0.01" min="0" required
-                        class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
-                        placeholder="0.00" />
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Monto</label>
+                    <input type="number" id="pago-monto" name="monto" min="0" step="0.01" required
+                        class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]" />
                 </div>
 
-                <!-- Método de Pago -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Método</label>
+                        <select id="pago-metodo" name="metodo" required
+                            class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]">
+                            <option value="">Seleccionar...</option>
+                            <option value="Efectivo">Efectivo</option>
+                            <option value="Tarjeta">Tarjeta</option>
+                            <option value="Transferencia">Transferencia</option>
+                            <option value="Cheque">Cheque</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Plan</label>
+                        <select id="pago-plan" name="plan_tratamiento_id"
+                            class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]">
+                            <option value="">Sin asociar</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div>
-                    <label
-                        class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
-                        Método de Pago *
-                    </label>
-                    <select id="pago-metodo" name="metodo" required
-                        class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
-                        <option value="">Seleccionar método...</option>
-                        <option value="Efectivo">Efectivo</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                        <option value="Transferencia">Transferencia</option>
-                        <option value="Cheque">Cheque</option>
-                        <option value="Otro">Otro</option>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Cuota</label>
+                    <select id="pago-cuota" name="cuota_financiamiento_id"
+                        class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]">
+                        <option value="">Aplicar automáticamente</option>
                     </select>
                 </div>
 
-                <!-- Plan de Tratamiento (Opcional) -->
                 <div>
-                    <label
-                        class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
-                        Asociar a Plan de Tratamiento (Opcional)
-                    </label>
-                    <select id="pago-plan" name="plan_tratamiento_id"
-                        class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition">
-                        <option value="">Sin asociar</option>
-                    </select>
-                </div>
-
-                <!-- Descripción -->
-                <div>
-                    <label
-                        class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">
-                        Descripción
-                    </label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Descripción</label>
                     <textarea id="pago-descripcion" name="descripcion" rows="3"
-                        class="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#0F2532] border border-[#8BCFDD] dark:border-slate-700 text-sm text-[#0F2532] dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition"
-                        placeholder="Concepto del pago, notas adicionales..."></textarea>
+                        class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]"
+                        placeholder="Concepto, referencia o nota interna..."></textarea>
                 </div>
 
-                <!-- Botones -->
                 <div class="flex justify-end gap-3 pt-4 border-t border-[#8BCFDD]/30 dark:border-slate-700">
                     <button type="button" id="cancel-pago"
-                        class="px-5 py-2.5 rounded-xl border border-[#8BCFDD] dark:border-slate-700 text-[#0F2532] dark:text-slate-100 hover:border-[#4EABBE] hover:text-[#1D5D69] dark:hover:border-[#4EABBE] dark:hover:text-white transition">
+                        class="px-5 py-2.5 rounded-xl border border-[#8BCFDD] dark:border-slate-700 text-[#0F2532] dark:text-slate-100 hover:border-[#4EABBE] transition">
                         Cancelar
                     </button>
                     <button type="submit"
                         class="px-6 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
-                        Guardar Pago
+                        Guardar
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Toast Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script src="../scripts/pagos.js"></script>
+  <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

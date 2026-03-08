@@ -13,6 +13,143 @@ function resolveDb() {
   return null;
 }
 
+function resolveApi() {
+  if (window.api) return window.api;
+  if (window.parent && window.parent !== window && window.parent.api) {
+    return window.parent.api;
+  }
+  return null;
+}
+
+function getFinanceApi() {
+  return resolveApi()?.finance || null;
+}
+
+function roundMoney(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+const currencyFormatter = new Intl.NumberFormat('es-MX', {
+  style: 'currency',
+  currency: 'MXN',
+});
+
+function formatCurrency(value) {
+  return currencyFormatter.format(Number(value || 0));
+}
+
+function formatDateDisplay(value) {
+  if (!value) return '-';
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function formatDateTimeDisplay(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('es-MX', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function getInstallmentBadge(item = {}) {
+  const scheduled = roundMoney(item.monto_programado || 0);
+  const paid = roundMoney(item.monto_pagado || 0);
+  const pending = roundMoney(item.saldo_pendiente != null ? item.saldo_pendiente : (scheduled - paid));
+  const dueDate = String(item.fecha_vencimiento || '').slice(0, 10);
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const overdue = pending > 0 && !!dueDate && dueDate < todayKey;
+
+  if (pending <= 0.01 || paid >= scheduled) {
+    return { label: 'Pagada', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' };
+  }
+  if (overdue) {
+    return { label: 'Vencida', className: 'bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400' };
+  }
+  if (paid > 0) {
+    return { label: 'Parcial', className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' };
+  }
+  return { label: 'Pendiente', className: 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300' };
+}
+
+function renderCommercialVersionHistory(plan) {
+  const reasonWrapper = document.getElementById('plan-version-reason-wrapper');
+  const reasonInput = document.getElementById('plan-version-reason');
+  const versionsWrapper = document.getElementById('plan-versiones-wrapper');
+  const versionsList = document.getElementById('plan-versiones-list');
+  const versionsEmpty = document.getElementById('plan-versiones-empty');
+  const versionBadge = document.getElementById('plan-version-actual-badge');
+
+  if (!reasonWrapper || !reasonInput || !versionsWrapper || !versionsList || !versionsEmpty || !versionBadge) return;
+
+  const isEdit = !!plan?.id;
+  reasonWrapper.classList.toggle('hidden', !isEdit);
+  reasonInput.value = '';
+
+  if (!isEdit) {
+    versionsWrapper.classList.add('hidden');
+    versionsList.innerHTML = '';
+    versionsEmpty.classList.add('hidden');
+    versionBadge.textContent = 'v1';
+    return;
+  }
+
+  const currentVersion = Math.max(1, Number(plan.version_comercial || 1));
+  versionBadge.textContent = `v${currentVersion}`;
+  versionsWrapper.classList.remove('hidden');
+
+  const versions = Array.isArray(plan.commercial_versions) ? plan.commercial_versions : [];
+  if (!versions.length) {
+    versionsList.innerHTML = '';
+    versionsEmpty.classList.remove('hidden');
+    return;
+  }
+
+  versionsEmpty.classList.add('hidden');
+  versionsList.innerHTML = versions.map(version => {
+    const versionNum = Math.max(1, Number(version.version_num || 1));
+    const total = formatCurrency(version.total_final || 0);
+    const user = escapeHtml(version.usuario_nombre || 'Sistema');
+    const reason = escapeHtml(version.motivo_cambio || '-');
+    const rowClass = versionNum === currentVersion
+      ? 'bg-[#8BCFDD]/10 dark:bg-slate-800/70'
+      : '';
+
+    return `
+      <tr class="border-t border-[#8BCFDD]/20 dark:border-slate-700 ${rowClass}">
+        <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100 font-semibold">v${versionNum}</td>
+        <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${escapeHtml(formatDateTimeDisplay(version.fecha_creacion))}</td>
+        <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${user}</td>
+        <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${reason}</td>
+        <td class="py-2 text-emerald-600 dark:text-emerald-400 font-semibold">${total}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function getSessionUser() {
+  try {
+    return JSON.parse(localStorage.getItem('sesionActual')) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function getCurrentUserId() {
+  return getSessionUser().id || null;
+}
+
 let messageSeq = 0;
 
 function requestParentDb(type, sql, params = []) {
@@ -32,6 +169,8 @@ function requestParentDb(type, sql, params = []) {
 
     function onMessage(event) {
       const data = event && event.data;
+      const trustedOrigin = !event?.origin || event.origin === 'null' || event.origin === 'file://' || event.origin === window.location.origin;
+      if (event.source !== window.parent || !trustedOrigin) return;
       if (!data || data.requestId !== requestId || data.type !== `${type}-response`) return;
       if (settled) return;
       settled = true;
@@ -50,6 +189,7 @@ function requestParentDb(type, sql, params = []) {
 }
 let currentPacienteId = null;
 let currentEditingPlanId = null;
+let planSchemaColumns = null;
 
 // DB Helpers
 function dbAll(sql, params = []) {
@@ -139,6 +279,565 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
+
+const FACE_LABELS = window.OdontoRender?.FACE_LABELS || {
+  oclusal: 'Oclusal',
+  mesial: 'Mesial',
+  distal: 'Distal',
+  vestibular: 'Vestibular',
+  lingual: 'Lingual',
+};
+
+const VALID_PLAN_FACES = Object.keys(FACE_LABELS);
+
+const DIAGNOSIS_LOOKUP = {
+  'crown-ok': { id: 'crown-ok', name: 'Corona', cssClass: 'tooth-crown-ok', color: '#3b82f6', status: 'Realizado', target: 'tooth' },
+  'crown-bad': { id: 'crown-bad', name: 'Corona (Mal Estado)', cssClass: 'tooth-crown-bad', color: '#ef4444', status: 'Pendiente', target: 'tooth' },
+  absent: { id: 'absent', name: 'Ausente', cssClass: 'tooth-absent', color: '#6b7280', status: 'Pendiente', target: 'tooth' },
+  'caries-dx': { id: 'caries-dx', name: 'Caries', cssClass: 'state-caries', color: '#ef4444', status: 'Pendiente', target: 'face' },
+  'rest-ok': { id: 'rest-ok', name: 'Restauracion', cssClass: 'state-rest-ok', color: '#3b82f6', status: 'Realizado', target: 'face' },
+  'rest-bad': { id: 'rest-bad', name: 'Restauracion (Mal Estado)', cssClass: 'state-rest-bad', color: '#f97316', status: 'Pendiente', target: 'face' },
+  sealant: { id: 'sealant', name: 'Sellante', cssClass: 'state-sealant', color: '#facc15', status: 'Realizado', target: 'face' },
+  amalgam: { id: 'amalgam', name: 'Amalgama', cssClass: 'state-amalgam', color: '#1f2937', status: 'Realizado', target: 'face' },
+  endo: { id: 'endo', name: 'Endodoncia', cssClass: 'state-endo', color: '#a855f7', status: 'Realizado', target: 'face' },
+  implante: { id: 'implante', name: 'Implante', cssClass: 'state-implante', color: '#059669', status: 'Realizado', target: 'face' },
+  perno: { id: 'perno', name: 'Perno Muñon', cssClass: 'state-perno', color: '#0f172a', status: 'Realizado', target: 'face' },
+  fractura: { id: 'fractura', name: 'Fractura', cssClass: 'state-fractura', color: '#f59e0b', status: 'Pendiente', target: 'face' },
+  pulpar: { id: 'pulpar', name: 'Infeccion Pulpar', cssClass: 'state-pulpar', color: '#f87171', status: 'Pendiente', target: 'face' },
+  movilidad: { id: 'movilidad', name: 'Movilidad', cssClass: 'state-mov', color: '#0ea5e9', status: 'Pendiente', target: 'face' },
+  resto: { id: 'resto', name: 'Resto Radicular', cssClass: 'state-resto', color: '#0f172a', status: 'Pendiente', target: 'face' },
+  erupcion: { id: 'erupcion', name: 'Sin Erupcionar', cssClass: 'state-erup', color: '#cbd5e1', status: 'Pendiente', target: 'face' },
+  sano: { id: 'sano', name: 'Sano', cssClass: 'clean', color: '#10b981', status: 'Realizado', target: 'face' },
+};
+
+const SURFACE_DX_IDS = new Set(['caries-dx', 'rest-ok', 'rest-bad', 'sealant', 'amalgam']);
+const WHOLE_TOOTH_TREATMENT_IDS = new Set(['corona', 'implante', 'perno', 'endodoncia', 'fractura', 'pulpar', 'ausente']);
+const PLAN_TREATMENT_VISUALS = {
+  caries: { id: 'caries', name: 'Caries', color: '#EF4444' },
+  restauracion: { id: 'restauracion', name: 'Restauracion', color: '#10B981' },
+  endodoncia: { id: 'endodoncia', name: 'Endodoncia', color: '#A855F7' },
+  ausente: { id: 'ausente', name: 'Ausente', color: '#6B7280' },
+  corona: { id: 'corona', name: 'Corona', color: '#FBBF24' },
+  implante: { id: 'implante', name: 'Implante', color: '#059669' },
+  perno: { id: 'perno', name: 'Perno Munon', color: '#0F172A' },
+  fractura: { id: 'fractura', name: 'Fractura', color: '#F59E0B' },
+  pulpar: { id: 'pulpar', name: 'Infeccion Pulpar', color: '#F87171' },
+};
+
+let toothImages = {};
+let showAdultTeeth = true;
+
+function calculateAgeYears(dateStr) {
+  if (!dateStr) return null;
+  const birth = new Date(dateStr);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    years -= 1;
+  }
+  return years;
+}
+
+function faceLabel(faceId) {
+  return FACE_LABELS[faceId] || faceId || 'Cara';
+}
+
+function findDiagnosisSpec(id) {
+  return DIAGNOSIS_LOOKUP[id] || null;
+}
+
+function findPlanVisualSpec(id) {
+  return DIAGNOSIS_LOOKUP[id] || PLAN_TREATMENT_VISUALS[id] || null;
+}
+
+function normalizePlanFace(face) {
+  const value = String(face || '').trim().toLowerCase();
+  return VALID_PLAN_FACES.includes(value) ? value : null;
+}
+
+function parsePlanFaces(raw) {
+  if (Array.isArray(raw)) {
+    return [...new Set(raw.map(normalizePlanFace).filter(Boolean))];
+  }
+
+  const text = String(raw || '').trim();
+  if (!text) return [];
+
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsePlanFaces(parsed);
+  } catch (e) {
+  }
+
+  return [...new Set(text.split(',').map(normalizePlanFace).filter(Boolean))];
+}
+
+function serializePlanFaces(faces) {
+  const normalized = parsePlanFaces(faces);
+  return normalized.length ? JSON.stringify(normalized) : '';
+}
+
+function getDiagnosisPriority(dxId) {
+  const priorityMap = {
+    absent: 100,
+    pulpar: 95,
+    fractura: 92,
+    'rest-bad': 88,
+    'caries-dx': 85,
+    movilidad: 82,
+    resto: 80,
+    'crown-bad': 72,
+    erupcion: 60,
+    endo: 54,
+    implante: 52,
+    perno: 50,
+    'rest-ok': 45,
+    amalgam: 44,
+    sealant: 40,
+    'crown-ok': 38,
+    sano: 10,
+  };
+
+  return priorityMap[dxId] || 20;
+}
+
+function getToothDiagnostics(toothNumber) {
+  const state = odontoData?.diagnosticsState?.[toothNumber];
+  if (!state) return [];
+
+  const entries = [];
+
+  if (state.tooth?.id) {
+    const dx = findDiagnosisSpec(state.tooth.id) || state.tooth;
+    entries.push({
+      key: 'tooth',
+      id: dx.id,
+      name: dx.name,
+      cssClass: dx.cssClass,
+      status: dx.status || state.tooth.status || '',
+      color: dx.color || '#4EABBE',
+      target: 'tooth',
+      face: null,
+      priority: getDiagnosisPriority(dx.id),
+    });
+  }
+
+  Object.entries(state.faces || {}).forEach(([face, rawDx]) => {
+    if (!rawDx?.id) return;
+    const dx = findDiagnosisSpec(rawDx.id) || rawDx;
+    entries.push({
+      key: face,
+      id: dx.id,
+      name: rawDx.name || dx.name,
+      cssClass: rawDx.cssClass || dx.cssClass,
+      status: rawDx.status || dx.status || '',
+      color: rawDx.color || dx.color || '#4EABBE',
+      target: 'face',
+      face,
+      priority: getDiagnosisPriority(dx.id),
+    });
+  });
+
+  return entries.sort((a, b) => b.priority - a.priority || a.name.localeCompare(b.name));
+}
+
+function getDiagnosisSummaryTitle(toothNumber) {
+  const entries = getToothDiagnostics(toothNumber);
+  if (!entries.length) return `Pieza ${toothNumber}`;
+
+  const detail = entries
+    .map(entry => entry.target === 'tooth' ? `Pieza: ${entry.name}` : `${faceLabel(entry.face)}: ${entry.name}`)
+    .join(' | ');
+
+  return `Pieza ${toothNumber} | ${detail}`;
+}
+
+function buildDxStyle(color) {
+  return `--dx-color:${color || BRAND.primary}; --dx-glow:${hexToRgba(color || BRAND.primary, 0.34)};`;
+}
+
+function compactVisualLabel(name) {
+  const plain = String(name || '').toLowerCase();
+  if (!plain) return '';
+  if (plain.includes('corona') && plain.includes('mal')) return 'Corona mal';
+  if (plain.includes('corona')) return 'Corona';
+  if (plain.includes('implante')) return 'Implante';
+  if (plain.includes('perno')) return 'Perno';
+  if (plain.includes('endodon')) return 'Endodoncia';
+  if (plain.includes('caries')) return 'Caries';
+  if (plain.includes('restaur') && plain.includes('mal')) return 'Rest. mal';
+  if (plain.includes('restaur')) return 'Restauracion';
+  if (plain.includes('fractura')) return 'Fractura';
+  if (plain.includes('pulpar')) return 'Pulpar';
+  if (plain.includes('ausent')) return 'Ausente';
+  if (plain.includes('radicular')) return 'Resto rad.';
+  if (plain.includes('movilidad')) return 'Movilidad';
+  if (plain.includes('erup')) return 'No erup.';
+  return name;
+}
+
+function getPlanTreatmentVisual(treatmentId, color) {
+  if (!treatmentId && !color) return null;
+  const base = PLAN_TREATMENT_VISUALS[treatmentId] || {};
+  return {
+    id: treatmentId || base.id || '',
+    name: base.name || treatmentId || '',
+    color: color || base.color || BRAND.primary,
+  };
+}
+
+function getToothQuickTag(toothNumber) {
+  const entries = getToothDiagnostics(toothNumber);
+  const primaryEntry = entries[0] || null;
+  const status = odontoData?.teethStatus?.[toothNumber] || null;
+
+  if (primaryEntry) {
+    return {
+      text: compactVisualLabel(primaryEntry.name),
+      color: primaryEntry.color || BRAND.primary,
+    };
+  }
+
+  if (status?.color) {
+    const treatment = getPlanTreatmentVisual(status.treatment, status.color);
+    return {
+      text: compactVisualLabel(treatment?.name || 'Tratado'),
+      color: treatment?.color || status.color,
+    };
+  }
+
+  return null;
+}
+
+function renderToothQuickTag(toothNumber) {
+  const tag = getToothQuickTag(toothNumber);
+  if (!tag) return '<div class="tooth-quick-tag-slot"></div>';
+
+  return `
+    <div class="tooth-quick-tag-slot">
+      <span class="tooth-quick-tag" style="${buildDxStyle(tag.color)}">${escapeHtml(tag.text)}</span>
+    </div>
+  `;
+}
+
+function renderToothDxHud(toothNumber, isUpper) {
+  const entries = getToothDiagnostics(toothNumber);
+  if (!entries.length) return '';
+
+  const popoverClass = isUpper ? 'tooth-dx-popover-top' : 'tooth-dx-popover-bottom';
+  const rows = entries.map(entry => `
+    <div class="tooth-dx-item">
+      <span class="tooth-dx-chip" style="${buildDxStyle(entry.color)}">${escapeHtml(entry.target === 'tooth' ? 'Pieza' : faceLabel(entry.face))}</span>
+      <span class="tooth-dx-text">${escapeHtml(entry.name)}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="tooth-dx-hud">
+      <div class="tooth-dx-popover ${popoverClass}">
+        <p class="tooth-dx-popover-title">Diagnosticos activos</p>
+        ${rows}
+      </div>
+    </div>
+  `;
+}
+
+function isDiagnosisFresh() {
+  return false;
+}
+
+function getPlanToothVisualState(toothNumber) {
+  const status = odontoData?.teethStatus?.[toothNumber] || null;
+  const treatment = getPlanTreatmentVisual(status?.treatment, status?.color);
+  const entries = getToothDiagnostics(toothNumber);
+  const toothEntry = entries.find(entry => entry.target === 'tooth') || null;
+  const faceEntries = entries.filter(entry => entry.target === 'face');
+  const ids = new Set(entries.map(entry => entry.id));
+  if (treatment?.id) ids.add(treatment.id);
+
+  return {
+    status,
+    treatment,
+    entries,
+    toothEntry,
+    faceEntries,
+    has(id) {
+      return ids.has(id);
+    },
+    primaryColor: toothEntry?.color || treatment?.color || faceEntries[0]?.color || BRAND.primary,
+  };
+}
+
+function renderPlanToothDiagnosisMarkers(toothNumber) {
+  const visual = getPlanToothVisualState(toothNumber);
+  if (!visual.entries.length && !visual.treatment) return '';
+
+  const toothFresh = isDiagnosisFresh(toothNumber, 'tooth') ? ' dx-feedback-fresh' : '';
+  const showFrame = !!visual.toothEntry || WHOLE_TOOTH_TREATMENT_IDS.has(visual.treatment?.id);
+  const frame = showFrame ? `
+    <span class="tooth-dx-frame${visual.has('absent') || visual.has('ausente') ? ' dxfx-absent' : ''}${toothFresh}"
+      style="${buildDxStyle(visual.primaryColor)}"></span>
+  ` : '';
+
+  const crownId = visual.has('crown-bad') ? 'crown-bad' : visual.has('crown-ok') ? 'crown-ok' : visual.has('corona') ? 'corona' : '';
+  const crown = crownId ? `
+    <span class="tooth-dx-crown dxfx-${crownId}${toothFresh}" style="${buildDxStyle(findPlanVisualSpec(crownId)?.color)}">
+      <span class="tooth-dx-crown-band"></span>
+    </span>
+  ` : '';
+
+  const implant = visual.has('implante') ? `
+    <span class="tooth-dx-implant dxfx-implante${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('implante')?.color)}">
+      <span class="tooth-dx-implant-cap"></span>
+      <span class="tooth-dx-implant-body"></span>
+      <span class="tooth-dx-implant-tip"></span>
+    </span>
+  ` : '';
+
+  const post = visual.has('perno') ? `
+    <span class="tooth-dx-post dxfx-perno${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('perno')?.color)}">
+      <span class="tooth-dx-post-core"></span>
+      <span class="tooth-dx-post-pin"></span>
+    </span>
+  ` : '';
+
+  const endoId = visual.has('endo') ? 'endo' : visual.has('endodoncia') ? 'endodoncia' : '';
+  const endo = endoId ? `
+    <span class="tooth-dx-endo dxfx-${endoId}${toothFresh}" style="${buildDxStyle(findPlanVisualSpec(endoId)?.color)}">
+      <span class="tooth-dx-endo-line"></span>
+      <span class="tooth-dx-endo-node"></span>
+    </span>
+  ` : '';
+
+  const fracture = visual.has('fractura') ? `
+    <span class="tooth-dx-fracture dxfx-fractura${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('fractura')?.color)}">
+      <span class="tooth-dx-fracture-a"></span>
+      <span class="tooth-dx-fracture-b"></span>
+    </span>
+  ` : '';
+
+  const pulpar = visual.has('pulpar') ? `
+    <span class="tooth-dx-pulp dxfx-pulpar${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('pulpar')?.color)}"></span>
+  ` : '';
+
+  const rootStub = visual.has('resto') ? `
+    <span class="tooth-dx-root-stub dxfx-resto${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('resto')?.color)}"></span>
+  ` : '';
+
+  const eruption = visual.has('erupcion') ? `
+    <span class="tooth-dx-eruption dxfx-erupcion${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('erupcion')?.color)}"></span>
+  ` : '';
+
+  const mobility = visual.has('movilidad') ? `
+    <span class="tooth-dx-mobility dxfx-movilidad${toothFresh}" style="${buildDxStyle(findPlanVisualSpec('movilidad')?.color)}">
+      <span class="tooth-dx-mobility-bar left"></span>
+      <span class="tooth-dx-mobility-bar right"></span>
+    </span>
+  ` : '';
+
+  const surfaceEntries = visual.faceEntries.filter(entry => SURFACE_DX_IDS.has(entry.id));
+  const surfaces = surfaceEntries.length ? `
+    <div class="tooth-dx-surface-map">
+      ${surfaceEntries.map(entry => `
+        <span class="tooth-dx-surface tooth-dx-surface-${entry.face} dxsurface-${entry.id}${isDiagnosisFresh(toothNumber, entry.face) ? ' dx-feedback-fresh' : ''}"
+          style="${buildDxStyle(entry.color)}"
+          title="${escapeAttr(`${faceLabel(entry.face)}: ${entry.name}`)}"></span>
+      `).join('')}
+    </div>
+  ` : '';
+
+  return `<div class="tooth-dx-layer">${frame}${surfaces}${crown}${endo}${post}${implant}${pulpar}${fracture}${rootStub}${eruption}${mobility}</div>`;
+}
+
+function normalizeToothImageEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return { imagen_v: '', imagen_p: '', imagen_url: '' };
+  }
+
+  const normalized = {
+    imagen_v: typeof entry.imagen_v === 'string' ? entry.imagen_v : '',
+    imagen_p: typeof entry.imagen_p === 'string' ? entry.imagen_p : '',
+    imagen_url: typeof entry.imagen_url === 'string' ? entry.imagen_url : '',
+  };
+
+  if (!normalized.imagen_v && !normalized.imagen_p && normalized.imagen_url) {
+    normalized.imagen_v = normalized.imagen_url;
+    normalized.imagen_p = normalized.imagen_url;
+  }
+
+  return normalized;
+}
+
+function getPlanToothImageUrl(toothNumber) {
+  const entry = toothImages[toothNumber];
+  if (!entry) return '';
+  return (entry.imagen_v || entry.imagen_url || entry.imagen_p || '').trim();
+}
+
+async function loadPlanToothImagesFromPeriodontograma() {
+  toothImages = {};
+  if (!currentPacienteId) return;
+
+  try {
+    const columns = await dbAll('PRAGMA table_info(periodontograma)');
+    const hasImagesColumn = Array.isArray(columns) && columns.some(column => column?.name === 'dientes_imagenes');
+    const selectCols = hasImagesColumn ? 'datos, dientes_imagenes' : 'datos';
+    const row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+    if (!row) return;
+
+    if (row.datos) {
+      const parsedDatos = JSON.parse(row.datos);
+      const rawTeeth = parsedDatos?.teeth && typeof parsedDatos.teeth === 'object' ? parsedDatos.teeth : parsedDatos;
+      if (rawTeeth && typeof rawTeeth === 'object') {
+        Object.entries(rawTeeth).forEach(([toothNumber, entry]) => {
+          if (!/^\d+$/.test(String(toothNumber))) return;
+          toothImages[toothNumber] = normalizeToothImageEntry(entry);
+        });
+      }
+    }
+
+    if (!row.dientes_imagenes) return;
+
+    const parsedImages = JSON.parse(row.dientes_imagenes);
+    if (!parsedImages || typeof parsedImages !== 'object') return;
+
+    Object.entries(parsedImages).forEach(([toothNumber, entry]) => {
+      if (!/^\d+$/.test(String(toothNumber))) return;
+      toothImages[toothNumber] = normalizeToothImageEntry(entry);
+    });
+  } catch (e) {
+    console.error('Error cargando imagenes del periodontograma para planes:', e);
+  }
+}
+
+async function loadPlanSchemaColumns(force = false) {
+  if (planSchemaColumns && !force) return planSchemaColumns;
+
+  try {
+    const rows = await dbAll('PRAGMA table_info(planes_tratamiento)');
+    planSchemaColumns = new Set((rows || []).map(row => row?.name).filter(Boolean));
+  } catch (e) {
+    console.error('Error loading planes_tratamiento schema:', e);
+    planSchemaColumns = new Set();
+  }
+
+  return planSchemaColumns;
+}
+
+async function hasPlanTargetColumns() {
+  const columns = await loadPlanSchemaColumns();
+  return columns.has('diente') && columns.has('caras');
+}
+
+function formatPlanTarget(diente, carasRaw) {
+  const tooth = String(diente || '').trim();
+  if (!tooth) return null;
+
+  const faces = parsePlanFaces(carasRaw);
+  return {
+    title: `Pieza ${tooth}`,
+    detail: faces.length ? faces.map(faceLabel).join(', ') : 'Pieza completa',
+  };
+}
+
+function getSelectedTreatmentCosts() {
+  const select = document.getElementById('select-tratamiento');
+  const option = select?.selectedOptions?.[0];
+  if (!option) {
+    return {
+      costoBase: 0,
+      costoMedicina: 0,
+      costoMiscelanea: 0,
+    };
+  }
+
+  return {
+    costoBase: parseFloat(option.dataset.costoBas || 0),
+    costoMedicina: parseFloat(option.dataset.costoMedicina || 0),
+    costoMiscelanea: parseFloat(option.dataset.costoMiscelanea || 0),
+  };
+}
+
+function updateFinancingVisibility() {
+  const financingEnabled = document.getElementById('plan-financiar')?.checked;
+  const wrapper = document.getElementById('financing-fields');
+  if (!wrapper) return;
+  wrapper.classList.toggle('hidden', !financingEnabled);
+}
+
+function recalculateFinancialPreview() {
+  const { costoBase, costoMedicina, costoMiscelanea } = getSelectedTreatmentCosts();
+  const costoTotal = roundMoney(costoBase + costoMedicina + costoMiscelanea);
+  const discountType = document.getElementById('plan-descuento-tipo')?.value || 'ninguno';
+  const discountValue = parseFloat(document.getElementById('plan-descuento-valor')?.value || 0);
+  const taxType = document.getElementById('plan-impuesto-tipo')?.value || 'ninguno';
+  const taxValue = parseFloat(document.getElementById('plan-impuesto-valor')?.value || 0);
+  let discountAmount = 0;
+  let taxAmount = 0;
+
+  if (discountType === 'porcentaje') {
+    discountAmount = roundMoney((costoTotal * Math.max(0, discountValue)) / 100);
+  } else if (discountType === 'monto_fijo') {
+    discountAmount = roundMoney(Math.max(0, discountValue));
+  }
+
+  discountAmount = Math.min(discountAmount, costoTotal);
+  const subtotalNeto = roundMoney(Math.max(0, costoTotal - discountAmount));
+
+  if (taxType === 'porcentaje') {
+    taxAmount = roundMoney((subtotalNeto * Math.max(0, taxValue)) / 100);
+  } else if (taxType === 'monto_fijo') {
+    taxAmount = roundMoney(Math.max(0, taxValue));
+  }
+
+  const totalFinal = roundMoney(subtotalNeto + taxAmount);
+
+  const descuentoEl = document.getElementById('info-descuento-monto');
+  const impuestoEl = document.getElementById('info-impuesto-monto');
+  const totalFinalEl = document.getElementById('info-total-final');
+  if (descuentoEl) descuentoEl.textContent = `$${discountAmount.toFixed(2)}`;
+  if (impuestoEl) impuestoEl.textContent = `$${taxAmount.toFixed(2)}`;
+  if (totalFinalEl) totalFinalEl.textContent = `$${totalFinal.toFixed(2)}`;
+
+  return {
+    costoTotal,
+    discountAmount,
+    subtotalNeto,
+    taxAmount,
+    totalFinal,
+  };
+}
+
+function getFinancingPayload(fechaInicio) {
+  const financingEnabled = document.getElementById('plan-financiar')?.checked;
+  if (!financingEnabled) {
+    return { enabled: false };
+  }
+
+  return {
+    enabled: true,
+    downPayment: parseFloat(document.getElementById('plan-anticipo')?.value || 0),
+    installmentCount: parseInt(document.getElementById('plan-numero-cuotas')?.value || 0, 10),
+    frequency: document.getElementById('plan-frecuencia')?.value || 'mensual',
+    interestPercent: parseFloat(document.getElementById('plan-interes')?.value || 0),
+    firstDueDate: document.getElementById('plan-primer-vencimiento')?.value || fechaInicio || null,
+  };
+}
+
 // Cargar lista de tratamientos del catálogo
 async function loadTratamientosCatalogo() {
   try {
@@ -200,6 +899,7 @@ async function onTratamientoSelected(e) {
     document.getElementById('info-costo-medicina').textContent = `$${costoMedicina.toFixed(2)}`;
     document.getElementById('info-costo-miscelanea').textContent = `$${costoMiscelanea.toFixed(2)}`;
     document.getElementById('info-costo-total').textContent = `$${total.toFixed(2)}`;
+    recalculateFinancialPreview();
 
     infoDiv.classList.remove('hidden');
   } catch (e) {
@@ -207,12 +907,28 @@ async function onTratamientoSelected(e) {
   }
 }
 
+// Guardar el progreso del plan a la BD
+async function updateProgressToDb(planId, nuevoProgreso) {
+  if (!currentPacienteId || !db) return;
+
+  try {
+    await dbRun('UPDATE planes_tratamiento SET progreso = ? WHERE id = ?', [nuevoProgreso, planId]);
+  } catch (e) {
+    console.error('Error actualizando progreso:', e);
+  }
+}
+
 // Cargar planes pendientes del paciente
 async function loadPlanesPendientes() {
   try {
+    const targetColumnsAvailable = await hasPlanTargetColumns();
+    const planTargetSelect = targetColumnsAvailable
+      ? 'p.diente, p.caras,'
+      : 'NULL as diente, NULL as caras,';
     const planes = await dbAll(`
-      SELECT 
-        p.id, p.catalogo_id, p.especialista_asignado, p.estado, p.fecha_inicio, p.costo_total, p.notas,
+      SELECT
+        p.id, p.catalogo_id, p.especialista_asignado, p.estado, p.fecha_inicio, p.costo_total, p.total_final, p.descuento_monto, p.impuesto_monto, p.version_comercial, p.notas, p.progreso, ${planTargetSelect}
+        EXISTS(SELECT 1 FROM planes_financiamiento pf WHERE pf.plan_tratamiento_id = p.id) as tiene_financiamiento,
         t.nombre as tratamiento_nombre, t.descripcion as tratamiento_desc,
         t.categoria, t.costo_base, t.costo_medicina_estandar, t.costo_miscelanea_estandar,
         t.duracion_estimada
@@ -222,10 +938,31 @@ async function loadPlanesPendientes() {
       ORDER BY p.fecha_inicio DESC, p.id DESC
     `, [currentPacienteId]);
 
+    const financeByPlan = new Map();
+    const installmentsByPlan = new Map();
+    const financeApi = getFinanceApi();
+
+    if (financeApi?.getPatientSummary) {
+      try {
+        const financeData = await financeApi.getPatientSummary(Number(currentPacienteId));
+        (financeData?.plans || []).forEach(plan => {
+          financeByPlan.set(Number(plan.id), plan);
+        });
+        (financeData?.installments || []).forEach(installment => {
+          const key = Number(installment.plan_tratamiento_id);
+          if (!installmentsByPlan.has(key)) installmentsByPlan.set(key, []);
+          installmentsByPlan.get(key).push(installment);
+        });
+      } catch (financeError) {
+        console.warn('No se pudieron cargar los datos financieros del paciente:', financeError);
+      }
+    }
+
     const listDiv = document.getElementById('planes-pendientes-list');
     if (!listDiv) return;
 
     if (planes.length === 0) {
+      listDiv.className = "space-y-4";
       listDiv.innerHTML = `
         <div class="text-center py-12">
           <svg class="w-16 h-16 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -237,78 +974,222 @@ async function loadPlanesPendientes() {
       return;
     }
 
-    listDiv.innerHTML = planes.map(p => {
-      const costoBase = parseFloat(p.costo_base || 0);
-      const costoMedicina = parseFloat(p.costo_medicina_estandar || 0);
-      const costoMiscelanea = parseFloat(p.costo_miscelanea_estandar || 0);
-      const costoTotal = costoBase + costoMedicina + costoMiscelanea;
+    listDiv.className = "grid grid-cols-1 gap-6";
+    let htmlContent = '';
 
-      return `
-      <div class="bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 rounded-2xl p-5 space-y-4">
-        <div class="flex justify-between items-start">
+    planes.forEach(p => {
+      const financePlan = financeByPlan.get(Number(p.id)) || null;
+      const planInstallments = (installmentsByPlan.get(Number(p.id)) || []).slice();
+      planInstallments.sort((left, right) => {
+        const leftDate = String(left.fecha_vencimiento || '');
+        const rightDate = String(right.fecha_vencimiento || '');
+        if (leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+        return Number(left.numero || 0) - Number(right.numero || 0);
+      });
+
+      const progreso = Math.max(0, Math.min(100, p.progreso || 0));
+      const totalFinal = roundMoney(financePlan?.total_final || p.total_final || p.costo_total || 0);
+      const totalPagado = roundMoney(financePlan?.neto_pagado || 0);
+      const saldoPendiente = roundMoney(financePlan?.saldo_pendiente != null ? financePlan.saldo_pendiente : Math.max(totalFinal - totalPagado, 0));
+      const montoVencido = roundMoney(financePlan?.monto_vencido || 0);
+      const descuentoMonto = roundMoney(p.descuento_monto || 0);
+      const impuestoMonto = roundMoney(financePlan?.impuesto_monto != null ? financePlan.impuesto_monto : (p.impuesto_monto || 0));
+      const versionComercial = Math.max(1, Number(financePlan?.version_comercial || p.version_comercial || 1));
+      const target = formatPlanTarget(p.diente, p.caras);
+      const nextPendingInstallments = planInstallments.filter(item => roundMoney(item.saldo_pendiente != null ? item.saldo_pendiente : (item.monto_programado - item.monto_pagado)) > 0);
+      const nextDue = nextPendingInstallments.length ? nextPendingInstallments[0] : null;
+      const radius = 45;
+      const circumference = 2 * Math.PI * radius;
+      const offset = circumference * (1 - progreso / 100);
+
+      htmlContent += `
+        <div class="rounded-xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg p-5 flex gap-6" data-plan-id="${p.id}">
+          <!-- Círculo de Progreso -->
+          <div class="flex flex-col items-center gap-3 min-w-fit">
+            <div style="position:relative; width:120px; height:120px;">
+              <svg style="width:100%; height:100%; transform:rotate(-90deg);" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="${radius}" fill="none" stroke="#e5e7eb" stroke-width="6" />
+                <circle cx="60" cy="60" r="${radius}" fill="none" stroke="#4EABBE" stroke-width="6"
+                  stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"
+                  style="transition: stroke-dashoffset 0.3s ease; filter: drop-shadow(0 2px 4px rgba(15,37,50,0.1));" />
+              </svg>
+              <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;">
+                <p style="font-size:24px; font-weight:bold; color:#4EABBE; margin:0;">${progreso}%</p>
+              </div>
+            </div>
+            <input type="range" min="0" max="100" value="${progreso}" class="progress-slider"
+              data-plan-id="${p.id}"
+              style="width:100px; cursor:pointer; accent-color:#4EABBE; margin-top:5px;">
+            <p style="font-size:10px; color:#999; margin:0;">Ajustar progreso</p>
+          </div>
+
+          <!-- Contenido del Plan -->
           <div class="flex-1">
-            <div class="flex items-center gap-2 mb-2">
-              <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">${p.tratamiento_nombre}</h3>
-              ${p.categoria ? `<span class="px-2 py-1 rounded-lg text-xs font-semibold bg-[#4EABBE]/20 text-[#1D5D69] dark:text-[#4EABBE]">${p.categoria}</span>` : ''}
+            <div class="flex justify-between items-start mb-4 pb-4 border-b border-[#8BCFDD]/20 dark:border-slate-700">
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400 uppercase">Tratamiento</p>
+                <p class="text-lg font-extrabold text-[#0F2532] dark:text-white">${escapeHtml(p.tratamiento_nombre)}</p>
+              </div>
+              <span class="px-3 py-1 rounded-lg text-xs font-bold ${
+                p.estado === 'completado' ? 'bg-green-100 text-green-700' :
+                p.estado === 'en_progreso' ? 'bg-blue-100 text-blue-700' :
+                'bg-orange-100 text-orange-700'
+              }">
+                ${p.estado.charAt(0).toUpperCase() + p.estado.slice(1)}
+              </span>
             </div>
-            <p class="text-sm text-gray-600 dark:text-gray-400">${p.tratamiento_desc || ''}</p>
+
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Total Final</p>
+                <p class="text-lg font-bold text-[#4EABBE] dark:text-[#8BCFDD]">$${totalFinal.toFixed(2)}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Duración</p>
+                <p class="text-[#0F2532] dark:text-slate-100">${p.duracion_estimada || 30} min</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Especialista</p>
+                <p class="text-[#0F2532] dark:text-slate-100">${escapeHtml(p.especialista_asignado || 'Sin asignar')}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Categoría</p>
+                <p class="text-[#0F2532] dark:text-slate-100">${escapeHtml(p.categoria || 'General')}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Descuento</p>
+                <p class="text-[#0F2532] dark:text-slate-100">$${descuentoMonto.toFixed(2)}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Impuesto</p>
+                <p class="text-[#0F2532] dark:text-slate-100">$${impuestoMonto.toFixed(2)}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Cobro</p>
+                <p class="text-[#0F2532] dark:text-slate-100">${Number(p.tiene_financiamiento) ? 'En cuotas' : 'Pago libre'}</p>
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Version</p>
+                <p class="text-[#0F2532] dark:text-slate-100">v${versionComercial}</p>
+              </div>
+            </div>
+
+            <div class="bg-[#0F2532]/5 dark:bg-slate-800/40 rounded-lg p-3 border border-[#8BCFDD]/20 dark:border-slate-700 mb-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Pagos / Cuotas</p>
+                <p class="text-xs text-[#0F2532]/70 dark:text-slate-300">
+                  ${nextDue
+          ? `${nextDue.es_anticipo ? 'Anticipo' : `Cuota #${nextDue.numero}`} - ${formatDateDisplay(nextDue.fecha_vencimiento)}`
+          : 'Sin cuotas pendientes'}
+                </p>
+              </div>
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                <div>
+                  <p class="text-xs text-[#1D5D69] dark:text-slate-400">Total</p>
+                  <p class="font-semibold text-[#0F2532] dark:text-slate-100">${formatCurrency(totalFinal)}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-[#1D5D69] dark:text-slate-400">Abonado</p>
+                  <p class="font-semibold text-emerald-600 dark:text-emerald-400">${formatCurrency(totalPagado)}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-[#1D5D69] dark:text-slate-400">Saldo</p>
+                  <p class="font-semibold ${saldoPendiente > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatCurrency(saldoPendiente)}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-[#1D5D69] dark:text-slate-400">Vencido</p>
+                  <p class="font-semibold ${montoVencido > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-[#0F2532] dark:text-slate-100'}">${formatCurrency(montoVencido)}</p>
+                </div>
+              </div>
+
+              ${planInstallments.length ? `
+                <div class="mt-3 overflow-x-auto">
+                  <table class="min-w-full text-xs">
+                    <thead>
+                      <tr class="text-left text-[#1D5D69] dark:text-slate-400">
+                        <th class="py-2 pr-3 font-semibold">Cuota</th>
+                        <th class="py-2 pr-3 font-semibold">Vencimiento</th>
+                        <th class="py-2 pr-3 font-semibold">Monto</th>
+                        <th class="py-2 pr-3 font-semibold">Abonado</th>
+                        <th class="py-2 pr-3 font-semibold">Saldo</th>
+                        <th class="py-2 font-semibold">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${planInstallments.map(item => {
+            const badge = getInstallmentBadge(item);
+            const scheduled = roundMoney(item.monto_programado || 0);
+            const paid = roundMoney(item.monto_pagado || 0);
+            const pending = roundMoney(item.saldo_pendiente != null ? item.saldo_pendiente : (scheduled - paid));
+            return `
+                          <tr class="border-t border-[#8BCFDD]/20 dark:border-slate-700">
+                            <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${item.es_anticipo ? 'Anticipo' : `#${item.numero}`}</td>
+                            <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${formatDateDisplay(item.fecha_vencimiento)}</td>
+                            <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${formatCurrency(scheduled)}</td>
+                            <td class="py-2 pr-3 text-emerald-600 dark:text-emerald-400">${formatCurrency(paid)}</td>
+                            <td class="py-2 pr-3 ${pending > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatCurrency(pending)}</td>
+                            <td class="py-2">
+                              <span class="px-2 py-1 rounded-full text-[11px] font-semibold ${badge.className}">
+                                ${badge.label}
+                              </span>
+                            </td>
+                          </tr>
+                        `;
+          }).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              ` : `
+                <p class="text-xs text-[#0F2532]/70 dark:text-slate-300 mt-3">No hay cuotas programadas para este plan.</p>
+              `}
+            </div>
+
+            ${target ? `
+              <div class="bg-[#0F2532]/5 dark:bg-slate-800/40 rounded-lg p-3 border border-[#8BCFDD]/20 dark:border-slate-700 mb-4">
+                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400 mb-1">Pieza objetivo</p>
+                <p class="text-sm font-semibold text-[#0F2532] dark:text-slate-100">${escapeHtml(target.title)}</p>
+                <p class="text-sm text-[#0F2532]/70 dark:text-slate-300">${escapeHtml(target.detail)}</p>
+              </div>
+            ` : ''}
+
+            ${p.notas ? `
+              <div class="bg-[#8BCFDD]/10 rounded-lg p-3 border border-[#8BCFDD]/20 mb-4">
+                <p class="text-xs font-semibold text-[#1D5D69] mb-1">Notas</p>
+                <p class="text-sm text-[#0F2532]">${escapeHtml(p.notas)}</p>
+              </div>
+            ` : ''}
+
+            <div class="flex justify-end gap-2 pt-3 border-t border-[#8BCFDD]/20">
+              <button class="px-4 py-2 rounded-lg bg-green-500/20 text-green-600 text-sm font-semibold hover:bg-green-500/30 transition"
+                onclick="changeEstado(${p.id}, 'completado')">
+                ✓ Completar
+              </button>
+            </div>
           </div>
-          <span class="px-3 py-1 rounded-full text-xs font-semibold ${p.estado === 'pendiente'
-          ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-        }">${p.estado === 'pendiente' ? 'Pendiente' : 'En Progreso'}</span>
         </div>
-        
-        <!-- Desglose de Costos -->
-        <div class="bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-xl p-4 border border-[#8BCFDD]/20 dark:border-slate-700">
-          <p class="text-xs font-semibold uppercase tracking-[0.1em] text-[#1D5D69] dark:text-slate-400 mb-3">Desglose de Costos</p>
-          <div class="grid grid-cols-3 gap-4 text-sm mb-3">
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Base</p>
-              <p class="font-mono font-semibold text-[#0F2532] dark:text-slate-100">$${costoBase.toFixed(2)}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Medicina</p>
-              <p class="font-mono font-semibold text-[#0F2532] dark:text-slate-100">$${costoMedicina.toFixed(2)}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400">Miscelánea</p>
-              <p class="font-mono font-semibold text-[#0F2532] dark:text-slate-100">$${costoMiscelanea.toFixed(2)}</p>
-            </div>
-          </div>
-          <div class="pt-3 border-t border-[#8BCFDD]/20 dark:border-slate-700">
-            <div class="flex justify-between items-center">
-              <p class="text-sm font-semibold text-[#1D5D69] dark:text-slate-300">Total Estimado</p>
-              <p class="text-xl font-bold text-[#4EABBE] dark:text-[#8BCFDD]">$${costoTotal.toFixed(2)}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Especialista</p>
-            <p class="text-[#0F2532] dark:text-slate-100">${p.especialista_asignado || 'Sin asignar'}</p>
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Duración Estimada</p>
-            <p class="text-[#0F2532] dark:text-slate-100">${p.duracion_estimada || 30} minutos</p>
-          </div>
-        </div>
-        
-        ${p.notas ? `
-          <div class="bg-[#8BCFDD]/10 dark:bg-slate-800/30 rounded-lg p-3 border border-[#8BCFDD]/20 dark:border-slate-700">
-            <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400 mb-1">Notas del Plan</p>
-            <p class="text-sm text-[#0F2532] dark:text-slate-200">${p.notas}</p>
-          </div>
-        ` : ''}
-        
-        <div class="flex justify-end gap-2 pt-3 border-t border-[#8BCFDD]/20 dark:border-slate-700">
-          <button onclick="changeEstado(${p.id}, 'completado')" class="px-4 py-2 rounded-lg bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 text-sm font-semibold transition">
-            ✓ Completar
-          </button>
-        </div>
-      </div>
-    `}).join('');
+      `;
+    });
+
+    listDiv.innerHTML = htmlContent;
+
+    // Bind sliders DESPUÉS de que el HTML esté en el DOM
+    setTimeout(() => {
+      document.querySelectorAll('.progress-slider').forEach(slider => {
+        slider.addEventListener('input', async (e) => {
+          const planId = parseInt(e.target.getAttribute('data-plan-id'), 10);
+          const nuevoProgreso = parseInt(e.target.value, 10);
+          await updateProgressToDb(planId, nuevoProgreso);
+          await loadPlanesPendientes();
+        });
+      });
+    }, 100);
+
   } catch (e) {
     console.error('Error cargando planes:', e);
     showToast('Error cargando planes: ' + e.message, 'error');
@@ -316,28 +1197,65 @@ async function loadPlanesPendientes() {
 }
 
 // Abrir modal para nuevo plan
-function openNewPlanModal() {
+async function openNewPlanModal() {
   currentEditingPlanId = null;
   document.getElementById('plan-id').value = '';
   document.getElementById('form-plan').reset();
   document.getElementById('modal-plan-subtitle').textContent = 'Seleccionar';
   document.getElementById('tratamiento-info').classList.add('hidden');
-  loadTratamientosCatalogo();
+  document.getElementById('plan-descuento-tipo').value = 'ninguno';
+  document.getElementById('plan-descuento-valor').value = '0';
+  document.getElementById('plan-impuesto-tipo').value = 'ninguno';
+  document.getElementById('plan-impuesto-valor').value = '0';
+  document.getElementById('plan-financiar').checked = false;
+  document.getElementById('plan-anticipo').value = '0';
+  document.getElementById('plan-numero-cuotas').value = '1';
+  document.getElementById('plan-frecuencia').value = 'mensual';
+  document.getElementById('plan-interes').value = '0';
+  document.getElementById('plan-primer-vencimiento').value = '';
+  updateFinancingVisibility();
+  recalculateFinancialPreview();
+  clearPlanTargetSelection({ rerender: false });
+  renderCommercialVersionHistory(null);
+  await loadTratamientosCatalogo();
   document.getElementById('modal-plan').classList.remove('hidden');
 }
 
 // Editar plan existente
 async function editPlan(planId) {
   try {
-    const plan = await dbGet('SELECT * FROM planes_tratamiento WHERE id = ?', [planId]);
+    const financeApi = getFinanceApi();
+    const plan = financeApi
+      ? await financeApi.getTreatmentPlanDetail(planId)
+      : await dbGet('SELECT * FROM planes_tratamiento WHERE id = ?', [planId]);
     if (!plan) return showToast('Plan no encontrado', 'error');
 
     currentEditingPlanId = planId;
+    await loadTratamientosCatalogo();
     document.getElementById('plan-id').value = plan.id;
     document.getElementById('select-tratamiento').value = plan.catalogo_id;
     document.getElementById('select-especialista').value = plan.especialista_asignado || '';
     document.getElementById('plan-notas').value = plan.notas || '';
     document.getElementById('plan-fecha-inicio').value = plan.fecha_inicio || '';
+    document.getElementById('plan-descuento-tipo').value = plan.descuento_tipo || 'ninguno';
+    document.getElementById('plan-descuento-valor').value = plan.descuento_valor || 0;
+    document.getElementById('plan-impuesto-tipo').value = plan.impuesto_tipo || 'ninguno';
+    document.getElementById('plan-impuesto-valor').value = plan.impuesto_valor || 0;
+    setPlanTargetSelection({
+      tooth: plan.diente || null,
+      faces: parsePlanFaces(plan.caras),
+      mode: plan.diente ? (parsePlanFaces(plan.caras).length ? 'face' : 'tooth') : null,
+    }, { rerender: true, syncForm: true });
+
+    const financing = plan.financing || null;
+    document.getElementById('plan-financiar').checked = !!financing;
+    document.getElementById('plan-anticipo').value = financing?.anticipo || 0;
+    document.getElementById('plan-numero-cuotas').value = financing?.numero_cuotas || 1;
+    document.getElementById('plan-frecuencia').value = financing?.frecuencia || 'mensual';
+    document.getElementById('plan-interes').value = financing?.interes_porcentaje || 0;
+    document.getElementById('plan-primer-vencimiento').value = financing?.fecha_primer_vencimiento || '';
+    updateFinancingVisibility();
+    renderCommercialVersionHistory(plan);
 
     document.getElementById('modal-plan-subtitle').textContent = 'Editar';
     await onTratamientoSelected({ target: { value: plan.catalogo_id } });
@@ -360,14 +1278,19 @@ async function changeEstado(planId, nuevoEstado) {
     if (!plan) return showToast('Plan no encontrado', 'error');
 
     if (nuevoEstado === 'completado') {
-      // Crear registro en historial
-      await dbRun(`
-        INSERT INTO planes_tratamiento_historial 
-        (plan_id, paciente_id, catalogo_id, especialista_ejecuto, costo_base, costo_medicina, costo_miscelanea, costo_total, fecha_ejecucion)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `, [planId, plan.paciente_id, plan.catalogo_id, plan.especialista_asignado, plan.costo_total, 0, 0, plan.costo_total]);
+      // Intentar crear registro en historial, pero no fallar si hay un error
+      try {
+        await dbRun(`
+          INSERT INTO planes_tratamiento_historial
+          (plan_id, paciente_id, catalogo_id, especialista_ejecuto, costo_total, fecha_ejecucion)
+          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `, [planId, plan.paciente_id, plan.catalogo_id, plan.especialista_asignado || null, plan.total_final || plan.costo_total]);
+      } catch (historialError) {
+        // Log del error pero continuar
+        console.warn('No se pudo guardar en historial (puede que falten columnas):', historialError);
+      }
 
-      // Actualizar estado a completado
+      // Actualizar estado a completado (esto sí es crítico)
       await dbRun('UPDATE planes_tratamiento SET estado = ? WHERE id = ?', ['completado', planId]);
       showToast('Plan marcado como completado', 'success');
     } else {
@@ -387,6 +1310,21 @@ async function deletePlan(planId) {
   if (!confirm('¿Estás seguro de eliminar este plan de tratamiento?')) return;
 
   try {
+    const pagosRelacionados = await dbGet(
+      `SELECT COUNT(*) AS total
+       FROM pagos
+       WHERE plan_tratamiento_id = ?
+         AND COALESCE(estado, 'aplicado') = 'aplicado'`,
+      [planId]
+    );
+    if (Number(pagosRelacionados?.total || 0) > 0) {
+      showToast('No se puede eliminar un plan con pagos aplicados. Cancela o devuelve los pagos primero.', 'error');
+      return;
+    }
+
+    await dbRun('DELETE FROM pagos_aplicaciones WHERE cuota_financiamiento_id IN (SELECT id FROM cuotas_financiamiento WHERE plan_tratamiento_id = ?)', [planId]);
+    await dbRun('DELETE FROM cuotas_financiamiento WHERE plan_tratamiento_id = ?', [planId]);
+    await dbRun('DELETE FROM planes_financiamiento WHERE plan_tratamiento_id = ?', [planId]);
     await dbRun('DELETE FROM planes_tratamiento WHERE id = ?', [planId]);
     showToast('Plan eliminado exitosamente', 'success');
     await loadPlanesPendientes();
@@ -406,39 +1344,141 @@ async function savePlan(e) {
   const especialista = form.especialista_asignado.value;
   const notas = form.notas.value.trim();
   const fechaInicio = form.fecha_inicio.value;
+  const diente = String(form.diente?.value || '').trim() || null;
+  const caras = parsePlanFaces(form.caras?.value || '');
+  const descuentoTipo = document.getElementById('plan-descuento-tipo').value;
+  const descuentoValor = parseFloat(document.getElementById('plan-descuento-valor').value || 0);
+  const impuestoTipo = document.getElementById('plan-impuesto-tipo').value;
+  const impuestoValor = parseFloat(document.getElementById('plan-impuesto-valor').value || 0);
+  const versionReason = document.getElementById('plan-version-reason')?.value?.trim() || '';
+  const financing = getFinancingPayload(fechaInicio);
+  const financeApi = getFinanceApi();
 
   if (!catalogoId) {
     showToast('Debe seleccionar un tratamiento', 'error');
     return;
   }
 
+  if (financing.enabled) {
+    if (!Number.isFinite(financing.downPayment) || financing.downPayment < 0) {
+      showToast('El anticipo es invalido', 'error');
+      return;
+    }
+    if (!Number.isInteger(financing.installmentCount) || financing.installmentCount < 1) {
+      showToast('El numero de cuotas debe ser mayor a 0', 'error');
+      return;
+    }
+    if (!Number.isFinite(financing.interestPercent) || financing.interestPercent < 0) {
+      showToast('El interes es invalido', 'error');
+      return;
+    }
+  }
+
+  if (!Number.isFinite(impuestoValor) || impuestoValor < 0) {
+    showToast('El impuesto es invalido', 'error');
+    return;
+  }
+
+  if (financeApi?.saveTreatmentPlan) {
+    try {
+      await financeApi.saveTreatmentPlan({
+        id: planId || null,
+        paciente_id: currentPacienteId,
+        catalogo_id: Number(catalogoId),
+        especialista_asignado: especialista,
+        notas,
+        fecha_inicio: fechaInicio || null,
+        diente,
+        caras,
+        descuento_tipo: descuentoTipo,
+        descuento_valor: descuentoValor,
+        impuesto_tipo: impuestoTipo,
+        impuesto_valor: impuestoValor,
+        version_reason: versionReason || undefined,
+        financing,
+        usuario_id: getCurrentUserId(),
+      });
+
+      showToast(planId ? 'Plan actualizado exitosamente' : 'Plan creado exitosamente', 'success');
+      document.getElementById('modal-plan').classList.add('hidden');
+      form.reset();
+      updateFinancingVisibility();
+      clearPlanTargetSelection();
+      planSchemaColumns = null;
+      await loadPlanesPendientes();
+      return;
+    } catch (e) {
+      console.error('Error guardando plan con finanzas:', e);
+      showToast('Error: ' + e.message, 'error');
+      return;
+    }
+  }
+
   try {
+    const targetColumnsAvailable = await hasPlanTargetColumns();
     // Obtener costo total del catálogo
     const tratamiento = await dbGet('SELECT costo_base, costo_medicina_estandar, costo_miscelanea_estandar FROM tratamientos_catalogo WHERE id = ?', [catalogoId]);
     if (!tratamiento) return showToast('Tratamiento no válido', 'error');
 
     const costoTotal = (parseFloat(tratamiento.costo_base || 0) + parseFloat(tratamiento.costo_medicina_estandar || 0) + parseFloat(tratamiento.costo_miscelanea_estandar || 0));
+    const descuentoMonto = descuentoTipo === 'porcentaje'
+      ? roundMoney((costoTotal * Math.max(0, descuentoValor)) / 100)
+      : descuentoTipo === 'monto_fijo'
+        ? roundMoney(Math.max(0, descuentoValor))
+        : 0;
+    const subtotalNeto = roundMoney(Math.max(0, costoTotal - Math.min(descuentoMonto, costoTotal)));
+    const impuestoMonto = impuestoTipo === 'porcentaje'
+      ? roundMoney((subtotalNeto * Math.max(0, impuestoValor)) / 100)
+      : impuestoTipo === 'monto_fijo'
+        ? roundMoney(Math.max(0, impuestoValor))
+        : 0;
+    const totalFinal = roundMoney(subtotalNeto + impuestoMonto);
 
     if (planId) {
       // Actualizar
-      await dbRun(`
-        UPDATE planes_tratamiento 
-        SET catalogo_id = ?, especialista_asignado = ?, notas = ?, fecha_inicio = ?, costo_total = ?
-        WHERE id = ?
-      `, [catalogoId, especialista, notas, fechaInicio, costoTotal, planId]);
+      if (targetColumnsAvailable) {
+        await dbRun(`
+          UPDATE planes_tratamiento 
+          SET catalogo_id = ?, especialista_asignado = ?, notas = ?, fecha_inicio = ?, costo_total = ?,
+              descuento_tipo = ?, descuento_valor = ?, descuento_monto = ?, subtotal_neto = ?,
+              impuesto_tipo = ?, impuesto_valor = ?, impuesto_monto = ?, total_final = ?,
+              version_comercial = COALESCE(version_comercial, 1) + 1, version_actualizada_en = CURRENT_TIMESTAMP,
+              diente = ?, caras = ?
+          WHERE id = ?
+        `, [catalogoId, especialista, notas, fechaInicio, costoTotal, descuentoTipo, descuentoValor, descuentoMonto, subtotalNeto, impuestoTipo, impuestoValor, impuestoMonto, totalFinal, diente, serializePlanFaces(caras), planId]);
+      } else {
+        await dbRun(`
+          UPDATE planes_tratamiento 
+          SET catalogo_id = ?, especialista_asignado = ?, notas = ?, fecha_inicio = ?, costo_total = ?,
+              descuento_tipo = ?, descuento_valor = ?, descuento_monto = ?, subtotal_neto = ?,
+              impuesto_tipo = ?, impuesto_valor = ?, impuesto_monto = ?, total_final = ?,
+              version_comercial = COALESCE(version_comercial, 1) + 1, version_actualizada_en = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `, [catalogoId, especialista, notas, fechaInicio, costoTotal, descuentoTipo, descuentoValor, descuentoMonto, subtotalNeto, impuestoTipo, impuestoValor, impuestoMonto, totalFinal, planId]);
+      }
       showToast('Plan actualizado exitosamente', 'success');
     } else {
       // Crear nuevo
-      await dbRun(`
-        INSERT INTO planes_tratamiento 
-        (paciente_id, catalogo_id, especialista_asignado, notas, fecha_inicio, costo_total, estado)
-        VALUES (?, ?, ?, ?, ?, ?, 'pendiente')
-      `, [currentPacienteId, catalogoId, especialista, notas, fechaInicio, costoTotal]);
+      if (targetColumnsAvailable) {
+        await dbRun(`
+          INSERT INTO planes_tratamiento 
+          (paciente_id, catalogo_id, especialista_asignado, notas, fecha_inicio, costo_total, descuento_tipo, descuento_valor, descuento_monto, subtotal_neto, impuesto_tipo, impuesto_valor, impuesto_monto, total_final, version_comercial, version_actualizada_en, diente, caras, estado)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, ?, ?, 'pendiente')
+        `, [currentPacienteId, catalogoId, especialista, notas, fechaInicio, costoTotal, descuentoTipo, descuentoValor, descuentoMonto, subtotalNeto, impuestoTipo, impuestoValor, impuestoMonto, totalFinal, diente, serializePlanFaces(caras)]);
+      } else {
+        await dbRun(`
+          INSERT INTO planes_tratamiento 
+          (paciente_id, catalogo_id, especialista_asignado, notas, fecha_inicio, costo_total, descuento_tipo, descuento_valor, descuento_monto, subtotal_neto, impuesto_tipo, impuesto_valor, impuesto_monto, total_final, version_comercial, version_actualizada_en, estado)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP, 'pendiente')
+        `, [currentPacienteId, catalogoId, especialista, notas, fechaInicio, costoTotal, descuentoTipo, descuentoValor, descuentoMonto, subtotalNeto, impuestoTipo, impuestoValor, impuestoMonto, totalFinal]);
+      }
       showToast('Plan creado exitosamente', 'success');
     }
 
     document.getElementById('modal-plan').classList.add('hidden');
     form.reset();
+    clearPlanTargetSelection();
+    planSchemaColumns = null;
     await loadPlanesPendientes();
   } catch (e) {
     console.error('Error guardando plan:', e);
@@ -450,23 +1490,563 @@ async function savePlan(e) {
 function closeModalPlan() {
   document.getElementById('modal-plan').classList.add('hidden');
   document.getElementById('form-plan').reset();
+  updateFinancingVisibility();
   currentEditingPlanId = null;
+  clearPlanTargetSelection();
+  renderCommercialVersionHistory(null);
+}
+
+// ===== MINI ODONTOGRAMA =====
+// Variables locales para el odontograma mini
+let odontoData = {
+  teethStatus: {},
+  diagnosticsState: {},
+  selectedTooth: null,
+  selectedFaces: [],
+  selectionMode: null,
+};
+
+const { createToothSVG: basicCreateToothSVG, adultTeeth, childTeeth, arcOffset, BRAND, hexToRgba, renderSurfaceMarks } = window.OdontoRender;
+
+function getPlanSelectionState() {
+  return {
+    tooth: odontoData.selectedTooth || null,
+    faces: parsePlanFaces(odontoData.selectedFaces),
+    mode: odontoData.selectionMode || null,
+  };
+}
+
+function syncPlanTargetFields() {
+  const selection = getPlanSelectionState();
+  const toothInput = document.getElementById('plan-diente');
+  const facesInput = document.getElementById('plan-caras');
+  const summary = document.getElementById('plan-target-summary');
+  const title = document.getElementById('plan-target-title');
+  const detail = document.getElementById('plan-target-detail');
+
+  if (toothInput) toothInput.value = selection.tooth || '';
+  if (facesInput) facesInput.value = selection.mode === 'face' ? serializePlanFaces(selection.faces) : '';
+
+  if (!summary || !title || !detail) return;
+  if (!selection.tooth) {
+    summary.classList.add('hidden');
+    title.textContent = '';
+    detail.textContent = '';
+    return;
+  }
+
+  summary.classList.remove('hidden');
+  title.textContent = `Pieza ${selection.tooth}`;
+  detail.textContent = selection.mode === 'face' && selection.faces.length
+    ? selection.faces.map(faceLabel).join(', ')
+    : 'Pieza completa';
+}
+
+function updateMiniSelectionHint() {
+  const selection = getPlanSelectionState();
+  const hint = document.getElementById('mini-odonto-selection');
+  if (!hint) return;
+
+  if (!selection.tooth) {
+    hint.textContent = 'Selecciona una cara desde el círculo o toda la pieza desde el diente para crear el plan.';
+    return;
+  }
+
+  hint.textContent = selection.mode === 'face' && selection.faces.length
+    ? `Seleccion actual: pieza ${selection.tooth} - ${selection.faces.map(faceLabel).join(', ')}.`
+    : `Seleccion actual: pieza ${selection.tooth} completa.`;
+}
+
+function setPlanTargetSelection(selection = {}, options = {}) {
+  const { rerender = true, syncForm = true } = options;
+  const tooth = String(selection.tooth || '').trim() || null;
+  const faces = parsePlanFaces(selection.faces);
+  const mode = tooth ? (selection.mode || (faces.length ? 'face' : 'tooth')) : null;
+
+  odontoData.selectedTooth = tooth;
+  odontoData.selectedFaces = mode === 'face' ? faces : [];
+  odontoData.selectionMode = tooth ? mode : null;
+
+  if (syncForm) syncPlanTargetFields();
+  updateMiniSelectionHint();
+  if (rerender) renderMiniOdontograma();
+}
+
+function clearPlanTargetSelection(options = {}) {
+  setPlanTargetSelection({ tooth: null, faces: [], mode: null }, options);
+}
+
+function getDiagnosesForSelection(selection = {}) {
+  const tooth = String(selection.tooth || '').trim();
+  if (!tooth) return [];
+
+  const dx = odontoData.diagnosticsState[tooth] || odontoData.diagnosticsState[Number(tooth)] || null;
+  if (!dx) return [];
+
+  if (selection.mode === 'face') {
+    return parsePlanFaces(selection.faces)
+      .map(face => dx.faces?.[face])
+      .filter(Boolean);
+  }
+
+  const toothDx = dx.tooth ? [dx.tooth] : [];
+  const faceDx = Object.values(dx.faces || {});
+  return [...toothDx, ...faceDx].filter(Boolean);
+}
+
+function buildPlanNotesFromSelection(selection = {}) {
+  const tooth = String(selection.tooth || '').trim();
+  if (!tooth) return '';
+
+  const diagnoses = getDiagnosesForSelection(selection);
+  const uniqueNames = [...new Set(diagnoses.map(item => item.name).filter(Boolean))];
+  let notes = `Tratamiento para pieza ${tooth}.`;
+
+  if (selection.mode === 'face' && parsePlanFaces(selection.faces).length) {
+    notes += ` Caras afectadas: ${parsePlanFaces(selection.faces).map(faceLabel).join(', ')}.`;
+  } else {
+    notes += ' Zona: pieza completa.';
+  }
+
+  if (uniqueNames.length) {
+    notes += ` Diagnostico: ${uniqueNames.join(', ')}.`;
+  }
+
+  return notes;
+}
+
+function suggestTreatmentFromSelection(selection = {}) {
+  const diagnoses = getDiagnosesForSelection(selection);
+  const ids = new Set(diagnoses.map(item => item.id));
+  const select = document.getElementById('select-tratamiento');
+  if (!select) return;
+
+  const options = Array.from(select.options);
+  let match = null;
+
+  if (ids.has('pulpar') || ids.has('endo')) {
+    match = options.find(option => option.text.toLowerCase().includes('endodon'));
+  } else if (ids.has('absent')) {
+    match = options.find(option => {
+      const text = option.text.toLowerCase();
+      return text.includes('implante') || text.includes('puente');
+    });
+  } else if (ids.has('crown-bad') || ids.has('crown-ok')) {
+    match = options.find(option => option.text.toLowerCase().includes('corona'));
+  } else if (ids.has('fractura') || ids.has('caries-dx') || ids.has('rest-bad')) {
+    match = options.find(option => {
+      const text = option.text.toLowerCase();
+      return text.includes('restauraci') || text.includes('obturaci');
+    });
+  }
+
+  if (!match) return;
+  select.value = match.value;
+  select.dispatchEvent(new Event('change'));
+}
+
+function createPlanToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMissing) {
+  const toothImageUrl = getPlanToothImageUrl(num);
+  if (!toothImageUrl) {
+    return `
+      <div class="tooth-visual">
+        <div class="tooth-image-stage tooth-svg-stage">
+          ${renderPlanToothDiagnosisMarkers(num)}
+          ${basicCreateToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMissing)}
+        </div>
+      </div>
+    `;
+  }
+
+  const w = 80;
+  const h = 104;
+  const surfaceColor = treatmentColor || '#EF4444';
+  const overlays = !isMissing && surfaces ? renderSurfaceMarks(surfaces, isUpper, surfaceColor, w, h) : '';
+  const missingMark = isMissing ? `
+    <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+    <line x1="${w * 0.8}" y1="${h * 0.2}" x2="${w * 0.2}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+  ` : '';
+  const baseOpacity = isMissing ? 0.45 : 1;
+
+  return `
+    <div class="tooth-visual tooth-visual-image">
+      <div class="tooth-image-stage">
+        <img src="${escapeAttr(toothImageUrl)}" alt="Diente ${num}"
+          class="tooth-illustration"
+          style="opacity:${baseOpacity};" draggable="false" />
+        ${renderPlanToothDiagnosisMarkers(num)}
+        <svg viewBox="0 0 ${w} ${h}" class="absolute inset-0 w-full h-full pointer-events-none">
+          ${overlays}
+          ${missingMark}
+        </svg>
+      </div>
+    </div>
+  `;
+}
+
+function renderMiniGeoCircle(num, dxState) {
+  const state = dxState || {};
+  const faces = state.faces || {};
+  const toothClass = state.tooth?.cssClass || '';
+  const isAbsent = state.tooth?.id === 'absent';
+  const entries = getToothDiagnostics(num);
+  const selection = getPlanSelectionState();
+  const isSelectedTooth = selection.tooth === String(num) && selection.mode === 'tooth';
+  const selectedFaces = selection.tooth === String(num) && selection.mode === 'face'
+    ? new Set(selection.faces)
+    : new Set();
+  const faceCls = (id) => {
+    const dx = faces[id];
+    const classes = [];
+    if (dx?.id) {
+      classes.push(dx.cssClass || '', `dxfx-${dx.id}`);
+    }
+    if (selectedFaces.has(id)) classes.push('geo-sector-target');
+    return classes.length ? ` ${classes.join(' ')}` : '';
+  };
+  const circleClasses = ['geo-circle', toothClass || ''];
+  if (state.tooth?.id) circleClasses.push(`dxfx-${state.tooth.id}`);
+  if (isSelectedTooth) circleClasses.push('geo-circle-selected');
+  const countBadge = entries.length
+    ? `<span class="geo-dx-count" style="${buildDxStyle(entries[0].color)}">${entries.length}</span>`
+    : '';
+
+  return `
+    <div class="geo-mini geo-mini-selectable ${toothClass || ''}" title="${escapeAttr(getDiagnosisSummaryTitle(num))}">
+      ${countBadge}
+      <svg viewBox="0 0 100 100" class="geo-svg">
+        <circle cx="50" cy="50" r="48" class="${circleClasses.filter(Boolean).join(' ')}" />
+
+        <path d="M15,15 L85,85 M85,15 L15,85" stroke="#0f172a" stroke-width="4" class="geo-cross ${isAbsent ? '' : 'hidden'}" />
+
+        <path d="M15,15 L85,15 L65,35 L35,35 Z" class="geo-sector${faceCls('vestibular')}"
+          data-plan-face="vestibular" data-tooth="${num}" />
+        <path d="M15,85 L85,85 L65,65 L35,65 Z" class="geo-sector${faceCls('lingual')}"
+          data-plan-face="lingual" data-tooth="${num}" />
+        <path d="M15,15 L15,85 L35,65 L35,35 Z" class="geo-sector${faceCls('mesial')}"
+          data-plan-face="mesial" data-tooth="${num}" />
+        <path d="M85,15 L85,85 L65,65 L65,35 Z" class="geo-sector${faceCls('distal')}"
+          data-plan-face="distal" data-tooth="${num}" />
+        <rect x="35" y="35" width="30" height="30" class="geo-sector${faceCls('oclusal')}"
+          data-plan-face="oclusal" data-tooth="${num}" />
+      </svg>
+    </div>
+  `;
+}
+
+// Cargar estado del odontograma (diagnósticos y tratamientos previos)
+async function loadOdontogramData() {
+  if (!currentPacienteId) return;
+  const loading = document.getElementById('odonto-loading');
+  if (loading) loading.classList.remove('hidden');
+
+  try {
+    await loadPlanToothImagesFromPeriodontograma();
+    const rows = await dbAll('SELECT * FROM tratamientos WHERE paciente_id = ? AND diente IS NOT NULL', [currentPacienteId]);
+
+    const status = {};
+    const dxState = {};
+
+    rows.forEach(row => {
+      const toothNum = parseInt(row.diente, 10);
+      if (isNaN(toothNum)) return;
+
+      // 1. Diagnósticos
+      if (row.notas && row.notas.startsWith("DX:")) {
+        try {
+          const json = JSON.parse(row.notas.substring(3));
+
+          // Helper local similar a ensureDxState
+          if (!dxState[toothNum]) dxState[toothNum] = { faces: {}, tooth: null };
+
+          // Mapear diagnóstico simple
+          // Nota: No tenemos acceso directo a DIAGNOSES completo aquí salvo si lo exportamos en odonto-render.
+          // Pero para visualizar el círculo o color, podemos inferir o usar CSS si 'odonto-render' tuviera todo.
+          // Por simplicidad, asumimos que 'odonto-render' solo pinta SVG y clases CSS básicas.
+          // Usaremos la clase CSS guardada en el JSON si existe, o defaults.
+
+          const spec = findDiagnosisSpec(json.dxId);
+          const diagData = {
+            id: json.dxId,
+            name: spec?.name || json.dxId,
+            cssClass: spec?.cssClass || json.cssClass || 'state-caries',
+            color: spec?.color || '#ef4444',
+            status: spec?.status || 'Pendiente',
+          };
+
+          if (json.face) {
+            dxState[toothNum].faces[json.face] = diagData;
+          } else {
+            dxState[toothNum].tooth = diagData;
+          }
+        } catch (e) { }
+        return;
+      }
+
+      // 2. Tratamientos realizados (para pintar diente completo)
+      // Simplificado: si tiene tratamiento, lo marcamos realizado.
+      const proc = (row.procedimiento || "").toLowerCase();
+      let color = null;
+      let treatId = null;
+
+      // Colores hardcodeados o reusar logica similar a odontograma.js si se quiere exactitud
+      if (proc.includes("caries")) { color = "#EF4444"; treatId = "caries"; }
+      else if (proc.includes("restauracion")) { color = "#10B981"; treatId = "restauracion"; }
+      else if (proc.includes("endodoncia")) { color = "#A855F7"; treatId = "endodoncia"; }
+      else if (proc.includes("ausente")) { color = "#6B7280"; treatId = "ausente"; }
+      else if (proc.includes("corona")) { color = "#FBBF24"; treatId = "corona"; }
+
+      if (treatId) {
+        status[toothNum] = { treatment: treatId, color };
+      }
+    });
+
+    odontoData.teethStatus = status;
+    odontoData.diagnosticsState = dxState;
+    renderMiniOdontograma();
+    updateMiniSelectionHint();
+
+  } catch (e) {
+    console.error("Error loading odonto data:", e);
+    renderMiniOdontograma();
+    updateMiniSelectionHint();
+  } finally {
+    if (loading) loading.classList.add('hidden');
+  }
+}
+
+// Renderizar el mini odontograma
+function renderMiniOdontograma() {
+  const container = document.getElementById('mini-odonto-content');
+  if (!container) return;
+  const teethSet = showAdultTeeth ? adultTeeth : childTeeth;
+
+  const renderRow = (teeth, isUpper) => {
+    return teeth.map((num, i) => {
+      const offset = arcOffset(i, teeth.length, isUpper, showAdultTeeth);
+      return renderMiniTooth(num, isUpper, offset);
+    }).join('');
+  };
+
+  container.innerHTML = `
+    <div class="mb-10 w-full">
+      <div class="text-center mb-4">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-extrabold text-white shadow-lg bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD]">
+          <span class="opacity-95">Arcada superior</span>
+        </span>
+      </div>
+      <div class="odonto-row odonto-row-top">
+        ${renderRow(teethSet.superior, true)}
+      </div>
+    </div>
+    <div class="relative my-8">
+      <div class="h-px bg-gradient-to-r from-transparent via-[#8BCFDD]/30 dark:via-slate-700 to-transparent"></div>
+    </div>
+    <div class="w-full">
+      <div class="odonto-row odonto-row-bottom mb-4">
+        ${renderRow(teethSet.inferior, false)}
+      </div>
+      <div class="text-center">
+        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-extrabold text-white shadow-lg bg-gradient-to-r from-[#4EABBE] to-[#8BCFDD]">
+          <span class="opacity-95">Arcada inferior</span>
+        </span>
+      </div>
+    </div>
+  `;
+
+  container.querySelectorAll('.mini-tooth-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const num = parseInt(btn.dataset.tooth, 10);
+      handleToothClick(num);
+    });
+  });
+
+  container.querySelectorAll('[data-plan-face]').forEach(faceEl => {
+    faceEl.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const num = parseInt(faceEl.getAttribute('data-tooth'), 10);
+      const face = faceEl.getAttribute('data-plan-face');
+      handleFaceClick(num, face);
+    });
+  });
+}
+
+
+function renderMiniTooth(num, isUpper, offset) {
+  const status = odontoData.teethStatus[num];
+  const dx = odontoData.diagnosticsState[num];
+  const surfaces = status?.surfaces || {};
+  const hasSurfaces = Object.values(surfaces).some(Boolean);
+  const treatment = getPlanTreatmentVisual(status?.treatment, status?.color);
+  const treatColor = treatment?.color || '';
+  const isSelected = String(odontoData.selectedTooth || '') === String(num);
+  const isMissing = status?.treatment === 'ausente' || dx?.tooth?.id === 'absent';
+  const border = isSelected ? BRAND.primary : (treatColor || '#CBD5E1');
+  const shadow = isSelected
+    ? `0 0 0 4px ${BRAND.ring}, 0 16px 32px rgba(15,37,50,.14)`
+    : treatColor
+      ? `0 0 0 2px ${hexToRgba(treatColor, 0.18)}, 0 12px 24px rgba(15,37,50,.12)`
+      : `0 8px 18px rgba(15,37,50,.08)`;
+  const label = treatment?.name || '';
+  const title = escapeAttr(`${getDiagnosisSummaryTitle(num)}${label ? ` | Tratamiento: ${label}` : ''}`);
+  const selectedCls = isSelected ? 'shadow-ring' : '';
+  const svg = createPlanToothSVG(num, !isUpper, isSelected, treatColor, hasSurfaces ? surfaces : null, isMissing);
+  const geoHtml = renderMiniGeoCircle(num, dx);
+  const baseBtn =
+    `tooth-btn rounded-[24px] border-[2.5px] bg-white
+     transition will-change-transform
+     hover:-translate-y-1.5 hover:shadow-[0_18px_40px_rgba(15,37,50,.16)]
+     dark:hover:shadow-[0_18px_40px_rgba(0,0,0,.35)]
+     active:translate-y-0`;
+
+  if (isUpper) {
+    return `
+      <div class="odonto-tooth odonto-tooth-upper flex flex-col items-center gap-3" style="transform: translateY(${offset}px);">
+        ${renderToothDxHud(num, true)}
+        <div class="tooth-number-badge">${num}</div>
+
+        <button class="${baseBtn} ${selectedCls} mini-tooth-btn relative overflow-hidden"
+          style="border-color:${border}; box-shadow:${shadow};"
+          data-tooth="${num}" title="${title}" aria-label="${title}">
+          <div class="tooth-shell">
+            ${svg}
+          </div>
+        </button>
+
+        ${geoHtml}
+        ${renderToothQuickTag(num)}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="odonto-tooth odonto-tooth-lower flex flex-col items-center gap-3" style="transform: translateY(${offset}px);">
+      ${renderToothDxHud(num, false)}
+      ${geoHtml}
+
+      <button class="${baseBtn} ${selectedCls} mini-tooth-btn relative overflow-hidden"
+        style="border-color:${border}; box-shadow:${shadow};"
+        data-tooth="${num}" title="${title}" aria-label="${title}">
+        <div class="tooth-shell">
+          ${svg}
+        </div>
+      </button>
+
+      ${renderToothQuickTag(num)}
+      <div class="tooth-number-badge">${num}</div>
+    </div>
+  `;
+}
+
+function handleToothClick(num) {
+  const dx = odontoData.diagnosticsState[num];
+  const hasDiagnosis = dx && (dx.tooth || (dx.faces && Object.keys(dx.faces).length > 0));
+
+  if (!hasDiagnosis) {
+    showToast("Solo se pueden planificar tratamientos en dientes con diagnóstico.", "error");
+    return;
+  }
+
+  const selection = { tooth: String(num), faces: [], mode: 'tooth' };
+  setPlanTargetSelection(selection);
+  openNewPlanModalWithSelection(selection);
+}
+
+function openNewPlanModalWithTooth(num) {
+  return openNewPlanModalWithSelection({ tooth: String(num), faces: [], mode: 'tooth' });
+
+  // Personalizar modal
+  const form = document.getElementById('form-plan');
+  if (form) {
+    // Buscar si hay diagnósticos para este diente para pre-llenar notas
+    const dx = odontoData.diagnosticsState[num];
+    let notas = `Tratamiento para pieza ${num}.`;
+
+    if (dx) {
+      if (dx.tooth) notas += ` Diagnóstico: ${dx.tooth.id}.`;
+      if (dx.faces) {
+        const faces = Object.keys(dx.faces).join(', ');
+        if (faces) notas += ` Caras afectadas: ${faces}.`;
+      }
+    }
+
+    document.getElementById('plan-notas').value = notas;
+
+    // Sugerir tratamiento basado en Diagnostico?
+    // (Opcional: lógica de mapeo simple)
+    const select = document.getElementById('select-tratamiento');
+    if (select && dx) {
+      // Ejemplo: Si hay caries, sugerir Restauracion si existe en el select
+      const options = Array.from(select.options);
+      if (dx.faces && Object.keys(dx.faces).length > 0) {
+        const rest = options.find(o => o.text.toLowerCase().includes('restauraci'));
+        if (rest) select.value = rest.value;
+      } else if (dx.tooth && dx.tooth.id === 'absent') {
+        const implante = options.find(o => o.text.toLowerCase().includes('implante') || o.text.toLowerCase().includes('puente'));
+        if (implante) select.value = implante.value;
+      }
+
+      // Disparar evento change para actualizar costos
+      if (select.value) {
+        select.dispatchEvent(new Event('change'));
+      }
+    }
+  }
+}
+
+function handleFaceClick(num, face) {
+  const dx = odontoData.diagnosticsState[num];
+  if (!dx?.faces?.[face]) {
+    showToast("Selecciona una cara que tenga un problema diagnosticado.", "error");
+    return;
+  }
+
+  const selection = { tooth: String(num), faces: [face], mode: 'face' };
+  setPlanTargetSelection(selection);
+  openNewPlanModalWithSelection(selection);
+}
+
+async function openNewPlanModalWithSelection(selection) {
+  await openNewPlanModal();
+  setPlanTargetSelection(selection, { rerender: true, syncForm: true });
+
+  const form = document.getElementById('form-plan');
+  if (!form) return;
+
+  document.getElementById('plan-notas').value = buildPlanNotesFromSelection(selection);
+  suggestTreatmentFromSelection(selection);
 }
 
 // Inicializar
 async function init() {
-  currentPacienteId = getQueryParam('id');
+  currentPacienteId = getQueryParam('paciente_id') || getQueryParam('id');
   if (!currentPacienteId) return;
+
+  try {
+    const paciente = await dbGet('SELECT fecha_nacimiento FROM pacientes WHERE id = ?', [currentPacienteId]);
+    const edad = calculateAgeYears(paciente?.fecha_nacimiento);
+    if (edad !== null) showAdultTeeth = edad >= 12;
+  } catch (e) {
+    console.error('Error loading patient age:', e);
+  }
 
   // Setup event listeners
   document.getElementById('add-plan-btn')?.addEventListener('click', openNewPlanModal);
   document.getElementById('close-modal-plan')?.addEventListener('click', closeModalPlan);
   document.getElementById('cancel-plan')?.addEventListener('click', closeModalPlan);
+  document.getElementById('clear-plan-target')?.addEventListener('click', () => clearPlanTargetSelection());
   document.getElementById('form-plan')?.addEventListener('submit', savePlan);
   document.getElementById('select-tratamiento')?.addEventListener('change', onTratamientoSelected);
+  document.getElementById('plan-descuento-tipo')?.addEventListener('change', recalculateFinancialPreview);
+  document.getElementById('plan-descuento-valor')?.addEventListener('input', recalculateFinancialPreview);
+  document.getElementById('plan-impuesto-tipo')?.addEventListener('change', recalculateFinancialPreview);
+  document.getElementById('plan-impuesto-valor')?.addEventListener('input', recalculateFinancialPreview);
+  document.getElementById('plan-financiar')?.addEventListener('change', updateFinancingVisibility);
+  document.getElementById('plan-anticipo')?.addEventListener('input', recalculateFinancialPreview);
 
   // Load initial data
   await loadPlanesPendientes();
+  await loadOdontogramData();
 }
 
 // Make functions globally available

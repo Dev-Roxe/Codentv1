@@ -82,6 +82,36 @@ db.serialize(() => {
         fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    db.run(`CREATE TABLE IF NOT EXISTS especialistas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        especialidad TEXT NOT NULL,
+        telefono TEXT,
+        email TEXT,
+        activo INTEGER DEFAULT 1,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Asegurar columnas adicionales en `especialistas`
+    db.all("PRAGMA table_info(especialistas)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla especialistas', err);
+        const cols = (rows || []).map(r => r.name);
+        const toAdd = [];
+        if (!cols.includes('telefono')) toAdd.push("telefono TEXT");
+        if (!cols.includes('email')) toAdd.push("email TEXT");
+        if (!cols.includes('activo')) toAdd.push("activo INTEGER DEFAULT 1");
+        if (!cols.includes('fecha_creacion')) toAdd.push("fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+        toAdd.forEach(colDef => {
+            try {
+                db.run(`ALTER TABLE especialistas ADD COLUMN ${colDef}`);
+                console.log('Added column to especialistas:', colDef);
+            } catch (e) {
+                console.warn('Could not add column to especialistas', colDef, e && e.message);
+            }
+        });
+    });
+
     // Asegurar columnas adicionales en `pacientes`
     db.all("PRAGMA table_info(pacientes)", (err, rows) => {
         if (err) return console.error('Error leyendo info de tabla pacientes', err);
@@ -125,7 +155,9 @@ db.serialize(() => {
         estado TEXT DEFAULT 'pendiente',
         monto REAL DEFAULT 0.0,
         dentista_id INTEGER REFERENCES usuarios(id),
-        FOREIGN KEY(paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
+        especialista_id INTEGER REFERENCES especialistas(id),
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE,
+        FOREIGN KEY(especialista_id) REFERENCES especialistas(id)
     )`);
 
     // Agregar columna dentista_id a citas si no existe
@@ -138,6 +170,14 @@ db.serialize(() => {
                 console.log('Added column to citas: dentista_id');
             } catch (e) {
                 console.warn('Could not add column dentista_id to citas', e && e.message);
+            }
+        }
+        if (!cols.includes('especialista_id')) {
+            try {
+                db.run(`ALTER TABLE citas ADD COLUMN especialista_id INTEGER REFERENCES especialistas(id)`);
+                console.log('Added column to citas: especialista_id');
+            } catch (e) {
+                console.warn('Could not add column especialista_id to citas', e && e.message);
             }
         }
         if (!cols.includes('monto')) {
@@ -190,9 +230,34 @@ db.serialize(() => {
         concepto TEXT,
         fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
         usuario_id INTEGER,
+        pago_id INTEGER REFERENCES pagos(id),
+        paciente_id INTEGER REFERENCES pacientes(id),
+        metodo TEXT,
+        origen TEXT DEFAULT 'manual',
         FOREIGN KEY(caja_id) REFERENCES cajas(id) ON DELETE CASCADE,
         FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
     )`);
+
+    // Asegurar columnas contables en `movimientos_caja`
+    db.all("PRAGMA table_info(movimientos_caja)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla movimientos_caja', err);
+        const cols = (rows || []).map(r => r.name);
+        const toAdd = [];
+        if (!cols.includes('pago_id')) toAdd.push("pago_id INTEGER REFERENCES pagos(id)");
+        if (!cols.includes('paciente_id')) toAdd.push("paciente_id INTEGER REFERENCES pacientes(id)");
+        if (!cols.includes('metodo')) toAdd.push("metodo TEXT");
+        if (!cols.includes('origen')) toAdd.push("origen TEXT DEFAULT 'manual'");
+
+        toAdd.forEach(colDef => {
+            db.run(`ALTER TABLE movimientos_caja ADD COLUMN ${colDef}`, (alterErr) => {
+                if (alterErr) {
+                    console.warn('Could not add column to movimientos_caja', colDef, alterErr && alterErr.message);
+                    return;
+                }
+                console.log('Added column to movimientos_caja:', colDef);
+            });
+        });
+    });
 
     // Agregar columna plan_tratamiento_id a pagos si no existe
     db.all("PRAGMA table_info(pagos)", (err, rows) => {
@@ -206,7 +271,85 @@ db.serialize(() => {
                 console.warn('Could not add column plan_tratamiento_id to pagos', e && e.message);
             }
         }
+        const pagosToAdd = [];
+        if (!cols.includes('tipo')) pagosToAdd.push("tipo TEXT DEFAULT 'pago'");
+        if (!cols.includes('estado')) pagosToAdd.push("estado TEXT DEFAULT 'aplicado'");
+        if (!cols.includes('usuario_id')) pagosToAdd.push("usuario_id INTEGER REFERENCES usuarios(id)");
+        if (!cols.includes('caja_id')) pagosToAdd.push("caja_id INTEGER REFERENCES cajas(id)");
+        if (!cols.includes('moneda')) pagosToAdd.push("moneda TEXT DEFAULT 'MXN'");
+        if (!cols.includes('referencia_externa')) pagosToAdd.push("referencia_externa TEXT");
+
+        pagosToAdd.forEach(colDef => {
+            try {
+                db.run(`ALTER TABLE pagos ADD COLUMN ${colDef}`);
+                console.log('Added column to pagos:', colDef);
+            } catch (e) {
+                console.warn('Could not add column to pagos', colDef, e && e.message);
+            }
+        });
     });
+
+    db.run(`CREATE TABLE IF NOT EXISTS pagos_aplicaciones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pago_id INTEGER NOT NULL,
+        cuota_financiamiento_id INTEGER NOT NULL,
+        monto_aplicado REAL NOT NULL,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(pago_id) REFERENCES pagos(id) ON DELETE CASCADE,
+        FOREIGN KEY(cuota_financiamiento_id) REFERENCES cuotas_financiamiento(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS auditoria_financiera (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        usuario_id INTEGER,
+        accion TEXT NOT NULL,
+        entidad TEXT NOT NULL,
+        entidad_id INTEGER,
+        payload TEXT,
+        fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS cobranza_recordatorios (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        paciente_id INTEGER NOT NULL,
+        plan_tratamiento_id INTEGER,
+        cuota_financiamiento_id INTEGER,
+        canal TEXT DEFAULT 'email',
+        destinatario TEXT,
+        estado TEXT DEFAULT 'pendiente',
+        error TEXT,
+        fecha_envio DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id),
+        FOREIGN KEY(plan_tratamiento_id) REFERENCES planes_tratamiento(id),
+        FOREIGN KEY(cuota_financiamiento_id) REFERENCES cuotas_financiamiento(id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS facturas_simuladas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        folio TEXT NOT NULL UNIQUE,
+        fecha_emision DATETIME DEFAULT CURRENT_TIMESTAMP,
+        paciente_id INTEGER NOT NULL,
+        plan_tratamiento_id INTEGER,
+        pago_id INTEGER,
+        tipo TEXT NOT NULL DEFAULT 'comprobante_pago',
+        estado TEXT NOT NULL DEFAULT 'emitida',
+        moneda TEXT NOT NULL DEFAULT 'MXN',
+        subtotal REAL NOT NULL DEFAULT 0.0,
+        descuento REAL NOT NULL DEFAULT 0.0,
+        impuesto REAL NOT NULL DEFAULT 0.0,
+        total REAL NOT NULL DEFAULT 0.0,
+        metodo_pago TEXT,
+        concepto TEXT NOT NULL,
+        observaciones TEXT,
+        creado_por INTEGER,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id),
+        FOREIGN KEY(plan_tratamiento_id) REFERENCES planes_tratamiento(id),
+        FOREIGN KEY(pago_id) REFERENCES pagos(id),
+        FOREIGN KEY(creado_por) REFERENCES usuarios(id)
+    )`);
 
 
     db.run(`CREATE TABLE IF NOT EXISTS admin_config (
@@ -460,20 +603,117 @@ db.serialize(() => {
 
     // Tabla de Planes de Tratamiento (Planes que se asignan a pacientes)
     db.run(`CREATE TABLE IF NOT EXISTS planes_tratamiento (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      paciente_id INTEGER NOT NULL,
+      catalogo_id INTEGER NOT NULL,
+      especialista_asignado TEXT,
+      estado TEXT DEFAULT 'pendiente',
+      fecha_inicio DATE,
+      fecha_finalizacion DATE,
+      costo_total REAL DEFAULT 0.0,
+      costo_medicina REAL DEFAULT 0.0,
+      costo_miscelanea REAL DEFAULT 0.0,
+      notas TEXT,
+      diente TEXT,
+      caras TEXT,
+      fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(paciente_id) REFERENCES pacientes(id),
+      FOREIGN KEY(catalogo_id) REFERENCES tratamientos_catalogo(id)
+  )`);
+
+    // Asegurar columnas adicionales en `planes_tratamiento` (compatibilidad con BD antiguas)
+    db.all("PRAGMA table_info(planes_tratamiento)", (err, rows) => {
+        if (err) return console.error('Error leyendo info de tabla planes_tratamiento', err);
+        const cols = (rows || []).map(r => r.name);
+        const toAdd = [];
+        if (!cols.includes('especialista_asignado')) toAdd.push("especialista_asignado TEXT");
+        if (!cols.includes('estado')) toAdd.push("estado TEXT DEFAULT 'pendiente'");
+        if (!cols.includes('fecha_inicio')) toAdd.push("fecha_inicio DATE");
+        if (!cols.includes('fecha_finalizacion')) toAdd.push("fecha_finalizacion DATE");
+        if (!cols.includes('costo_total')) toAdd.push("costo_total REAL DEFAULT 0.0");
+        if (!cols.includes('costo_medicina')) toAdd.push("costo_medicina REAL DEFAULT 0.0");
+        if (!cols.includes('costo_miscelanea')) toAdd.push("costo_miscelanea REAL DEFAULT 0.0");
+        if (!cols.includes('notas')) toAdd.push("notas TEXT");
+        if (!cols.includes('diente')) toAdd.push("diente TEXT");
+        if (!cols.includes('caras')) toAdd.push("caras TEXT");
+        if (!cols.includes('fecha_creacion')) toAdd.push("fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP");
+        if (!cols.includes('progreso')) toAdd.push("progreso INTEGER DEFAULT 0");
+        if (!cols.includes('descuento_tipo')) toAdd.push("descuento_tipo TEXT DEFAULT 'ninguno'");
+        if (!cols.includes('descuento_valor')) toAdd.push("descuento_valor REAL DEFAULT 0.0");
+        if (!cols.includes('descuento_monto')) toAdd.push("descuento_monto REAL DEFAULT 0.0");
+        if (!cols.includes('subtotal_neto')) toAdd.push("subtotal_neto REAL DEFAULT 0.0");
+        if (!cols.includes('impuesto_tipo')) toAdd.push("impuesto_tipo TEXT DEFAULT 'ninguno'");
+        if (!cols.includes('impuesto_valor')) toAdd.push("impuesto_valor REAL DEFAULT 0.0");
+        if (!cols.includes('impuesto_monto')) toAdd.push("impuesto_monto REAL DEFAULT 0.0");
+        if (!cols.includes('total_final')) toAdd.push("total_final REAL DEFAULT 0.0");
+        if (!cols.includes('version_comercial')) toAdd.push("version_comercial INTEGER DEFAULT 1");
+        if (!cols.includes('version_actualizada_en')) toAdd.push("version_actualizada_en DATETIME");
+
+        toAdd.forEach(colDef => {
+            try {
+                db.run(`ALTER TABLE planes_tratamiento ADD COLUMN ${colDef}`);
+                console.log('Added column to planes_tratamiento:', colDef);
+            } catch (e) {
+                console.warn('Could not add column to planes_tratamiento', colDef, e && e.message);
+            }
+        });
+    });
+
+    db.run(`CREATE TABLE IF NOT EXISTS planes_financiamiento (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        paciente_id INTEGER NOT NULL,
-        catalogo_id INTEGER NOT NULL,
-        especialista_asignado TEXT,
-        estado TEXT DEFAULT 'pendiente',
-        fecha_inicio DATE,
-        fecha_finalizacion DATE,
-        costo_total REAL DEFAULT 0.0,
-        costo_medicina REAL DEFAULT 0.0,
-        costo_miscelanea REAL DEFAULT 0.0,
-        notas TEXT,
+        plan_tratamiento_id INTEGER NOT NULL UNIQUE,
+        frecuencia TEXT NOT NULL,
+        numero_cuotas INTEGER NOT NULL DEFAULT 1,
+        anticipo REAL NOT NULL DEFAULT 0.0,
+        interes_porcentaje REAL NOT NULL DEFAULT 0.0,
+        fecha_primer_vencimiento DATE,
+        activo INTEGER DEFAULT 1,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(paciente_id) REFERENCES pacientes(id),
-        FOREIGN KEY(catalogo_id) REFERENCES tratamientos_catalogo(id)
+        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(plan_tratamiento_id) REFERENCES planes_tratamiento(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS cuotas_financiamiento (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_financiamiento_id INTEGER NOT NULL,
+        plan_tratamiento_id INTEGER NOT NULL,
+        numero INTEGER NOT NULL,
+        es_anticipo INTEGER DEFAULT 0,
+        fecha_vencimiento DATE NOT NULL,
+        monto_programado REAL NOT NULL,
+        monto_pagado REAL NOT NULL DEFAULT 0.0,
+        estado TEXT DEFAULT 'pendiente',
+        fecha_ultimo_pago DATETIME,
+        notas TEXT,
+        FOREIGN KEY(plan_financiamiento_id) REFERENCES planes_financiamiento(id) ON DELETE CASCADE,
+        FOREIGN KEY(plan_tratamiento_id) REFERENCES planes_tratamiento(id) ON DELETE CASCADE
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS planes_tratamiento_versiones (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plan_tratamiento_id INTEGER NOT NULL,
+        version_num INTEGER NOT NULL,
+        estado_version TEXT NOT NULL DEFAULT 'vigente',
+        motivo_cambio TEXT,
+        costo_total REAL NOT NULL DEFAULT 0.0,
+        descuento_tipo TEXT DEFAULT 'ninguno',
+        descuento_valor REAL DEFAULT 0.0,
+        descuento_monto REAL DEFAULT 0.0,
+        subtotal_neto REAL DEFAULT 0.0,
+        impuesto_tipo TEXT DEFAULT 'ninguno',
+        impuesto_valor REAL DEFAULT 0.0,
+        impuesto_monto REAL DEFAULT 0.0,
+        total_final REAL NOT NULL DEFAULT 0.0,
+        diente TEXT,
+        caras TEXT,
+        notas TEXT,
+        financiamiento_json TEXT,
+        snapshot_json TEXT,
+        creado_por INTEGER,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(plan_tratamiento_id) REFERENCES planes_tratamiento(id) ON DELETE CASCADE,
+        FOREIGN KEY(creado_por) REFERENCES usuarios(id),
+        UNIQUE(plan_tratamiento_id, version_num)
     )`);
 
     // Tabla de Detalles de Medicinas en Planes de Tratamiento
@@ -519,6 +759,32 @@ db.serialize(() => {
         FOREIGN KEY(paciente_id) REFERENCES pacientes(id),
         FOREIGN KEY(catalogo_id) REFERENCES tratamientos_catalogo(id)
     )`);
+
+    // Asegurar columnas en `planes_tratamiento_historial`
+    db.serialize(() => {
+        db.all("PRAGMA table_info(planes_tratamiento_historial)", (err, rows) => {
+            if (err) return console.error('Error leyendo info de tabla planes_tratamiento_historial', err);
+            const cols = (rows || []).map(r => r.name);
+
+            if (!cols.includes('especialista_ejecuto')) {
+                try {
+                    db.run(`ALTER TABLE planes_tratamiento_historial ADD COLUMN especialista_ejecuto TEXT`);
+                    console.log('Added column to planes_tratamiento_historial: especialista_ejecuto');
+                } catch (e) {
+                    console.warn('Could not add column especialista_ejecuto', e && e.message);
+                }
+            }
+
+            if (!cols.includes('descripcion_procedimiento')) {
+                try {
+                    db.run(`ALTER TABLE planes_tratamiento_historial ADD COLUMN descripcion_procedimiento TEXT`);
+                    console.log('Added column to planes_tratamiento_historial: descripcion_procedimiento');
+                } catch (e) {
+                    console.warn('Could not add column descripcion_procedimiento', e && e.message);
+                }
+            }
+        });
+    });
 
     // CRM templates (email, reminders, sms)
     db.run(`CREATE TABLE IF NOT EXISTS crm_templates (
@@ -737,6 +1003,62 @@ db.serialize(() => {
         if (!err) console.log('Created index: idx_cajas_fecha_apertura');
     });
 
+    // Migración segura: mantener una sola caja abierta por usuario
+    db.run(
+        `UPDATE cajas
+         SET estado = 'cerrada',
+             fecha_cierre = COALESCE(fecha_cierre, CURRENT_TIMESTAMP),
+             saldo_final = COALESCE(
+                 saldo_final,
+                 ROUND(
+                     COALESCE(saldo_inicial, 0) + (
+                         SELECT COALESCE(SUM(CASE WHEN m.tipo = 'egreso' THEN -m.monto ELSE m.monto END), 0)
+                         FROM movimientos_caja m
+                         WHERE m.caja_id = cajas.id
+                     ),
+                     2
+                 )
+             ),
+             arqueo = COALESCE(arqueo, '{"auto_cierre_migracion":"caja_unica_por_usuario"}')
+         WHERE estado = 'abierta'
+           AND usuario_id IS NOT NULL
+           AND id NOT IN (
+               SELECT c_keep.id
+               FROM cajas c_keep
+               WHERE c_keep.estado = 'abierta'
+                 AND c_keep.id = (
+                     SELECT c_latest.id
+                     FROM cajas c_latest
+                     WHERE c_latest.usuario_id = c_keep.usuario_id
+                       AND c_latest.estado = 'abierta'
+                     ORDER BY datetime(c_latest.fecha_apertura) DESC, c_latest.id DESC
+                     LIMIT 1
+                 )
+           )`,
+        function (err) {
+            if (err) {
+                console.warn('Could not normalize open cajas per user', err && err.message);
+                return;
+            }
+            if (this && this.changes > 0) {
+                console.log('Normalized duplicate open cajas:', this.changes);
+            }
+        }
+    );
+
+    db.run(
+        `CREATE UNIQUE INDEX IF NOT EXISTS idx_cajas_open_user_unique
+         ON cajas(usuario_id)
+         WHERE estado = 'abierta'`,
+        (err) => {
+            if (!err) {
+                console.log('Created index: idx_cajas_open_user_unique');
+            } else {
+                console.warn('Could not create unique open-caja index', err && err.message);
+            }
+        }
+    );
+
     db.run(`CREATE INDEX IF NOT EXISTS idx_movimientos_caja_caja ON movimientos_caja(caja_id)`, (err) => {
         if (!err) console.log('Created index: idx_movimientos_caja_caja');
     });
@@ -745,10 +1067,155 @@ db.serialize(() => {
         if (!err) console.log('Created index: idx_movimientos_caja_fecha');
     });
 
+    db.run(`CREATE INDEX IF NOT EXISTS idx_movimientos_caja_filtros ON movimientos_caja(fecha, caja_id, tipo, usuario_id)`, (err) => {
+        if (!err) console.log('Created index: idx_movimientos_caja_filtros');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_movimientos_caja_pago ON movimientos_caja(pago_id)`, (err) => {
+        if (!err) console.log('Created index: idx_movimientos_caja_pago');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_movimientos_caja_paciente ON movimientos_caja(paciente_id)`, (err) => {
+        if (!err) console.log('Created index: idx_movimientos_caja_paciente');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_paciente_fecha ON pagos(paciente_id, fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_paciente_fecha');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_plan_fecha ON pagos(plan_tratamiento_id, fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_plan_fecha');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_tipo_estado ON pagos(tipo, estado)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_tipo_estado');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_caja ON pagos(caja_id)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_caja');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_planes_tratamiento_paciente_estado ON planes_tratamiento(paciente_id, estado)`, (err) => {
+        if (!err) console.log('Created index: idx_planes_tratamiento_paciente_estado');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_planes_financiamiento_plan ON planes_financiamiento(plan_tratamiento_id)`, (err) => {
+        if (!err) console.log('Created index: idx_planes_financiamiento_plan');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_cuotas_financiamiento_plan ON cuotas_financiamiento(plan_tratamiento_id, estado)`, (err) => {
+        if (!err) console.log('Created index: idx_cuotas_financiamiento_plan');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_cuotas_financiamiento_vencimiento ON cuotas_financiamiento(fecha_vencimiento, estado)`, (err) => {
+        if (!err) console.log('Created index: idx_cuotas_financiamiento_vencimiento');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_planes_tratamiento_versiones_plan_version ON planes_tratamiento_versiones(plan_tratamiento_id, version_num)`, (err) => {
+        if (!err) console.log('Created index: idx_planes_tratamiento_versiones_plan_version');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_planes_tratamiento_versiones_estado ON planes_tratamiento_versiones(estado_version)`, (err) => {
+        if (!err) console.log('Created index: idx_planes_tratamiento_versiones_estado');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_aplicaciones_pago ON pagos_aplicaciones(pago_id)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_aplicaciones_pago');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_pagos_aplicaciones_cuota ON pagos_aplicaciones(cuota_financiamiento_id)`, (err) => {
+        if (!err) console.log('Created index: idx_pagos_aplicaciones_cuota');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_auditoria_financiera_fecha ON auditoria_financiera(fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_auditoria_financiera_fecha');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_cobranza_recordatorios_paciente ON cobranza_recordatorios(paciente_id)`, (err) => {
+        if (!err) console.log('Created index: idx_cobranza_recordatorios_paciente');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_facturas_simuladas_folio ON facturas_simuladas(folio)`, (err) => {
+        if (!err) console.log('Created index: idx_facturas_simuladas_folio');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_facturas_simuladas_plan ON facturas_simuladas(plan_tratamiento_id)`, (err) => {
+        if (!err) console.log('Created index: idx_facturas_simuladas_plan');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_facturas_simuladas_pago ON facturas_simuladas(pago_id)`, (err) => {
+        if (!err) console.log('Created index: idx_facturas_simuladas_pago');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_facturas_simuladas_paciente_fecha ON facturas_simuladas(paciente_id, fecha_emision)`, (err) => {
+        if (!err) console.log('Created index: idx_facturas_simuladas_paciente_fecha');
+    });
+
+    // Tabla de Periodontograma
+    db.run(`CREATE TABLE IF NOT EXISTS periodontograma (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        paciente_id INTEGER UNIQUE NOT NULL,
+        datos TEXT NOT NULL,
+        fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        fecha_actualizacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
+    )`, (err) => {
+        if (!err) console.log('Created table: periodontograma');
+    });
+
+    // Índice para periodontograma
+    db.run(`CREATE INDEX IF NOT EXISTS idx_periodontograma_paciente ON periodontograma(paciente_id)`, (err) => {
+        if (!err) console.log('Created index: idx_periodontograma_paciente');
+    });
+
+    // ⚠️ SECURITY FIX S8: Tabla de auditoría de acceso a expedientes clínicos
+    // Registra QUIÉN accedió a QUÉ expediente, CUÁNDO y QUÉ acción realizó.
+    // Requerido por NOM-004-SSA3 y Ley Federal de Protección de Datos Personales.
+    db.run(`CREATE TABLE IF NOT EXISTS auditoria_clinica(
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    usuario_id INTEGER,
+                    paciente_id INTEGER,
+                    accion TEXT NOT NULL,
+                    modulo TEXT NOT NULL,
+                    detalle TEXT,
+                    ip_local TEXT,
+                    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(usuario_id) REFERENCES usuarios(id),
+                    FOREIGN KEY(paciente_id) REFERENCES pacientes(id)
+                )`, (err) => {
+        if (!err) console.log('Created table: auditoria_clinica');
+    });
+
+    db.run(`CREATE INDEX IF NOT EXISTS idx_auditoria_clinica_paciente ON auditoria_clinica(paciente_id, fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_auditoria_clinica_paciente');
+    });
+    db.run(`CREATE INDEX IF NOT EXISTS idx_auditoria_clinica_usuario ON auditoria_clinica(usuario_id, fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_auditoria_clinica_usuario');
+    });
+    db.run(`CREATE INDEX IF NOT EXISTS idx_auditoria_clinica_fecha ON auditoria_clinica(fecha)`, (err) => {
+        if (!err) console.log('Created index: idx_auditoria_clinica_fecha');
+    });
+
     // Habilitar foreign keys
     db.run(`PRAGMA foreign_keys = ON`, (err) => {
         if (!err) console.log('Foreign keys enabled');
     });
 });
 
+/**
+ * S8 — Helper: Registra un acceso/modificación a expediente clínico.
+ * Llamar desde main.js antes de responder a consultas sobre historia clínica.
+ * @param {object} opts - { usuario_id, paciente_id, accion, modulo, detalle }
+ */
+function logClinicalAccess({ usuario_id, paciente_id, accion, modulo, detalle = null }) {
+    db.run(
+        `INSERT INTO auditoria_clinica(usuario_id, paciente_id, accion, modulo, detalle) VALUES(?, ?, ?, ?, ?)`,
+        [usuario_id || null, paciente_id || null, accion, modulo, detalle || null],
+        (err) => {
+            if (err) console.warn('[AUDIT] Error al registrar acceso clínico:', err.message);
+        }
+    );
+}
+
 module.exports = db;
+module.exports.logClinicalAccess = logClinicalAccess;
