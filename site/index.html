@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sonalia Desktop, software de escritorio para gestion empresarial desarrollado por Software Sonalia.">
+  <title>Sonalia Desktop | Software Sonalia</title>
+  <style>
+    :root {
+      --bg: #eef4f6;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-soft: #f5f9fa;
+      --text: #17313b;
+      --muted: #5c717d;
+      --line: #d5e0e6;
+      --brand: #3f8fa0;
+      --brand-deep: #1f5662;
+      --brand-soft: #dff1f5;
+      --shadow: 0 24px 60px rgba(23, 49, 59, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max-width: 1120px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(63, 143, 160, 0.18), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(31, 86, 98, 0.09), transparent 24%),
+        linear-gradient(180deg, #f9fcfd 0%, var(--bg) 100%);
+      line-height: 1.65;
+    }
+
+    a { color: var(--brand-deep); }
+    .shell { width: min(var(--max-width), calc(100% - 32px)); margin: 0 auto; }
+    .topbar { padding: 22px 0 0; }
+
+    .topbar__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.86);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 30px rgba(23, 49, 59, 0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand__mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .brand__text strong, .brand__text span { display: block; }
+    .brand__text strong { font-size: 1rem; letter-spacing: 0.02em; }
+    .brand__text span { font-size: 0.88rem; color: var(--muted); }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      text-decoration: none;
+      font-size: 0.95rem;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover, .nav a:focus-visible {
+      color: var(--brand-deep);
+      background: rgba(63, 143, 160, 0.1);
+      outline: none;
+    }
+
+    .nav a.is-active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+    }
+
+    .hero { padding: 28px 0 20px; }
+
+    .hero__card {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+      gap: 24px;
+      padding: 56px;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(31, 86, 98, 0.96) 0%, rgba(63, 143, 160, 0.94) 58%, rgba(111, 186, 200, 0.9) 100%);
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero__card::after {
+      content: "";
+      position: absolute;
+      inset: auto -100px -100px auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 0.86rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      max-width: 720px;
+      margin: 18px 0 14px;
+      font-size: clamp(2rem, 4.5vw, 3.8rem);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 1.03rem;
+    }
+
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .hero__meta span {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 0.92rem;
+    }
+
+    .summary {
+      position: relative;
+      z-index: 1;
+      align-self: stretch;
+      padding: 24px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .summary h2 {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+
+    .summary ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .summary li {
+      margin-bottom: 10px;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .content {
+      display: grid;
+      gap: 20px;
+      padding: 12px 0 60px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .panel, .cta {
+      border: 1px solid rgba(213, 224, 230, 0.95);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: 0 12px 30px rgba(23, 49, 59, 0.05);
+    }
+
+    .panel {
+      padding: 28px;
+    }
+
+    .panel h2, .panel h3, .cta h2 {
+      margin: 0 0 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel p, .cta p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    .panel p:last-child, .cta p:last-child {
+      margin-bottom: 0;
+    }
+
+    .feature {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+      border: 1px solid var(--line);
+    }
+
+    .feature__kicker {
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand-deep);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .list {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .list li {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface-soft);
+    }
+
+    .list strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .cta {
+      padding: 30px;
+      background:
+        linear-gradient(180deg, rgba(223, 241, 245, 0.72) 0%, rgba(255, 255, 255, 0.98) 100%);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: 0.2s ease;
+    }
+
+    .button--primary {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+    }
+
+    .button--secondary {
+      color: var(--brand-deep);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+    }
+
+    .button:hover, .button:focus-visible {
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .footer { padding: 0 0 42px; }
+
+    .footer__inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 960px) {
+      .hero__card, .grid, .grid-two { grid-template-columns: 1fr; }
+      .topbar__inner { flex-direction: column; align-items: flex-start; border-radius: 28px; }
+      .nav { width: 100%; justify-content: flex-start; }
+      .hero__card, .panel, .cta { padding: 24px; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(var(--max-width), calc(100% - 20px)); }
+      .hero__meta span, .nav a, .button { width: 100%; text-align: center; }
+      .footer__inner { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar__inner">
+      <div class="brand" aria-label="Software Sonalia">
+        <div class="brand__mark">SS</div>
+        <div class="brand__text">
+          <strong>Software Sonalia</strong>
+          <span>Sonalia Desktop | Sitio informativo</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navegacion principal">
+        <a class="is-active" href="index.html">Inicio</a>
+        <a href="privacy.html">Privacidad</a>
+        <a href="terms.html">Terminos</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero__card">
+        <div>
+          <div class="eyebrow">Software de escritorio empresarial</div>
+          <h1>Sonalia Desktop centraliza operacion, acceso seguro y automatizacion empresarial.</h1>
+          <p>
+            Sonalia Desktop es una aplicacion de escritorio desarrollada por Software Sonalia para apoyar procesos de
+            gestion empresarial, administracion operativa y envio de notificaciones automaticas. La aplicacion opera
+            localmente en equipos autorizados y utiliza Google OAuth exclusivamente para identificacion y acceso seguro.
+          </p>
+          <div class="hero__meta">
+            <span>Empresa: Software Sonalia</span>
+            <span>Ubicacion: Orizaba, Veracruz, Mexico</span>
+            <span>Contacto: softwaresonalia@gmail.com</span>
+          </div>
+        </div>
+
+        <aside class="summary" aria-label="Resumen de la aplicacion">
+          <h2>Resumen para usuarios y verificacion</h2>
+          <ul>
+            <li>Aplicacion local de escritorio desarrollada con Electron y Node.js.</li>
+            <li>Uso principal: gestion empresarial y notificaciones operativas.</li>
+            <li>Datos obtenidos por Google OAuth: nombre y correo electronico.</li>
+            <li>No recolecta pagos, ubicacion ni datos personales sensibles.</li>
+            <li>Documentacion legal disponible en Privacidad y Terminos.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="shell content">
+      <div class="grid">
+        <article class="feature">
+          <div class="feature__kicker">Operacion</div>
+          <h2>Control centralizado</h2>
+          <p>
+            Sonalia Desktop concentra funciones operativas y administrativas en una interfaz local para equipos de trabajo
+            autorizados, con enfoque en continuidad, organizacion y seguimiento.
+          </p>
+        </article>
+
+        <article class="feature">
+          <div class="feature__kicker">Seguridad</div>
+          <h2>Acceso con Google OAuth</h2>
+          <p>
+            La autenticacion mediante Google se usa para identificar al usuario de forma segura y asociar su cuenta con
+            el perfil correspondiente dentro del sistema.
+          </p>
+        </article>
+
+        <article class="feature">
+          <div class="feature__kicker">Automatizacion</div>
+          <h2>Notificaciones y soporte operativo</h2>
+          <p>
+            La aplicacion puede gestionar envios y notificaciones automaticas relacionadas con el uso del sistema y la
+            operacion empresarial.
+          </p>
+        </article>
+      </div>
+
+      <div class="grid-two">
+        <section class="panel">
+          <h2>Uso de datos personales</h2>
+          <p>
+            Software Sonalia aplica un criterio de minimizacion de datos. Para el inicio de sesion con Google solo se
+            solicita la informacion indispensable para identificar al usuario dentro de Sonalia Desktop.
+          </p>
+          <ul class="list">
+            <li>
+              <strong>Nombre</strong>
+              Permite identificar visualmente al usuario dentro del software.
+            </li>
+            <li>
+              <strong>Correo electronico</strong>
+              Se utiliza para autenticacion, identificacion de cuenta y comunicaciones vinculadas al servicio.
+            </li>
+            <li>
+              <strong>Exclusiones expresas</strong>
+              No se recolectan datos de pago, ubicacion ni datos sensibles por medio de Google OAuth.
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>Ambito del producto</h2>
+          <p>
+            Sonalia Desktop es un producto de escritorio. Esta pagina publica existe como referencia informativa del
+            producto, de su operador responsable y de la documentacion legal asociada al uso de autenticacion con Google.
+          </p>
+          <ul class="list">
+            <li>
+              <strong>Responsable</strong>
+              Software Sonalia
+            </li>
+            <li>
+              <strong>Aplicacion</strong>
+              Sonalia Desktop
+            </li>
+            <li>
+              <strong>Canal de contacto</strong>
+              softwaresonalia@gmail.com
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="cta" id="contacto">
+        <h2>Documentacion y contacto</h2>
+        <p>
+          Para conocer como se tratan los datos personales, las condiciones de uso del software o realizar consultas
+          relacionadas con Sonalia Desktop, consulte las paginas oficiales enlazadas a continuacion.
+        </p>
+        <div class="actions">
+          <a class="button button--primary" href="privacy.html">Ver Politica de Privacidad</a>
+          <a class="button button--secondary" href="terms.html">Ver Terminos y Condiciones</a>
+          <a class="button button--secondary" href="mailto:softwaresonalia@gmail.com">Contactar a Software Sonalia</a>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer__inner">
+      <div>Software Sonalia | Orizaba, Veracruz, Mexico</div>
+      <div>Sonalia Desktop</div>
+    </div>
+  </footer>
+</body>
+</html>

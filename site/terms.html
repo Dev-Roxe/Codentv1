@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="T&eacute;rminos y condiciones de uso de Sonalia Desktop, software empresarial de Software Sonalia.">
+  <title>T&eacute;rminos y Condiciones | Sonalia Desktop</title>
+  <style>
+    :root {
+      --bg: #f2f6f8;
+      --surface-soft: #f7fafb;
+      --text: #162c34;
+      --muted: #617580;
+      --line: #d8e2e7;
+      --brand: #3f8fa0;
+      --brand-deep: #1e5662;
+      --highlight: #eef8fa;
+      --shadow: 0 24px 60px rgba(22, 44, 52, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max-width: 1120px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(63, 143, 160, 0.14), transparent 32%),
+        linear-gradient(180deg, #fafcfd 0%, var(--bg) 100%);
+      line-height: 1.65;
+    }
+
+    a { color: var(--brand-deep); }
+    .shell { width: min(var(--max-width), calc(100% - 32px)); margin: 0 auto; }
+    .topbar { padding: 22px 0 0; }
+
+    .topbar__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 30px rgba(22, 44, 52, 0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand__mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+    }
+
+    .brand__text strong, .brand__text span { display: block; }
+    .brand__text strong { font-size: 1rem; letter-spacing: 0.02em; }
+    .brand__text span { font-size: 0.88rem; color: var(--muted); }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      text-decoration: none;
+      font-size: 0.95rem;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover, .nav a:focus-visible {
+      color: var(--brand-deep);
+      background: rgba(63, 143, 160, 0.1);
+      outline: none;
+    }
+
+    .nav a.is-active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+    }
+
+    .hero { padding: 28px 0 22px; }
+
+    .hero__card {
+      position: relative;
+      overflow: hidden;
+      padding: 56px;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.96) 0%, rgba(238, 248, 250, 0.98) 55%, rgba(210, 234, 239, 0.98) 100%);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(216, 226, 231, 0.95);
+    }
+
+    .hero__card::after {
+      content: "";
+      position: absolute;
+      inset: -60px -50px auto auto;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(63, 143, 160, 0.08);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(63, 143, 160, 0.12);
+      font-size: 0.86rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--brand-deep);
+    }
+
+    .hero h1 {
+      max-width: 760px;
+      margin: 18px 0 14px;
+      font-size: clamp(2rem, 4.3vw, 3.5rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 0;
+      font-size: 1.02rem;
+      color: var(--muted);
+    }
+
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .hero__meta span {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(216, 226, 231, 0.95);
+      font-size: 0.92rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 28px;
+      padding: 8px 0 60px;
+    }
+
+    .toc, .panel, .notice {
+      border: 1px solid rgba(216, 226, 231, 0.95);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 12px 30px rgba(22, 44, 52, 0.05);
+    }
+
+    .toc {
+      position: sticky;
+      top: 22px;
+      align-self: start;
+      padding: 22px;
+    }
+
+    .toc h2, .panel h2, .notice h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .toc p { margin: 0 0 18px; font-size: 0.94rem; color: var(--muted); }
+
+    .toc a {
+      display: block;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      transition: 0.2s ease;
+    }
+
+    .toc a:hover, .toc a:focus-visible {
+      background: var(--surface-soft);
+      color: var(--brand-deep);
+      outline: none;
+    }
+
+    .stack { display: grid; gap: 20px; }
+    .panel, .notice { padding: 28px; }
+    .panel p, .notice p { margin: 0 0 14px; color: var(--muted); }
+    .panel p:last-child, .notice p:last-child { margin-bottom: 0; }
+
+    .list {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .list li {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+    }
+
+    .list strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .notice {
+      background: linear-gradient(180deg, rgba(238, 248, 250, 0.78) 0%, rgba(255, 255, 255, 0.98) 100%);
+    }
+
+    .footer { padding: 0 0 42px; }
+
+    .footer__inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 20px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 920px) {
+      .layout { grid-template-columns: 1fr; }
+      .topbar__inner { border-radius: 28px; }
+      .topbar__inner { flex-direction: column; align-items: flex-start; }
+      .nav { width: 100%; justify-content: flex-start; }
+      .toc { position: static; }
+      .hero__card, .panel, .notice { padding: 24px; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(var(--max-width), calc(100% - 20px)); }
+      .hero__card { padding: 22px; }
+      .hero__meta span, .nav a { width: 100%; text-align: center; }
+      .footer__inner { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar__inner">
+      <div class="brand" aria-label="Software Sonalia">
+        <div class="brand__mark">SS</div>
+        <div class="brand__text">
+          <strong>Software Sonalia</strong>
+          <span>Sonalia Desktop | Documentaci&oacute;n legal</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navegaci&oacute;n legal">
+        <a href="privacy.html">Privacidad</a>
+        <a class="is-active" href="terms.html">T&eacute;rminos</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero__card">
+        <div class="eyebrow">Condiciones de uso</div>
+        <h1>T&eacute;rminos y Condiciones de Sonalia Desktop</h1>
+        <p>
+          El uso de Sonalia Desktop implica la aceptaci&oacute;n de las presentes condiciones.
+          Este documento regula la licencia de uso del software, las restricciones aplicables,
+          los supuestos de terminaci&oacute;n y el marco legal que rige la relaci&oacute;n entre Software Sonalia y sus usuarios.
+        </p>
+        <div class="hero__meta">
+          <span>Empresa: Software Sonalia</span>
+          <span>Aplicaci&oacute;n: Sonalia Desktop</span>
+          <span>&Uacute;ltima actualizaci&oacute;n: 8 de marzo de 2026</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell layout">
+      <aside class="toc" aria-label="Contenido de t&eacute;rminos">
+        <h2>Contenido</h2>
+        <p>Puntos esenciales para el uso permitido de la aplicaci&oacute;n y el cumplimiento operativo.</p>
+        <a href="#aceptacion">Aceptaci&oacute;n</a>
+        <a href="#licencia">Licencia de uso</a>
+        <a href="#prohibiciones">Prohibiciones</a>
+        <a href="#responsabilidad">Limitaci&oacute;n de responsabilidad</a>
+        <a href="#terminacion">Terminaci&oacute;n</a>
+        <a href="#ley">Ley aplicable</a>
+      </aside>
+
+      <div class="stack">
+        <section class="panel" id="aceptacion">
+          <h2>Aceptaci&oacute;n de los t&eacute;rminos</h2>
+          <p>
+            Al instalar, acceder o utilizar Sonalia Desktop, el usuario declara haber le&iacute;do, entendido y aceptado estos T&eacute;rminos y Condiciones.
+            Si el usuario no est&aacute; de acuerdo con ellos, deber&aacute; abstenerse de utilizar el software.
+          </p>
+        </section>
+
+        <section class="panel" id="licencia">
+          <h2>Licencia de uso del software</h2>
+          <p>
+            Software Sonalia otorga al usuario una licencia limitada, revocable, no exclusiva, intransferible y no sublicenciable para utilizar Sonalia Desktop
+            &uacute;nicamente con fines internos de gesti&oacute;n empresarial y conforme a las funcionalidades previstas por la aplicaci&oacute;n.
+          </p>
+          <p>
+            La titularidad del software, su dise&ntilde;o, c&oacute;digo, estructura, funcionalidades, marcas y dem&aacute;s elementos relacionados permanece en todo momento en Software Sonalia o en sus respectivos titulares.
+          </p>
+        </section>
+
+        <section class="panel" id="prohibiciones">
+          <h2>Prohibiciones</h2>
+          <p>Sin autorizaci&oacute;n previa y por escrito de Software Sonalia, el usuario no podr&aacute;:</p>
+          <ul class="list">
+            <li>
+              <strong>Realizar ingenier&iacute;a inversa</strong>
+              Descompilar, desensamblar, intentar obtener el c&oacute;digo fuente o analizar la arquitectura interna del software fuera de lo permitido por la ley.
+            </li>
+            <li>
+              <strong>Redistribuir o comercializar copias</strong>
+              Vender, arrendar, sublicenciar, prestar o distribuir Sonalia Desktop a terceros sin autorizaci&oacute;n expresa.
+            </li>
+            <li>
+              <strong>Alterar el funcionamiento autorizado</strong>
+              Modificar mecanismos de seguridad, autenticaci&oacute;n o cualquier componente que afecte la operaci&oacute;n normal de la aplicaci&oacute;n.
+            </li>
+            <li>
+              <strong>Usar el software con fines il&iacute;citos</strong>
+              Utilizar Sonalia Desktop para actividades contrarias a la ley, al orden p&uacute;blico o a derechos de terceros.
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel" id="responsabilidad">
+          <h2>Limitaci&oacute;n de responsabilidad</h2>
+          <p>
+            Sonalia Desktop se proporciona para apoyar procesos de gesti&oacute;n empresarial.
+            Software Sonalia realiza esfuerzos razonables para mantener la operaci&oacute;n y funcionalidad del software,
+            pero no garantiza que el servicio sea ininterrumpido, libre de errores o adecuado para todos los escenarios particulares del usuario.
+          </p>
+          <p>
+            En la medida permitida por la legislaci&oacute;n aplicable, Software Sonalia no ser&aacute; responsable por da&ntilde;os indirectos, incidentales,
+            especiales, consecuenciales o por lucro cesante derivados del uso o imposibilidad de uso del software.
+          </p>
+        </section>
+
+        <section class="panel" id="terminacion">
+          <h2>Terminaci&oacute;n o suspensi&oacute;n de cuenta</h2>
+          <p>
+            Software Sonalia podr&aacute; suspender o terminar el acceso a Sonalia Desktop cuando detecte incumplimiento de estos t&eacute;rminos,
+            uso indebido del software, riesgos de seguridad, requerimientos legales o cualquier conducta que comprometa la integridad operativa del servicio.
+          </p>
+          <p>
+            La terminaci&oacute;n de la cuenta no exime al usuario de las obligaciones previamente contra&iacute;das ni afecta los derechos de Software Sonalia respecto a incumplimientos anteriores.
+          </p>
+        </section>
+
+        <section class="notice" id="ley">
+          <h2>Ley aplicable y jurisdicci&oacute;n</h2>
+          <p>
+            Estos T&eacute;rminos y Condiciones se rigen por las leyes vigentes de los Estados Unidos Mexicanos.
+            Para la interpretaci&oacute;n, cumplimiento y resoluci&oacute;n de cualquier controversia relacionada con Sonalia Desktop,
+            las partes se someten a la jurisdicci&oacute;n de las autoridades competentes en M&eacute;xico,
+            renunciando a cualquier otro fuero que pudiera corresponderles por raz&oacute;n de su domicilio presente o futuro.
+          </p>
+          <p>
+            Para asuntos relacionados con privacidad y tratamiento de datos, consulte tambi&eacute;n la
+            <a href="privacy.html">Pol&iacute;tica de Privacidad</a>.
+          </p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer__inner">
+      <div>Software Sonalia | Orizaba, Veracruz, M&eacute;xico</div>
+      <div><a href="mailto:softwaresonalia@gmail.com">softwaresonalia@gmail.com</a></div>
+    </div>
+  </footer>
+</body>
+</html>
