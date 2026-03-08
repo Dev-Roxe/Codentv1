@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Aviso de privacidad de Sonalia Desktop, software empresarial de Software Sonalia.">
+  <title>Pol&iacute;tica de Privacidad | Sonalia Desktop</title>
+  <style>
+    :root {
+      --bg: #eef4f6;
+      --surface-soft: #f5f9fa;
+      --text: #17313b;
+      --muted: #5d7280;
+      --line: #d6e1e7;
+      --brand: #3f8fa0;
+      --brand-deep: #1f5662;
+      --accent: #dff1f5;
+      --shadow: 0 24px 60px rgba(23, 49, 59, 0.12);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --max-width: 1120px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(63, 143, 160, 0.16), transparent 34%),
+        linear-gradient(180deg, #f8fbfc 0%, var(--bg) 100%);
+      line-height: 1.65;
+    }
+
+    a { color: var(--brand-deep); }
+    .shell { width: min(var(--max-width), calc(100% - 32px)); margin: 0 auto; }
+    .topbar { padding: 22px 0 0; }
+
+    .topbar__inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 16px 22px;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 8px 30px rgba(23, 49, 59, 0.06);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand__mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .brand__text strong, .brand__text span { display: block; }
+    .brand__text strong { font-size: 1rem; letter-spacing: 0.02em; }
+    .brand__text span { font-size: 0.88rem; color: var(--muted); }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .nav a {
+      text-decoration: none;
+      font-size: 0.95rem;
+      color: var(--muted);
+      padding: 10px 16px;
+      border-radius: 999px;
+      transition: 0.2s ease;
+    }
+
+    .nav a:hover, .nav a:focus-visible {
+      color: var(--brand-deep);
+      background: rgba(63, 143, 160, 0.1);
+      outline: none;
+    }
+
+    .nav a.is-active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-deep) 100%);
+    }
+
+    .hero { padding: 28px 0 22px; }
+
+    .hero__card {
+      position: relative;
+      overflow: hidden;
+      padding: 56px;
+      border-radius: var(--radius-xl);
+      background:
+        linear-gradient(135deg, rgba(31, 86, 98, 0.96) 0%, rgba(63, 143, 160, 0.94) 58%, rgba(111, 186, 200, 0.92) 100%);
+      color: #ffffff;
+      box-shadow: var(--shadow);
+    }
+
+    .hero__card::after {
+      content: "";
+      position: absolute;
+      inset: auto -120px -120px auto;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 0.86rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      max-width: 760px;
+      margin: 18px 0 14px;
+      font-size: clamp(2rem, 4.4vw, 3.6rem);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 720px;
+      margin: 0;
+      font-size: 1.02rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hero__meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 28px;
+    }
+
+    .hero__meta span {
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      font-size: 0.92rem;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 28px;
+      padding: 8px 0 60px;
+    }
+
+    .toc, .panel, .contact {
+      border: 1px solid rgba(214, 225, 231, 0.95);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 12px 30px rgba(23, 49, 59, 0.05);
+    }
+
+    .toc {
+      position: sticky;
+      top: 22px;
+      align-self: start;
+      padding: 22px;
+    }
+
+    .toc h2, .panel h2, .contact h2 {
+      margin: 0 0 14px;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+    }
+
+    .toc p { margin: 0 0 18px; font-size: 0.94rem; color: var(--muted); }
+
+    .toc a {
+      display: block;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      text-decoration: none;
+      color: var(--text);
+      transition: 0.2s ease;
+    }
+
+    .toc a:hover, .toc a:focus-visible {
+      background: var(--surface-soft);
+      color: var(--brand-deep);
+      outline: none;
+    }
+
+    .stack { display: grid; gap: 20px; }
+    .panel { padding: 28px; }
+    .panel p { margin: 0 0 14px; color: var(--muted); }
+    .panel p:last-child { margin-bottom: 0; }
+
+    .list {
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 12px;
+    }
+
+    .list li {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+    }
+
+    .list strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+    }
+
+    .chip strong { display: block; margin-bottom: 6px; }
+
+    .contact {
+      padding: 28px;
+      background: linear-gradient(180deg, rgba(223, 241, 245, 0.7) 0%, rgba(255, 255, 255, 0.98) 100%);
+    }
+
+    .contact p { margin: 0 0 12px; color: var(--muted); }
+
+    .contact__grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .contact__item {
+      padding: 18px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(214, 225, 231, 0.95);
+    }
+
+    .contact__item span {
+      display: block;
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .footer { padding: 0 0 42px; }
+
+    .footer__inner {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 20px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 920px) {
+      .content, .contact__grid, .grid-two { grid-template-columns: 1fr; }
+      .topbar__inner { border-radius: 28px; }
+      .topbar__inner { flex-direction: column; align-items: flex-start; }
+      .nav { width: 100%; justify-content: flex-start; }
+      .toc { position: static; }
+      .hero__card, .panel, .contact { padding: 24px; }
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(var(--max-width), calc(100% - 20px)); }
+      .hero__card { padding: 22px; }
+      .hero__meta span, .nav a { width: 100%; text-align: center; }
+      .footer__inner { font-size: 0.88rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar__inner">
+      <div class="brand" aria-label="Software Sonalia">
+        <div class="brand__mark">SS</div>
+        <div class="brand__text">
+          <strong>Software Sonalia</strong>
+          <span>Sonalia Desktop | Documentaci&oacute;n legal</span>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Navegaci&oacute;n legal">
+        <a class="is-active" href="privacy.html">Privacidad</a>
+        <a href="terms.html">T&eacute;rminos</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero__card">
+        <div class="eyebrow">Google OAuth | Sonalia Desktop</div>
+        <h1>Pol&iacute;tica de Privacidad</h1>
+        <p>
+          En Software Sonalia valoramos la privacidad y el tratamiento responsable de la informaci&oacute;n.
+          Esta pol&iacute;tica explica qu&eacute; datos personales se recaban al utilizar Sonalia Desktop,
+          c&oacute;mo se usan y qu&eacute; derechos tienen nuestros usuarios conforme a la legislaci&oacute;n mexicana aplicable.
+        </p>
+        <div class="hero__meta">
+          <span>Empresa: Software Sonalia</span>
+          <span>Ubicaci&oacute;n: Orizaba, Veracruz, M&eacute;xico</span>
+          <span>&Uacute;ltima actualizaci&oacute;n: 8 de marzo de 2026</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="shell content">
+      <aside class="toc" aria-label="Contenido de privacidad">
+        <h2>Contenido</h2>
+        <p>Resumen de los puntos relevantes para usuarios y validaci&oacute;n de Google Cloud OAuth.</p>
+        <a href="#introduccion">Introducci&oacute;n</a>
+        <a href="#datos">Datos recolectados</a>
+        <a href="#uso">Uso de la informaci&oacute;n</a>
+        <a href="#terceros">Proveedores terceros</a>
+        <a href="#retencion">Retenci&oacute;n de datos</a>
+        <a href="#derechos">Derechos del usuario</a>
+        <a href="#cumplimiento">Cumplimiento legal</a>
+        <a href="#contacto">Contacto</a>
+      </aside>
+
+      <div class="stack">
+        <section class="panel" id="introduccion">
+          <h2>Introducci&oacute;n</h2>
+          <p>
+            Sonalia Desktop es un software de escritorio desarrollado por Software Sonalia para apoyar la gesti&oacute;n empresarial,
+            la administraci&oacute;n operativa y el env&iacute;o de notificaciones autom&aacute;ticas relacionadas con el uso del sistema.
+          </p>
+          <p>
+            Para autenticar usuarios de manera segura, la aplicaci&oacute;n puede utilizar el servicio de inicio de sesi&oacute;n de Google OAuth.
+            El tratamiento de la informaci&oacute;n obtenido por esta v&iacute;a se limita estrictamente a fines de identificaci&oacute;n y operaci&oacute;n interna.
+          </p>
+        </section>
+
+        <section class="panel" id="datos">
+          <h2>Datos personales recolectados</h2>
+          <p>
+            Al utilizar el acceso mediante Google OAuth, Software Sonalia recolecta &uacute;nicamente la informaci&oacute;n m&iacute;nima necesaria para identificar al usuario dentro de Sonalia Desktop.
+          </p>
+          <ul class="list">
+            <li>
+              <strong>Nombre del usuario</strong>
+              Se utiliza para identificar visualmente la cuenta dentro del sistema.
+            </li>
+            <li>
+              <strong>Direcci&oacute;n de correo electr&oacute;nico</strong>
+              Se utiliza para autenticaci&oacute;n, identificaci&oacute;n de la cuenta y comunicaciones vinculadas al uso del servicio.
+            </li>
+          </ul>
+          <div class="grid-two">
+            <div class="chip">
+              <strong>No recolectamos datos de pagos</strong>
+              Sonalia Desktop no solicita ni procesa informaci&oacute;n bancaria o de tarjetas a trav&eacute;s de Google OAuth.
+            </div>
+            <div class="chip">
+              <strong>No recolectamos ubicaci&oacute;n ni datos sensibles</strong>
+              No obtenemos geolocalizaci&oacute;n, datos biom&eacute;tricos, salud, religi&oacute;n, opiniones pol&iacute;ticas u otras categor&iacute;as sensibles.
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="uso">
+          <h2>Prop&oacute;sito del uso de la informaci&oacute;n</h2>
+          <p>Los datos recabados se utilizan exclusivamente para los fines siguientes:</p>
+          <ul class="list">
+            <li>
+              <strong>Inicio de sesi&oacute;n y autenticaci&oacute;n</strong>
+              Validar la identidad del usuario y permitir el acceso seguro a Sonalia Desktop.
+            </li>
+            <li>
+              <strong>Identificaci&oacute;n interna de la cuenta</strong>
+              Relacionar la cuenta de Google con el perfil correspondiente dentro del software.
+            </li>
+            <li>
+              <strong>Notificaciones autom&aacute;ticas</strong>
+              Facilitar el env&iacute;o de notificaciones y comunicaciones operativas asociadas a la gesti&oacute;n empresarial.
+            </li>
+          </ul>
+          <p>
+            Los datos no se venden, no se alquilan y no se utilizan para perfiles comerciales ajenos al funcionamiento de la aplicaci&oacute;n.
+          </p>
+        </section>
+
+        <section class="panel" id="terceros">
+          <h2>Proveedores terceros</h2>
+          <p>
+            El &uacute;nico proveedor tercero relacionado con la autenticaci&oacute;n descrita en esta pol&iacute;tica es Google,
+            mediante sus APIs y servicios de OAuth necesarios para el inicio de sesi&oacute;n y la identificaci&oacute;n del usuario.
+          </p>
+          <p>
+            Software Sonalia no comparte esta informaci&oacute;n con terceros adicionales, salvo cuando exista obligaci&oacute;n legal o requerimiento expreso de autoridad competente.
+          </p>
+        </section>
+
+        <section class="panel" id="retencion">
+          <h2>Retenci&oacute;n y conservaci&oacute;n de datos</h2>
+          <p>
+            Los datos de nombre y correo electr&oacute;nico se conservan durante el tiempo en que la cuenta del usuario permanezca activa en Sonalia Desktop
+            y hasta por un plazo adicional de 1 a&ntilde;o contado a partir del cese de uso de la aplicaci&oacute;n,
+            con el fin de atender soporte, continuidad operativa, auditor&iacute;a interna o cumplimiento legal.
+          </p>
+          <p>
+            Concluido ese periodo, la informaci&oacute;n ser&aacute; eliminada o anonimizada conforme a los procesos internos aplicables, salvo que la ley exija un plazo mayor de conservaci&oacute;n.
+          </p>
+        </section>
+
+        <section class="panel" id="derechos">
+          <h2>Derechos de los usuarios</h2>
+          <p>
+            Los usuarios pueden solicitar el acceso, correcci&oacute;n, actualizaci&oacute;n o eliminaci&oacute;n de sus datos personales,
+            as&iacute; como formular consultas sobre el tratamiento de la informaci&oacute;n vinculada con su cuenta.
+          </p>
+          <ul class="list">
+            <li>
+              <strong>Acceso</strong>
+              Solicitar confirmaci&oacute;n sobre los datos personales que mantiene Software Sonalia.
+            </li>
+            <li>
+              <strong>Rectificaci&oacute;n o actualizaci&oacute;n</strong>
+              Pedir la correcci&oacute;n de datos inexactos o desactualizados.
+            </li>
+            <li>
+              <strong>Eliminaci&oacute;n</strong>
+              Solicitar la baja de la cuenta y la supresi&oacute;n de la informaci&oacute;n, sujeto a obligaciones legales de conservaci&oacute;n.
+            </li>
+          </ul>
+        </section>
+
+        <section class="panel" id="cumplimiento">
+          <h2>Cumplimiento con la legislaci&oacute;n mexicana</h2>
+          <p>
+            Software Sonalia procura el tratamiento de datos personales conforme a los principios de licitud, consentimiento, informaci&oacute;n,
+            calidad, finalidad, lealtad, proporcionalidad y responsabilidad previstos en la Ley Federal de Protecci&oacute;n de Datos Personales en Posesi&oacute;n de los Particulares y dem&aacute;s normativa aplicable en M&eacute;xico.
+          </p>
+          <p>
+            Esta pol&iacute;tica podr&aacute; actualizarse cuando existan cambios regulatorios, operativos o funcionales en Sonalia Desktop.
+            La versi&oacute;n vigente ser&aacute; la publicada en esta misma p&aacute;gina.
+          </p>
+        </section>
+
+        <section class="contact" id="contacto">
+          <h2>Contacto de la empresa</h2>
+          <p>
+            Para consultas sobre privacidad, ejercicio de derechos o aclaraciones relacionadas con el tratamiento de datos personales,
+            puede comunicarse con Software Sonalia a trav&eacute;s de los siguientes medios:
+          </p>
+          <div class="contact__grid">
+            <div class="contact__item">
+              <span>Empresa</span>
+              Software Sonalia
+            </div>
+            <div class="contact__item">
+              <span>Correo electr&oacute;nico</span>
+              <a href="mailto:softwaresonalia@gmail.com">softwaresonalia@gmail.com</a>
+            </div>
+            <div class="contact__item">
+              <span>Ubicaci&oacute;n</span>
+              Orizaba, Veracruz, M&eacute;xico
+            </div>
+            <div class="contact__item">
+              <span>Aplicaci&oacute;n</span>
+              Sonalia Desktop
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer__inner">
+      <div>Software Sonalia | Sonalia Desktop</div>
+      <div><a href="terms.html">Ver T&eacute;rminos y Condiciones</a></div>
+    </div>
+  </footer>
+</body>
+</html>
