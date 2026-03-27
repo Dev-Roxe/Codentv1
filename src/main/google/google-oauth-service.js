@@ -46,13 +46,18 @@ function logoutOAuthUser() {
   }
 }
 
-async function authenticateWithGoogle() {
+async function authenticateWithGoogle(options = {}) {
+  const loginHint =
+    typeof options.loginHint === 'string' && options.loginHint.trim()
+      ? options.loginHint.trim()
+      : undefined;
   const credentials = loadGoogleCredentials();
   const { client, tokens, redirectUri } = await runLoopbackOAuthFlow({
     callbackPath: LOGIN_CALLBACK_PATH,
     scopes: OAUTH_SCOPES,
     prompt: 'select_account',
-    includeGrantedScopes: true
+    includeGrantedScopes: true,
+    ...(loginHint ? { loginHint } : {})
   });
 
   if (!tokens?.id_token) {

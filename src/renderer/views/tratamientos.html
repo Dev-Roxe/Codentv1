@@ -8,8 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; object-src 'none'; base-uri 'self';" />
+      <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
   <title>Planes de Tratamiento</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
@@ -19,179 +18,128 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
-  <style>
-    /* === GEO CÍRCULO / DIAGNÓSTICOS === */
-    .geo-mini {
-      margin-top: -6px;
-      pointer-events: none;
-    }
 
-    .geo-mini.geo-mini-selectable {
-      pointer-events: auto;
-    }
 
-    .geo-svg {
-      width: 54px;
-      height: 54px;
-    }
 
-    .geo-circle {
-      fill: #ffffff;
-      stroke: #cbd5e1;
-      stroke-width: 1.2;
-      transition: all .16s ease;
-    }
 
-    :root {
-      --tooth-w: clamp(62px, 4.8vw, 88px);
-      --tooth-h: calc(var(--tooth-w) * 1.38);
-      --tooth-gap: clamp(8px, 1vw, 12px);
-    }
 
-    .odonto-tooth {
-      min-width: var(--tooth-w);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-    }
 
-    .tooth-btn {
-      width: var(--tooth-w);
-      height: var(--tooth-h);
-    }
 
-    .geo-sector {
-      fill: #ffffff;
-      stroke: #94a3b8;
-      stroke-width: 0.6;
-      transition: all .12s ease;
-    }
 
-    .geo-mini-selectable .geo-sector {
-      cursor: pointer;
-    }
 
-    .geo-mini-selectable .geo-sector:hover {
-      fill: #dff4f8;
-      stroke: #4EABBE;
-    }
 
-    .geo-circle-selected {
-      stroke: #4EABBE !important;
-      stroke-width: 2.8;
-      filter: drop-shadow(0 0 10px rgba(78, 171, 190, 0.28));
-    }
 
-    .geo-sector-target {
-      stroke: #0F2532 !important;
-      stroke-width: 1.4;
-      filter: drop-shadow(0 0 8px rgba(15, 37, 50, 0.22));
-      opacity: 1 !important;
-    }
 
-    .geo-cross {
-      display: none;
-    }
 
-    .tooth-absent .geo-sector {
-      fill: #f3f4f6;
-    }
 
-    .tooth-absent .geo-cross {
-      display: block;
-    }
 
-    .tooth-crown-ok .geo-circle {
-      stroke: #3b82f6;
-      stroke-width: 2.6;
-    }
 
-    .tooth-crown-bad .geo-circle {
-      stroke: #ef4444;
-      stroke-width: 2.6;
-    }
 
-    .state-caries {
-      fill: #ef4444 !important;
-    }
 
-    .state-rest-ok {
-      fill: #3b82f6 !important;
-    }
 
-    .state-rest-bad {
-      fill: #f97316 !important;
-    }
 
-    .state-sealant {
-      fill: #facc15 !important;
-    }
 
-    .state-amalgam {
-      fill: #1f2937 !important;
-    }
 
-    .state-endo {
-      fill: #a855f7 !important;
-    }
 
-    .state-implante {
-      fill: #059669 !important;
-    }
 
-    .state-perno {
-      fill: #0f172a !important;
-    }
 
-    .state-fractura {
-      fill: #f59e0b !important;
-    }
 
-    .state-pulpar {
-      fill: #f87171 !important;
-    }
 
-    .state-mov {
-      fill: #0ea5e9 !important;
-    }
 
-    .state-resto {
-      fill: #0f172a !important;
-    }
 
-    .state-erup {
-      fill: #e5e7eb !important;
-      stroke: #cbd5e1;
-      stroke-dasharray: 4 3;
-    }
 
-    /* Custom Scrollbar for mini odonto */
-    .mini-odonto-scroll {
-      overflow-x: auto;
-      overflow-y: hidden;
-    }
 
-    #mini-odonto-content {
-      min-width: max-content;
-    }
 
-    @media (min-width: 1280px) {
-      .mini-odonto-scroll {
-        overflow-x: visible;
-      }
 
-      #mini-odonto-content {
-        min-width: 100%;
-      }
-    }
 
-    @media (max-width: 1279px) {
-      :root {
-        --tooth-w: clamp(56px, 7.2vw, 74px);
-      }
-    }
-  </style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   <style>
     :root {
       --tooth-w: clamp(54px, 4.7vw, 66px);
@@ -207,7 +155,7 @@
       min-width: 100%;
       box-sizing: border-box;
       gap: var(--tooth-gap);
-      padding: 14px 28px 18px;
+      padding: 14px 14px 18px;
       overflow-x: auto;
       scroll-snap-type: x proximity;
       scrollbar-width: thin;
@@ -285,6 +233,40 @@
 
     .dark .tooth-shell {
       background: #ffffff;
+    }
+
+    .tooth-visual {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+    }
+
+    .tooth-visual-image {
+      padding: 0;
+    }
+
+    .tooth-image-stage {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 17px;
+      background: #ffffff;
+      box-shadow: none;
+      overflow: hidden;
+    }
+
+    .tooth-svg-stage {
+      padding: 4px;
+    }
+
+    .tooth-illustration {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      filter: none;
+      user-select: none;
     }
 
     .mini-tooth-btn:hover {
@@ -366,12 +348,26 @@
       transition: all .16s ease;
     }
 
+
+
     .geo-sector {
       fill: #ffffff;
       stroke: #94a3b8;
       stroke-width: 0.6;
       transition: all .12s ease;
     }
+
+    .dark .geo-circle {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+    }
+
+    .dark .geo-sector {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+    }
+
+
 
     .geo-mini-selectable .geo-sector {
       cursor: pointer;
@@ -394,9 +390,7 @@
       opacity: 1 !important;
     }
 
-    .geo-cross {
-      display: none;
-    }
+
 
     .tooth-absent .geo-sector {
       fill: #f3f4f6;
@@ -407,69 +401,25 @@
       display: block;
     }
 
-    .tooth-crown-ok .geo-circle {
-      stroke: #3b82f6;
-      stroke-width: 2.6;
-    }
 
-    .tooth-crown-bad .geo-circle {
-      stroke: #ef4444;
-      stroke-width: 2.6;
-    }
 
-    .state-caries {
-      fill: #ef4444 !important;
-    }
 
-    .state-rest-ok {
-      fill: #3b82f6 !important;
-    }
 
-    .state-rest-bad {
-      fill: #f97316 !important;
-    }
 
-    .state-sealant {
-      fill: #facc15 !important;
-    }
 
-    .state-amalgam {
-      fill: #1f2937 !important;
-    }
 
-    .state-endo {
-      fill: #a855f7 !important;
-    }
 
-    .state-implante {
-      fill: #059669 !important;
-    }
 
-    .state-perno {
-      fill: #0f172a !important;
-    }
 
-    .state-fractura {
-      fill: #f59e0b !important;
-    }
 
-    .state-pulpar {
-      fill: #f87171 !important;
-    }
 
-    .state-mov {
-      fill: #0ea5e9 !important;
-    }
 
-    .state-resto {
-      fill: #0f172a !important;
-    }
 
-    .state-erup {
-      fill: #e5e7eb !important;
-      stroke: #cbd5e1;
-      stroke-dasharray: 4 3;
-    }
+
+
+
+
+
 
     .geo-circle,
     .geo-sector {
@@ -1170,10 +1120,11 @@
       }
     }
   </style>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
-  <main class="max-w-[96rem] mx-auto p-6 space-y-6">
+  <main class="mx-auto p-6 space-y-6" style="max-width: 1800px;">
     <header class="space-y-1">
       <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
       <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Planes de Tratamiento</h1>
@@ -1195,7 +1146,7 @@
 
       <!-- Mini Odontograma Interactivo -->
       <div id="mini-odonto-container"
-        class="bg-white dark:bg-[#0E1A25] rounded-3xl p-6 border border-[#8BCFDD]/30 dark:border-slate-800 shadow-sm relative">
+        class="bg-white dark:bg-[#0E1A25] rounded-3xl p-4 border border-[#8BCFDD]/30 dark:border-slate-800 shadow-sm relative">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-bold text-[#1D5D69] dark:text-white">Odontograma</h3>
           <div class="flex items-center gap-2 text-xs">
@@ -1214,7 +1165,7 @@
         </div>
 
         <div class="mini-odonto-scroll relative w-full pb-2">
-          <div id="mini-odonto-content" class="w-full flex flex-col gap-6 items-center justify-center p-4">
+          <div id="mini-odonto-content" class="w-full flex flex-col gap-6 items-center justify-center p-0">
             <!-- Se inyectan filas aquí -->
           </div>
 
@@ -1536,7 +1487,8 @@
 
   <!-- Scripts -->
   <script src="../scripts/odonto-render.js"></script>
-  <script src="../scripts/tratamientos.js"></script>
+    <script src="../scripts/treatment-cancellation-flow.js"></script>
+    <script src="../scripts/tratamientos.js"></script>
   <script src="../scripts/session-timeout.js"></script>
 </body>
 

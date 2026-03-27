@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.logToMain && window.logToMain.log) window.logToMain.log(`Intentando login para ${email}`);
 
             try {
-                // Evitar que sobreviva una sesiÃ³n previa
+                // Evitar que sobreviva una sesión previa
                 clearSessionData();
                 const res = await window.api.loginUser({ email, password: pwd });
                 if (window.logToMain && window.logToMain.log) window.logToMain.log('loginUser resolved: ' + JSON.stringify(res));
@@ -199,6 +199,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     message = message.replace(/Error invoking remote method '[^']+': Error: /, '');
                 }
 
+                if (isGoogleOnlyAccountMessage(message)) {
+                    toast.show('Esta cuenta usa Google. Continuando con Google...', 'info');
+                    await startGoogleSignIn({ loginHint: email });
+                    return;
+                }
+
                 toast.show(message, 'error');
             } finally {
                 loginBtn.disabled = false;
@@ -213,21 +219,112 @@ document.addEventListener('DOMContentLoaded', async () => {
     const roleSelectionModal = document.getElementById('roleSelectionModal');
     let pendingUserInfo = null;
 
+    const isGoogleOnlyAccountMessage = (value = '') => {
+        const normalized = String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+
+        return normalized.includes('esta cuenta aun no tiene contrasena local')
+            || normalized.includes('esta cuenta solo puede iniciar sesion con google');
+    };
+
+    const startGoogleSignIn = async ({ loginHint = '' } = {}) => {
+        if (!window.api?.googleOAuthAuthenticate) {
+            toast.show('Autenticacion con Google no disponible', 'error');
+            return false;
+        }
+
+        if (!googleSignInBtn) {
+            toast.show('Boton de Google no disponible', 'error');
+            return false;
+        }
+
+        googleSignInBtn.disabled = true;
+        const originalText = googleSignInBtn.innerHTML;
+        googleSignInBtn.innerHTML = '<span class="text-sm">Autenticando...</span>';
+
+        try {
+            clearSessionData();
+            const result = await window.api.googleOAuthAuthenticate({
+                mode: 'login',
+                loginHint: String(loginHint || '').trim()
+            });
+
+            if (!result.success) {
+                toast.show('Error: ' + result.error, 'error');
+                return false;
+            }
+
+            if (result.needsRegistrationCompletion) {
+                toast.show('Completa tu registro para continuar', 'info');
+                await window.api.openView('register');
+                return true;
+            }
+
+            if (result.needsRole) {
+                pendingUserInfo = result.userInfo;
+                roleSelectionModal.classList.remove('hidden');
+                return true;
+            }
+
+            if (result.isNewUser) {
+                toast.show('Registro exitoso. Bienvenido', 'success');
+            } else {
+                toast.show('Autenticacion exitosa', 'success');
+            }
+
+            if (window.cachedUserEmail !== undefined) window.cachedUserEmail = null;
+            if (window.cachedUserName !== undefined) window.cachedUserName = null;
+
+            const displayName = buildDisplayName(result.user.nombre, result.user.apellido);
+            localStorage.setItem('sesionActual', JSON.stringify({
+                id: result.user.id,
+                nombre: result.user.nombre,
+                apellido: result.user.apellido || '',
+                rol: result.user.rol,
+                email: result.user.email || result.userInfo?.email
+            }));
+            localStorage.setItem('userName', displayName);
+            localStorage.setItem('sesionLastLogin', new Date().toISOString());
+
+            await window.api.openView('pacientes');
+            return true;
+        } catch (err) {
+            toast.show('Error al autenticar con Google', 'error');
+            console.error(err);
+            return false;
+        } finally {
+            googleSignInBtn.disabled = false;
+            googleSignInBtn.innerHTML = originalText;
+        }
+    };
+
     if (googleSignInBtn) {
         googleSignInBtn.addEventListener('click', async (e) => {
             e.preventDefault();
+            await startGoogleSignIn({
+                loginHint: username ? username.value.trim() : ''
+            });
+            return;
 
             googleSignInBtn.disabled = true;
             const originalText = googleSignInBtn.innerHTML;
             googleSignInBtn.innerHTML = '<span class="text-sm">Autenticando...</span>';
 
             try {
-                // Evitar que sobreviva una sesiÃ³n previa
+                // Evitar que sobreviva una sesión previa
                 clearSessionData();
                 const result = await window.api.googleOAuthAuthenticate();
 
                 if (!result.success) {
                     toast.show('Error: ' + result.error, 'error');
+                    return;
+                }
+
+                if (result.needsRegistrationCompletion) {
+                    toast.show('Completa tu registro para continuar', 'info');
+                    await window.api.openView('register');
                     return;
                 }
 

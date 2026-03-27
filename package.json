@@ -1,18 +1,20 @@
 {
   "name": "sonalia",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Sonalia Dental Management",
-  "main": "src/main.js",
+  "main": "main.js",
   "scripts": {
     "dev:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css --watch",
     "dev": "electron .",
     "start": "concurrently \"npm run dev:css\" \"npm run dev\"",
     "build:css": "npx tailwindcss -i ./src/renderer/styles/style.css -o ./src/renderer/styles/output.css",
-    "clean:db": "node scripts/clean-db.js",
+    "mail:status": "node scripts/check-mail-service.js",
+    "mail:bootstrap": "node scripts/bootstrap-system-mail-auth.js",
     "postinstall": "electron-builder install-app-deps",
     "pack": "npm run build:css && electron-builder --dir",
+    "build:win": "npm run build:css && electron-builder --win nsis",
     "dist": "npm run build:css && electron-builder",
-    "dist:clean": "npm run clean:db && npm run dist",
+    "publish:win": "npm run build:css && electron-builder --win nsis --publish always",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -22,6 +24,7 @@
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
+    "electron-updater": "^6.8.3",
     "express": "^5.2.1",
     "google-auth-library": "^10.6.1",
     "googleapis": "^166.0.0",
@@ -43,12 +46,14 @@
   "build": {
     "appId": "com.nerick.sonalia.app",
     "productName": "Sonalia",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "icon": "src/renderer/assets/icons/app.ico",
     "directories": {
       "output": "dist_installer"
     },
     "npmRebuild": false,
     "files": [
+      "main.js",
       "src/**/*",
       "package.json",
       "node_modules/**/*"
@@ -64,6 +69,14 @@
         "nsis"
       ]
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "TU_USUARIO_GITHUB",
+        "repo": "TU_REPO_GITHUB",
+        "releaseType": "release"
+      }
+    ],
     "nsis": {
       "oneClick": true,
       "perMachine": false,

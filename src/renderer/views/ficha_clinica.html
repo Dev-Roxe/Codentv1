@@ -8,8 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy"
-    content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self';" />
+      <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
   <title>Ficha Clinica</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script type="module" src="../scripts/init.js"></script>
@@ -85,7 +84,6 @@
             Clínico</p>
 
 
-
           <!-- 1. Historial de Tratamientos -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
@@ -143,6 +141,18 @@
             <span>Periodontograma</span>
           </button>
 
+          <button
+            class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+            data-tab="rx">
+            <span class="inline-flex items-center">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6h16M4 18h16M7 6l3 6-3 6m10-12-3 6 3 6" />
+              </svg>
+            </span>
+            <span>RX e Imágenes</span>
+          </button>
+
           <!-- 4. Planes de Tratamiento -->
           <button
             class="tab-btn w-full text-left px-3 py-2.5 text-sm rounded-lg text-[#0F2532] dark:text-slate-200 hover:bg-[#8BCFDD]/25 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
@@ -198,6 +208,7 @@
             <iframe id="frame-odontograma" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-periodontograma"
               class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
+            <iframe id="frame-rx" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-pagos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-galeria" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>
             <iframe id="frame-contactos" class="tab-frame absolute inset-0 w-full h-full border-0 hidden"></iframe>

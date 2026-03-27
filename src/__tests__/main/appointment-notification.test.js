@@ -1,12 +1,5 @@
-/**
- * Pruebas Unitarias para el Servicio de Notificaciones de Citas
- * 
- * Estas pruebas verifican el funcionamiento correcto del módulo
- * appointment-notification.js
- */
-
-// Mock del servicio de Gmail
 const mockSendEmail = jest.fn();
+
 jest.mock('../../main/google/gmail-service', () => ({
     sendEmail: mockSendEmail
 }));
@@ -14,24 +7,21 @@ jest.mock('../../main/google/gmail-service', () => ({
 const { sendAppointmentNotification } = require('../../main/appointment-notification');
 
 describe('Appointment Notification Service', () => {
-
     beforeEach(() => {
-        // Limpiar todos los mocks antes de cada prueba
         jest.clearAllMocks();
     });
 
     describe('sendAppointmentNotification', () => {
-
-        test('debe enviar notificación exitosamente con todos los datos', async () => {
+        test('sends the notification successfully with full appointment data', async () => {
             mockSendEmail.mockResolvedValue(true);
 
             const appointmentData = {
                 patientEmail: 'paciente@example.com',
-                patientName: 'Juan Pérez',
+                patientName: 'Juan Perez',
                 appointmentDate: '2026-02-10',
                 appointmentTime: '10:00',
                 reason: 'Limpieza dental',
-                dentistName: 'Dr. García',
+                dentistName: 'Dr. Garcia',
                 duration: 30
             };
 
@@ -42,144 +32,170 @@ describe('Appointment Notification Service', () => {
             expect(mockSendEmail).toHaveBeenCalledWith(
                 expect.objectContaining({
                     to: 'paciente@example.com',
-                    subject: expect.stringContaining('Cita'),
-                    html: expect.stringContaining('Juan Pérez')
+                    subject: 'Cita Agendada - Confirmacion',
+                    html: expect.stringContaining('Juan Perez')
                 })
             );
         });
 
-        test('debe incluir todos los detalles de la cita en el email', async () => {
+        test('includes appointment details in the confirmation email body', async () => {
             mockSendEmail.mockResolvedValue(true);
 
-            const appointmentData = {
+            await sendAppointmentNotification({
                 patientEmail: 'test@example.com',
-                patientName: 'María López',
+                patientName: 'Maria Lopez',
                 appointmentDate: '2026-03-15',
                 appointmentTime: '14:30',
-                reason: 'Revisión general',
-                dentistName: 'Dra. Martínez',
+                reason: 'Revision general',
+                dentistName: 'Dra. Martinez',
                 duration: 45
-            };
-
-            await sendAppointmentNotification(appointmentData);
+            });
 
             const emailCall = mockSendEmail.mock.calls[0][0];
-            expect(emailCall.html).toContain('María López');
+            expect(emailCall.html).toContain('Maria Lopez');
             expect(emailCall.html).toContain('14:30');
-            expect(emailCall.html).toContain('Revisión general');
-            expect(emailCall.html).toContain('Dra. Martínez');
+            expect(emailCall.html).toContain('Revision general');
+            expect(emailCall.html).toContain('Dra. Martinez');
+            expect(emailCall.html).toContain('Cita Agendada');
+            expect(emailCall.html).not.toContain('Ã');
+            expect(emailCall.html).not.toContain('ðŸ');
         });
 
-        test('debe retornar false cuando falta el email del paciente', async () => {
-            const appointmentData = {
+        test('builds the cancellation template when the appointment is cancelled', async () => {
+            mockSendEmail.mockResolvedValue(true);
+
+            await sendAppointmentNotification({
+                patientEmail: 'test@example.com',
+                patientName: 'Laura Gomez',
+                appointmentDate: '2026-04-20',
+                appointmentTime: '09:15',
+                reason: 'Consulta',
+                dentistName: 'Dr. Ruiz',
+                notificationType: 'cancelado'
+            });
+
+            const emailCall = mockSendEmail.mock.calls[0][0];
+            expect(emailCall.subject).toBe('Cita Cancelada - Aviso');
+            expect(emailCall.html).toContain('Cita Cancelada');
+            expect(emailCall.html).toContain('su cita fue cancelada');
+            expect(emailCall.html).toContain('contactenos para asignarle una nueva fecha');
+        });
+
+        test('builds the no-show template when the appointment is marked as no show', async () => {
+            mockSendEmail.mockResolvedValue(true);
+
+            await sendAppointmentNotification({
+                patientEmail: 'test@example.com',
+                patientName: 'Mario Torres',
+                appointmentDate: '2026-05-11',
+                appointmentTime: '12:00',
+                reason: 'Ortodoncia',
+                dentistName: 'Dra. Leon',
+                notificationType: 'no-asiste'
+            });
+
+            const emailCall = mockSendEmail.mock.calls[0][0];
+            expect(emailCall.subject).toBe('Inasistencia de Cita - Aviso');
+            expect(emailCall.html).toContain('Inasistencia Registrada');
+            expect(emailCall.html).toContain('no asistida');
+            expect(emailCall.html).toContain('desea reagendar');
+        });
+
+        test('returns false when the patient email is missing', async () => {
+            const result = await sendAppointmentNotification({
                 patientEmail: null,
-                patientName: 'Juan Pérez',
+                patientName: 'Juan Perez',
                 appointmentDate: '2026-02-10',
                 appointmentTime: '10:00',
                 reason: 'Limpieza dental'
-            };
-
-            const result = await sendAppointmentNotification(appointmentData);
+            });
 
             expect(result).toBe(false);
             expect(mockSendEmail).not.toHaveBeenCalled();
         });
 
-        test('debe retornar false cuando el email está vacío', async () => {
-            const appointmentData = {
+        test('returns false when the patient email is empty', async () => {
+            const result = await sendAppointmentNotification({
                 patientEmail: '',
-                patientName: 'Juan Pérez',
+                patientName: 'Juan Perez',
                 appointmentDate: '2026-02-10',
                 appointmentTime: '10:00',
                 reason: 'Limpieza dental'
-            };
-
-            const result = await sendAppointmentNotification(appointmentData);
+            });
 
             expect(result).toBe(false);
             expect(mockSendEmail).not.toHaveBeenCalled();
         });
 
-        test('debe manejar errores del servicio de email correctamente', async () => {
+        test('returns false when the email service fails', async () => {
             mockSendEmail.mockRejectedValue(new Error('Gmail service error'));
 
-            const appointmentData = {
+            const result = await sendAppointmentNotification({
                 patientEmail: 'paciente@example.com',
-                patientName: 'Juan Pérez',
+                patientName: 'Juan Perez',
                 appointmentDate: '2026-02-10',
                 appointmentTime: '10:00',
                 reason: 'Limpieza dental'
-            };
-
-            const result = await sendAppointmentNotification(appointmentData);
+            });
 
             expect(result).toBe(false);
             expect(mockSendEmail).toHaveBeenCalled();
         });
 
-        test('debe funcionar sin datos opcionales (dentista, duración)', async () => {
+        test('works without optional professional and duration data', async () => {
             mockSendEmail.mockResolvedValue(true);
 
-            const appointmentData = {
+            const result = await sendAppointmentNotification({
                 patientEmail: 'paciente@example.com',
                 patientName: 'Ana Torres',
                 appointmentDate: '2026-02-20',
                 appointmentTime: '09:00',
                 reason: 'Consulta'
-            };
-
-            const result = await sendAppointmentNotification(appointmentData);
+            });
 
             expect(result).toBe(true);
             expect(mockSendEmail).toHaveBeenCalled();
         });
 
-        test('debe formatear correctamente el HTML del email', async () => {
+        test('keeps the generated HTML well formed', async () => {
             mockSendEmail.mockResolvedValue(true);
 
-            const appointmentData = {
+            await sendAppointmentNotification({
                 patientEmail: 'test@example.com',
                 patientName: 'Carlos Ruiz',
                 appointmentDate: '2026-04-01',
                 appointmentTime: '16:00',
                 reason: 'Ortodoncia',
-                dentistName: 'Dr. Sánchez'
-            };
-
-            await sendAppointmentNotification(appointmentData);
+                dentistName: 'Dr. Sanchez'
+            });
 
             const emailCall = mockSendEmail.mock.calls[0][0];
-
-            // Verificar que el HTML está bien formado
             expect(emailCall.html).toContain('<');
             expect(emailCall.html).toContain('>');
             expect(emailCall.html).toContain('style=');
-
-            // Verificar estructura del email
             expect(emailCall.to).toBe('test@example.com');
             expect(emailCall.subject).toBeTruthy();
         });
 
-        test('debe manejar caracteres especiales en los datos', async () => {
+        test('normalizes accented and mojibake data to safe ASCII text', async () => {
             mockSendEmail.mockResolvedValue(true);
 
-            const appointmentData = {
+            const result = await sendAppointmentNotification({
                 patientEmail: 'test@example.com',
-                patientName: 'José María Ñoño',
+                patientName: 'JosÃƒ© MarÃƒÂ­a Ãƒâ€˜oÃƒÂ±o',
                 appointmentDate: '2026-05-01',
                 appointmentTime: '11:00',
-                reason: 'Extracción & Limpieza',
-                dentistName: 'Dr. Pérez-García'
-            };
-
-            const result = await sendAppointmentNotification(appointmentData);
+                reason: 'ExtracciÃƒÂ³n & Limpieza',
+                dentistName: 'Dr. PÃƒ©rez-GarcÃƒÂ­a'
+            });
 
             expect(result).toBe(true);
             expect(mockSendEmail).toHaveBeenCalled();
 
             const emailCall = mockSendEmail.mock.calls[0][0];
-            expect(emailCall.html).toContain('José María Ñoño');
-            expect(emailCall.html).toContain('Extracción & Limpieza');
+            expect(emailCall.html).toContain('Jose Maria Nono');
+            expect(emailCall.html).toContain('Extraccion &amp; Limpieza');
+            expect(emailCall.html).toContain('Dr. Perez-Garcia');
         });
     });
 });

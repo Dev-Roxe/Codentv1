@@ -35,8 +35,19 @@ function dbRun(sql, params = []) {
   return new Promise((resolve, reject) => {
     try {
       if (!db) return resolve();
-      if (db.run && db.run.length >= 3) db.run(sql, params, (err) => err ? reject(err) : resolve());
-      else if (db.run) db.run(sql, params).then(resolve).catch(reject);
+      // standard sqlite3 callback matches (err) => ... BUT the callback is 'function(err) {}' to access this.lastID
+      if (db.run && db.run.length >= 3) {
+        db.run(sql, params, function(err) {
+          if (err) return reject(err);
+          resolve(this ? this.lastID : undefined);
+        });
+      }
+      else if (db.run) {
+        db.run(sql, params).then(result => {
+          // Some wrappers return { lastID }
+          resolve(result?.lastID || result?.id);
+        }).catch(reject);
+      }
       else resolve();
     } catch (e) { reject(e); }
   });
@@ -147,23 +158,28 @@ const FACE_LABELS = {
 };
 
 const DIAGNOSES = [
-  { id: "crown-ok", name: "Corona", cssClass: "tooth-crown-ok", target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.star },
-  { id: "crown-bad", name: "Corona (Mal Estado)", cssClass: "tooth-crown-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
-  { id: "absent", name: "Ausente", cssClass: "tooth-absent", target: "tooth", status: "Pendiente", color: "#6b7280", icon: ICONS.x },
-  { id: "caries-dx", name: "Caries", cssClass: "state-caries", target: "face", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
-  { id: "rest-ok", name: "Restauración", cssClass: "state-rest-ok", target: "face", status: "Realizado", color: "#3b82f6", icon: ICONS.check },
-  { id: "rest-bad", name: "Restauración (Mal Estado)", cssClass: "state-rest-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
-  { id: "sealant", name: "Sellante", cssClass: "state-sealant", target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
-  { id: "amalgam", name: "Amalgama", cssClass: "state-amalgam", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
-  { id: "endo", name: "Endodoncia", cssClass: "state-endo", target: "face", status: "Realizado", color: "#a855f7", icon: ICONS.bolt },
-  { id: "implante", name: "Implante", cssClass: "state-implante", target: "face", status: "Realizado", color: "#059669", icon: ICONS.link },
-  { id: "perno", name: "Perno Muñón", cssClass: "state-perno", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
-  { id: "fractura", name: "Fractura", cssClass: "state-fractura", target: "face", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
-  { id: "pulpar", name: "Infección Pulpar", cssClass: "state-pulpar", target: "face", status: "Pendiente", color: "#f87171", icon: ICONS.bolt },
-  { id: "movilidad", name: "Movilidad", cssClass: "state-mov", target: "face", status: "Pendiente", color: "#0ea5e9", icon: ICONS.adjust },
-  { id: "resto", name: "Resto Radicular", cssClass: "state-resto", target: "face", status: "Pendiente", color: "#0f172a", icon: ICONS.x },
-  { id: "erupcion", name: "Sin Erupcionar", cssClass: "state-erup", target: "face", status: "Pendiente", color: "#cbd5e1", icon: ICONS.circle },
-  { id: "sano", name: "Sano", cssClass: "clean", target: "face", status: "Realizado", color: "#10b981", icon: ICONS.check },
+  // target:"tooth"  → Afecta la pieza entera; se guarda en state.tooth
+  { id: "crown-ok",  name: "Corona",              cssClass: "tooth-crown-ok",  target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.star },
+  { id: "crown-bad", name: "Corona (Mal Estado)",  cssClass: "tooth-crown-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "absent",    name: "Ausente",              cssClass: "tooth-absent",    target: "tooth", status: "Pendiente", color: "#6b7280", icon: ICONS.x },
+
+  // target:"face"   → Afecta una o más caras puntuales; se guarda en state.faces[cara]
+  { id: "caries-dx", name: "Caries",                     cssClass: "state-caries",   target: "face", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
+  { id: "rest-ok",   name: "Restauración",               cssClass: "state-rest-ok",  target: "face", status: "Realizado", color: "#3b82f6", icon: ICONS.check },
+  { id: "rest-bad",  name: "Restauración (Mal Estado)",  cssClass: "state-rest-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
+  { id: "sealant",   name: "Sellante",                   cssClass: "state-sealant",  target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
+  { id: "amalgam",   name: "Amalgama",                   cssClass: "state-amalgam",  target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
+  { id: "sano",      name: "Sano",                       cssClass: "clean",          target: "face", status: "Realizado", color: "#10b981", icon: ICONS.check },
+
+  // target:"whole"  → Afecta la pieza completa visualmente (overlay); se guarda en state.tooth (face=null en BD)
+  { id: "endo",      name: "Endodoncia",       cssClass: "state-endo",    target: "whole", status: "Realizado", color: "#a855f7", icon: ICONS.bolt },
+  { id: "implante",  name: "Implante",         cssClass: "state-implante",target: "whole", status: "Realizado", color: "#059669", icon: ICONS.link },
+  { id: "perno",     name: "Perno Muñón",      cssClass: "state-perno",   target: "whole", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
+  { id: "fractura",  name: "Fractura",         cssClass: "state-fractura",target: "whole", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "pulpar",    name: "Infección Pulpar", cssClass: "state-pulpar",  target: "whole", status: "Pendiente", color: "#f87171", icon: ICONS.bolt },
+  { id: "movilidad", name: "Movilidad",        cssClass: "state-mov",     target: "whole", status: "Pendiente", color: "#0ea5e9", icon: ICONS.adjust },
+  { id: "resto",     name: "Resto Radicular",  cssClass: "state-resto",   target: "whole", status: "Pendiente", color: "#0f172a", icon: ICONS.x },
+  { id: "erupcion",  name: "Sin Erupcionar",   cssClass: "state-erup",    target: "whole", status: "Pendiente", color: "#cbd5e1", icon: ICONS.circle },
 ];
 
 const DX_CATEGORIES = [
@@ -172,7 +188,12 @@ const DX_CATEGORIES = [
   { title: "Otras Simbologías", ids: ["sano", "sealant", "erupcion", "crown-bad"] },
 ];
 
+// IDs de diagnósticos de tipo cara que sólo aplican a una cara puntual seleccionada
 const SURFACE_DX_IDS = new Set(["caries-dx", "rest-ok", "rest-bad", "sealant", "amalgam"]);
+
+// IDs de diagnósticos de tipo "whole" — afectan la pieza completa (se guardan en state.tooth)
+const WHOLE_DX_IDS = new Set(["endo", "implante", "perno", "fractura", "pulpar", "movilidad", "resto", "erupcion"]);
+
 const WHOLE_TOOTH_TREATMENT_IDS = new Set(["corona", "implante", "perno", "endodoncia", "fractura", "pulpar", "ausente"]);
 
 // Load treatments from catalog
@@ -348,6 +369,8 @@ function getToothDiagnostics(toothNumber) {
   const entries = [];
   if (state.tooth?.id) {
     const dx = findDiagnosis(state.tooth.id) || state.tooth;
+    // Propagar el target real (tooth / whole) para que los helpers visuales distingan correctamente
+    const realTarget = dx.target || state.tooth.target || "tooth";
     entries.push({
       key: "tooth",
       id: dx.id,
@@ -356,7 +379,7 @@ function getToothDiagnostics(toothNumber) {
       status: dx.status || state.tooth.status || "",
       color: dx.color || BRAND.primary,
       icon: dx.icon || ICONS.circle,
-      target: "tooth",
+      target: realTarget,
       face: null,
       priority: getDiagnosisPriority(dx.id),
     });
@@ -386,7 +409,10 @@ function getDiagnosisSummaryTitle(toothNumber) {
   const entries = getToothDiagnostics(toothNumber);
   if (!entries.length) return `Pieza ${toothNumber}`;
   const detail = entries
-    .map((entry) => entry.target === "tooth" ? `Pieza: ${entry.name}` : `${faceLabel(entry.face)}: ${entry.name}`)
+    .map((entry) => {
+      const isWide = entry.target === "tooth" || entry.target === "whole";
+      return isWide ? `Pieza: ${entry.name}` : `${faceLabel(entry.face)}: ${entry.name}`;
+    })
     .join(" | ");
   return `Pieza ${toothNumber} | ${detail}`;
 }
@@ -399,7 +425,8 @@ function getToothVisualState(toothNumber) {
   const status = teethStatus[toothNumber] || null;
   const treatment = status?.treatment ? findTreatment(status.treatment) : null;
   const entries = getToothDiagnostics(toothNumber);
-  const toothEntry = entries.find((entry) => entry.target === "tooth") || null;
+  // tooth-level entry = target "tooth" OR target "whole" (pieza completa visualmente)
+  const toothEntry = entries.find((entry) => entry.target === "tooth" || entry.target === "whole") || null;
   const faceEntries = entries.filter((entry) => entry.target === "face");
   const ids = new Set(entries.map((entry) => entry.id));
   if (status?.treatment) ids.add(status.treatment);
@@ -1039,14 +1066,26 @@ async function loadTreatmentsFromDB() {
           const json = JSON.parse(row.notas.substring(3));
           const dx = findDiagnosis(json.dxId);
           if (dx) {
+            const recordId = row.id;
             const state = ensureDxState(toothNum);
-            if (json.face) {
-              state.faces = state.faces || {};
-              state.faces[json.face] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status };
+
+            // Restaurar según la naturaleza del diagnóstico
+            const isToothWide = (dx.target === "tooth" || dx.target === "whole" || !json.face);
+            if (isToothWide) {
+              // Diagnóstico de pieza completa (tooth o whole)
+              state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name, target: dx.target, recordId };
+              if (dx.id === "absent") state.faces = {};
             } else {
-              state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name };
+              // Diagnóstico de cara puntual
+              const faceKey = normalizeFaceId(json.face);
+              if (faceKey) {
+                state.faces = state.faces || {};
+                state.faces[faceKey] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status, recordId };
+              }
             }
-            addDxRow(toothNum, json.face ? faceLabel(json.face) : "Pieza completa", dx, json.face || null);
+
+            const zoneLabel = isToothWide ? "Pieza completa" : faceLabel(json.face);
+            addDxRow(toothNum, zoneLabel, dx, isToothWide ? null : json.face, recordId);
           }
         } catch (e) { console.error("Error parsing dx note", e); }
         return;
@@ -1234,39 +1273,37 @@ function renderDxOptions() {
 }
 
 async function saveDiagnosisToDB(tooth, face, dx) {
-  if (!currentPacienteId || !db) return;
+  if (!currentPacienteId || !db) return null;
   try {
     const noteObj = { type: "diagnosis", dxId: dx.id, face: face || null };
     const nota = "DX:" + JSON.stringify(noteObj);
 
-    await dbRun(
+    const insertedId = await dbRun(
       'INSERT INTO tratamientos (paciente_id, diente, procedimiento, costo, notas, fecha) VALUES (?, ?, ?, ?, ?, datetime("now"))',
       [currentPacienteId, tooth.toString(), dx.name, 0, nota]
     );
+
     if (window.parent !== window) window.parent.postMessage({ type: "tratamiento-guardado" }, "*");
+    return insertedId;
   } catch (e) {
     console.error("Error saving diagnosis:", e);
     toast("Error al guardar diagnóstico", "error");
+    return null;
   }
 }
 
-async function deleteDiagnosisFromDB(tooth, face, dxId) {
+async function deleteDiagnosisFromDB(tooth, face, dxId, recordId = null) {
   if (!currentPacienteId || !db) return;
   try {
-    // Buscar el tratamiento que coincida con la nota
-    // Como no guardamos el ID en el DOM, buscaremos por contenido de la nota aproximado o parseado
-    // Para simplificar, borramos el mas reciente que coincida
+    // Si tenemos recordId, borramos directamente por ID (más seguro)
+    if (recordId) {
+      await dbRun('DELETE FROM tratamientos WHERE id = ? AND paciente_id = ?', [recordId, currentPacienteId]);
+      if (window.parent !== window) window.parent.postMessage({ type: "tratamiento-guardado" }, "*");
+      return;
+    }
 
-    const rows = await dbAll('SELECT id, notas FROM tratamientos WHERE paziente_id = ? AND diente = ?', [currentPacienteId, tooth]); // Typo in paziente_id fixed below
-    // Actually simpler: Select where note like...
-
-    // Better query:
-    const notePattern = `%"dxId":"${dxId}"%`;
-    const facePattern = face ? `%"face":"${face}"%` : `%"face":null%`;
-
-    // SQLite LIKE is case insensitive by default usually, but let's be safe.
-    // Actually, let's just fetch all for patient/tooth and filter in JS to be safe with JSON format
-    const candidateRows = await dbAll('SELECT id, notas FROM tratamientos WHERE paciente_id = ? AND diente = ?', [currentPacienteId, tooth]);
+    // Fallback: buscar por nota (lógica original corregida)
+    const candidateRows = await dbAll('SELECT id, notas FROM tratamientos WHERE paciente_id = ? AND diente = ?', [currentPacienteId, tooth.toString()]);
 
     let targetId = null;
     for (const row of candidateRows) {
@@ -1275,7 +1312,7 @@ async function deleteDiagnosisFromDB(tooth, face, dxId) {
           const json = JSON.parse(row.notas.substring(3));
           if (json.dxId === dxId && json.face === (face || null)) {
             targetId = row.id;
-            break; // Delete one match
+            break; 
           }
         } catch (e) { }
       }
@@ -1335,38 +1372,64 @@ async function applyDiagnosis(dxId) {
 
   const state = ensureDxState(dxContext.tooth);
 
+  // ── Regla de aplicación centralizada ──────────────────────────────────────
+  // target:"tooth"  → pieza completa (crown-ok, crown-bad, absent)
+  // target:"whole"  → pieza completa visualmente (endo, implante, movilidad…)
+  //                   se almacena en state.tooth igual que tooth, face=null en BD
+  // target:"face"   → cara puntual seleccionada (caries, restauración, sellante…)
+  // "sano"          → limpia sólo la cara seleccionada (acción especial)
+  // ──────────────────────────────────────────────────────────────────────────
+
   if (dx.id === "sano" || dx.cssClass === "clean") {
+    // Limpiar sólo la cara seleccionada
     if (dxContext.face && state.faces) delete state.faces[dxContext.face];
-  } else if (dx.target === "tooth") {
-    state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name };
-    if (dx.id === "absent") state.faces = {};
-  } else if (dxContext.face) {
-    state.faces[dxContext.face] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status };
+
+  } else if (dx.target === "tooth" || dx.target === "whole") {
+    // Diagnóstico de pieza completa
+    state.tooth = { id: dx.id, cssClass: dx.cssClass, name: dx.name, target: dx.target };
+    if (dx.id === "absent") state.faces = {}; // Ausente limpia todas las caras
+
+  } else if (dx.target === "face") {
+    // Diagnóstico de cara puntual
+    if (dxContext.face) {
+      state.faces[dxContext.face] = { id: dx.id, cssClass: dx.cssClass, name: dx.name, status: dx.status };
+    }
   }
 
   diagnosticsState[dxContext.tooth] = state;
-  addDxRow(
-    dxContext.tooth,
-    dx.target === "tooth" ? "Pieza completa" : faceLabel(dxContext.face),
-    dx,
-    dx.target === "tooth" ? null : dxContext.face
-  );
-  triggerDiagnosisFeedback(dxContext.tooth, dx.target === "tooth" ? "tooth" : dxContext.face);
-  toast(`DX: ${dx.name} en pieza ${dxContext.tooth}${dx.target === "face" && dxContext.face ? ` · ${faceLabel(dxContext.face)}` : ""}`, dx.status?.toLowerCase().includes("pend") ? "warn" : "ok");
 
-  // Guardar en BD
-  saveDiagnosisToDB(dxContext.tooth, dxContext.face, dx);
+  // Determinar etiqueta de zona para la tabla y el toast
+  const isToothWide = (dx.target === "tooth" || dx.target === "whole");
+  const zoneLabel = isToothWide ? "Pieza completa" : faceLabel(dxContext.face);
+  const faceForDB  = isToothWide ? null : dxContext.face;
+
+  // Guardar en BD (Primero para tener el ID)
+  const recordId = await saveDiagnosisToDB(dxContext.tooth, faceForDB, dx);
+
+  // Vincular ID al estado visual para sincronización
+  if (isToothWide) {
+    if (state.tooth) state.tooth.recordId = recordId;
+  } else if (dxContext.face && state.faces[dxContext.face]) {
+    state.faces[dxContext.face].recordId = recordId;
+  }
+
+  addDxRow(dxContext.tooth, zoneLabel, dx, faceForDB, recordId);
+  triggerDiagnosisFeedback(dxContext.tooth, isToothWide ? "tooth" : dxContext.face);
+  toast(
+    `DX: ${dx.name} en pieza ${dxContext.tooth}${!isToothWide && dxContext.face ? ` · ${faceLabel(dxContext.face)}` : ""}`,
+    dx.status?.toLowerCase().includes("pend") ? "warn" : "ok"
+  );
 
   closeDxModal();
   render();
 }
 
-function addDxRow(tooth, face, dx, faceIdRaw = null) {
+function addDxRow(tooth, face, dx, faceIdRaw = null, recordId = null) {
   const tbody = $("dxTableBody");
   if (!tbody || !dx) return;
   $("dxEmpty")?.classList.add("hidden");
 
-  const normalizedFaceId = dx.target === "tooth"
+  const normalizedFaceId = (dx.target === "tooth" || dx.target === "whole")
     ? "tooth"
     : (normalizeFaceId(faceIdRaw) || normalizeFaceId(dxContext.face) || normalizeFaceId(face) || "");
 
@@ -1374,6 +1437,8 @@ function addDxRow(tooth, face, dx, faceIdRaw = null) {
   tr.dataset.tooth = tooth;
   tr.dataset.faceId = normalizedFaceId;
   tr.dataset.diag = dx.id;
+  if (recordId) tr.dataset.recordId = recordId;
+
   const date = new Date().toLocaleDateString("es-ES");
 
   tr.innerHTML = `
@@ -1399,20 +1464,30 @@ async function deleteDxRow(rowEl) {
   const tooth = parseInt(rowEl.dataset.tooth, 10);
   const faceId = normalizeFaceId(rowEl.dataset.faceId);
   const diagId = rowEl.dataset.diag;
+  const recordId = rowEl.dataset.recordId ? parseInt(rowEl.dataset.recordId, 10) : null;
   const dx = findDiagnosis(diagId);
   const state = diagnosticsState[tooth];
 
   if (state) {
-    const isToothDx = faceId === "tooth" || dx?.target === "tooth";
+    const isToothDx = faceId === "tooth" || dx?.target === "tooth" || dx?.target === "whole";
+
     if (isToothDx) {
-      state.tooth = null;
+      // Eliminar solo si el recordId coincide o si no hay recordId (compatibilidad)
+      if (!recordId || state.tooth?.recordId == recordId) {
+        state.tooth = null;
+      }
     } else if (state.faces && faceId && state.faces[faceId]) {
-      delete state.faces[faceId];
+      if (!recordId || state.faces[faceId].recordId == recordId) {
+        delete state.faces[faceId];
+      }
     }
-    if (!state.tooth && state.faces && Object.keys(state.faces).length === 0) delete diagnosticsState[tooth];
+
+    if (!state.tooth && (!state.faces || Object.keys(state.faces).length === 0)) {
+      delete diagnosticsState[tooth];
+    }
 
     // Eliminar de BD
-    await deleteDiagnosisFromDB(tooth, isToothDx ? null : faceId, diagId);
+    await deleteDiagnosisFromDB(tooth, isToothDx ? null : faceId, diagId, recordId);
   }
 
   rowEl.remove();

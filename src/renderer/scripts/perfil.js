@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
     session.apellido = perfil.apellido || session.apellido || '';
     session.email = perfil.email || session.email || '';
     session.rol = perfil.rol || session.rol || '';
+    session.foto_perfil = perfil.foto_perfil || session.foto_perfil || null;
 
     const displayName =
       buildDisplayName(session.nombre, session.apellido) ||

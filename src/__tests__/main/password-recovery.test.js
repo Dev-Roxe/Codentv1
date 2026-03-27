@@ -1,28 +1,19 @@
 /**
- * Pruebas Unitarias para el Servicio de Recuperación de Contraseña
- * 
- * Estas pruebas verifican el funcionamiento correcto del módulo
- * password-recovery-service.js
+ * Pruebas unitarias para el servicio de recuperacion de contrasena.
  */
 
-const crypto = require('crypto');
-
-// Mock de la base de datos
 const mockDb = {
     get: jest.fn(),
     run: jest.fn(),
     all: jest.fn()
 };
 
-// Mock del módulo de base de datos
 jest.mock('../../db/database', () => mockDb);
 
-// Mock del servicio de Gmail
 jest.mock('../../main/google/gmail-service', () => ({
     sendEmail: jest.fn().mockResolvedValue(true)
 }));
 
-// Mock de setInterval para evitar timers activos
 const originalSetInterval = global.setInterval;
 beforeAll(() => {
     global.setInterval = jest.fn();
@@ -35,20 +26,15 @@ afterAll(() => {
 const passwordRecoveryService = require('../../main/password-recovery-service');
 const { sendEmail } = require('../../main/google/gmail-service');
 
-// Aumentar timeout para pruebas asíncronas
 jest.setTimeout(15000);
 
 describe('Password Recovery Service', () => {
-
     beforeEach(() => {
-        // Limpiar todos los mocks antes de cada prueba
         jest.clearAllMocks();
     });
 
     describe('requestPasswordReset', () => {
-
         test('debe generar un token y enviar email cuando el usuario existe', async () => {
-            // Simular usuario existente
             const mockUser = {
                 id: 1,
                 nombre: 'Juan',
@@ -67,6 +53,7 @@ describe('Password Recovery Service', () => {
             const result = await passwordRecoveryService.requestPasswordReset('juan@example.com');
 
             expect(result.success).toBe(true);
+            expect(result.codeSent).toBe(true);
             expect(result.message).toContain('correo con instrucciones');
             expect(mockDb.get).toHaveBeenCalledWith(
                 expect.stringContaining('SELECT'),
@@ -77,27 +64,28 @@ describe('Password Recovery Service', () => {
             expect(sendEmail).toHaveBeenCalledWith(
                 expect.objectContaining({
                     to: 'juan@example.com',
-                    subject: expect.stringContaining('Recuperación de Contraseña')
+                    subject: expect.stringContaining('Recuperacion de Contrasena')
                 })
             );
         });
 
-        test('debe retornar mensaje genérico cuando el usuario no existe (seguridad)', async () => {
+        test('debe retornar mensaje generico cuando el usuario no existe', async () => {
             mockDb.get.mockImplementation((query, params, callback) => {
-                callback(null, null); // Usuario no encontrado
+                callback(null, null);
             });
 
             const result = await passwordRecoveryService.requestPasswordReset('noexiste@example.com');
 
             expect(result.success).toBe(true);
-            expect(result.message).toContain('Si el correo existe');
+            expect(result.codeSent).toBe(false);
+            expect(result.message).toContain('Si existe una cuenta con ese correo');
             expect(sendEmail).not.toHaveBeenCalled();
         });
 
-        test('debe retornar mensaje genérico para usuarios OAuth (Google)', async () => {
+        test('debe enviar codigo tambien para usuarios OAuth de Google', async () => {
             const mockOAuthUser = {
                 id: 2,
-                nombre: 'María',
+                nombre: 'Maria',
                 email: 'maria@example.com',
                 auth_provider: 'google'
             };
@@ -106,11 +94,16 @@ describe('Password Recovery Service', () => {
                 callback(null, mockOAuthUser);
             });
 
+            mockDb.run.mockImplementation((query, params, callback) => {
+                callback(null);
+            });
+
             const result = await passwordRecoveryService.requestPasswordReset('maria@example.com');
 
             expect(result.success).toBe(true);
-            expect(result.message).toContain('Si el correo existe');
-            expect(sendEmail).not.toHaveBeenCalled();
+            expect(result.codeSent).toBe(true);
+            expect(result.message).toContain('crear o restablecer tu contrasena');
+            expect(sendEmail).toHaveBeenCalledTimes(1);
         });
 
         test('debe manejar errores de base de datos correctamente', async () => {
@@ -125,9 +118,8 @@ describe('Password Recovery Service', () => {
     });
 
     describe('validateResetToken', () => {
-
-        test('debe validar correctamente un token válido', async () => {
-            const futureDate = new Date(Date.now() + 3600000).toISOString(); // 1 hora en el futuro
+        test('debe validar correctamente un token valido', async () => {
+            const futureDate = new Date(Date.now() + 3600000).toISOString();
             const mockToken = {
                 user_id: 1,
                 expires_at: futureDate,
@@ -144,7 +136,7 @@ describe('Password Recovery Service', () => {
             expect(result.userId).toBe(1);
         });
 
-        test('debe rechazar un token inválido (no existe)', async () => {
+        test('debe rechazar un token invalido cuando no existe', async () => {
             mockDb.get.mockImplementation((query, params, callback) => {
                 callback(null, null);
             });
@@ -152,7 +144,7 @@ describe('Password Recovery Service', () => {
             const result = await passwordRecoveryService.validateResetToken('invalid-token');
 
             expect(result.valid).toBe(false);
-            expect(result.error).toContain('inválido');
+            expect(result.error).toContain('invalido');
         });
 
         test('debe rechazar un token ya usado', async () => {
@@ -173,7 +165,7 @@ describe('Password Recovery Service', () => {
         });
 
         test('debe rechazar un token expirado', async () => {
-            const pastDate = new Date(Date.now() - 3600000).toISOString(); // 1 hora en el pasado
+            const pastDate = new Date(Date.now() - 3600000).toISOString();
             const mockExpiredToken = {
                 user_id: 1,
                 expires_at: pastDate,
@@ -192,8 +184,7 @@ describe('Password Recovery Service', () => {
     });
 
     describe('resetPassword', () => {
-
-        test('debe resetear la contraseña con un token válido', async () => {
+        test('debe resetear la contrasena con un token valido', async () => {
             const futureDate = new Date(Date.now() + 3600000).toISOString();
             const mockToken = {
                 user_id: 1,
@@ -227,7 +218,7 @@ describe('Password Recovery Service', () => {
             );
         });
 
-        test('debe rechazar reseteo con token inválido', async () => {
+        test('debe rechazar reseteo con token invalido', async () => {
             mockDb.get.mockImplementation((query, params, callback) => {
                 callback(null, null);
             });
@@ -240,13 +231,11 @@ describe('Password Recovery Service', () => {
     });
 
     describe('cleanupExpiredTokens', () => {
-
         test('debe eliminar tokens expirados sin errores', () => {
             mockDb.run.mockImplementation((query, callback) => {
                 callback(null);
             });
 
-            // No debe lanzar error
             expect(() => {
                 passwordRecoveryService.cleanupExpiredTokens();
             }).not.toThrow();
@@ -262,7 +251,6 @@ describe('Password Recovery Service', () => {
                 callback(new Error('Cleanup error'));
             });
 
-            // No debe lanzar error (solo loguearlo)
             expect(() => {
                 passwordRecoveryService.cleanupExpiredTokens();
             }).not.toThrow();

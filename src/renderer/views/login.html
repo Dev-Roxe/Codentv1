@@ -1,25 +1,32 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Sonalia</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Login - Sonalia</title>
+  <link href="../styles/output.css" rel="stylesheet">
   <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-  </script>
-  <script>
-    // Initialize dark mode from localStorage
-    const savedTheme = localStorage.getItem('theme');
-    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    const VALID_THEMES = new Set(['light', 'dark', 'auto']);
+    const safeParseSettings = (value) => {
+      if (!value) return {};
+      try {
+        return JSON.parse(value) || {};
+      } catch (error) {
+        return {};
+      }
+    };
+    const directTheme = localStorage.getItem('theme');
+    const appSettings = safeParseSettings(localStorage.getItem('app_settings'));
+    const resolvedTheme = VALID_THEMES.has(directTheme)
+      ? directTheme
+      : (VALID_THEMES.has(appSettings.theme) ? appSettings.theme : 'auto');
+    const isDark = resolvedTheme === 'dark' || (resolvedTheme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.dataset.theme = resolvedTheme;
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
   </script>
 </head>
 
@@ -40,10 +47,10 @@
         <!-- Formulario -->
         <form id="loginForm" class="space-y-5">
 
-          <!-- Email/Usuario -->
+          <!-- Email -->
           <div>
-            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Email
-              o usuario</label>
+            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide">Correo
+              electronico</label>
             <input id="username" type="text" placeholder="correo@ejemplo.com" required
               class="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-white focus:outline-none focus:border-[#4EABBE] focus:ring-1 focus:ring-[#4EABBE] transition">
           </div>

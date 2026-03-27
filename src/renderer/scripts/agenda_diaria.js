@@ -1,4 +1,4 @@
-// agenda_diaria.js - Vista diaria con Timeline, Drag & Drop y BÃºsqueda
+// agenda_diaria.js - Vista diaria con Timeline, Drag & Drop y Búsqueda
 
 export async function initDiaria(container, dateStr) {
     // Cargar plantilla si es necesario
@@ -33,7 +33,7 @@ export async function initDiaria(container, dateStr) {
         'dentista',
         'especialista',
         'medico',
-        'mÃ©dico',
+        'médico',
         'doctor',
         'doctora',
         'odont',
@@ -49,7 +49,7 @@ export async function initDiaria(container, dateStr) {
         try {
             return JSON.parse(value);
         } catch (err) {
-            console.warn('[agenda_diaria] JSON invÃ¡lido en app_settings:', err);
+            console.warn('[agenda_diaria] JSON inválido en app_settings:', err);
             return fallback;
         }
     };
@@ -60,6 +60,13 @@ export async function initDiaria(container, dateStr) {
         } catch (e) {
             return {};
         }
+    }
+
+    function getWhatsAppLink(telefono) {
+        if (!telefono) return '';
+        let number = String(telefono).replace(/\D/g, '');
+        if (number.length === 10) number = '52' + number;
+        return `https://wa.me/${number}`;
     }
 
     function getCurrentUserId() {
@@ -240,7 +247,7 @@ export async function initDiaria(container, dateStr) {
         return { ok: true };
     };
 
-    // Cargar configuraciÃ³n del localStorage
+    // Cargar configuración del localStorage
     function loadConfig() {
         const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {});
         return {
@@ -292,7 +299,7 @@ export async function initDiaria(container, dateStr) {
         window.dispatchEvent(new Event('configurationChanged'));
     }
 
-    // ConfiguraciÃ³n del timeline
+    // Configuración del timeline
     const HOUR_HEIGHT = 84;
     let START_HOUR = config.workStart;
     let END_HOUR = config.workEnd;
@@ -567,12 +574,14 @@ export async function initDiaria(container, dateStr) {
         if (!filtersDiv) return;
         filtersDiv.innerHTML = statusFilters.map(f => `
             <label class="flex items-center gap-2 cursor-pointer group">
-                <div class="relative flex items-center">
+                <div class="relative flex items-center shrink-0">
                     <input type="checkbox" class="peer sr-only" value="${f.id}" ${f.checked ? 'checked' : ''}>
-                    <div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 peer-checked:bg-[#4EABBE] peer-checked:border-[#4EABBE] transition-all"></div>
-                    <svg class="absolute w-3 h-3 text-white left-1 top-1 opacity-0 peer-checked:opacity-100 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    <div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 peer-checked:bg-[#4EABBE] peer-checked:border-[#4EABBE] transition-all flex items-center justify-center">
+                        <svg class="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    </div>
                 </div>
-                <span class="text-sm text-[#0F2532]/70 dark:text-gray-300 group-hover:text-[#0F2532] dark:group-hover:text-white transition-colors">${f.label}</span>
+                <div class="w-2.5 h-2.5 rounded-full ${f.color} shrink-0 shadow-sm border border-black/10 dark:border-white/10"></div>
+                <span class="text-sm text-[#0F2532]/70 dark:text-gray-300 group-hover:text-[#0F2532] dark:group-hover:text-white transition-colors flex-1 truncate">${f.label}</span>
             </label>
         `).join('');
 
@@ -658,7 +667,7 @@ export async function initDiaria(container, dateStr) {
         currentTimeIntervalId = setInterval(updateCurrentTimeLine, 60000);
     }
 
-    // Actualizar lÃ­nea de hora actual
+    // Actualizar línea de hora actual
     function updateCurrentTimeLine() {
         const currentTimeLine = $('#currentTimeLine');
         const currentTimeLabel = $('#currentTimeLabel');
@@ -840,6 +849,14 @@ export async function initDiaria(container, dateStr) {
                         ` : ''}
                         
                         <div class="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            ${apt.telefono ? `
+                            <a href="${getWhatsAppLink(apt.telefono)}" target="_blank" onclick="event.stopPropagation()" class="p-1 text-gray-400 hover:text-green-500 rounded transition-colors" title="Enviar WhatsApp">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12.012 2c5.513 0 9.988 4.475 9.988 9.987 0 2.05-.626 3.95-1.688 5.524l1.642 5.968-6.104-1.603a9.962 9.962 0 01-3.838.775c-5.513 0-9.988-4.475-9.988-9.987 0-5.513 4.475-9.988 9.988-9.988zm0 1.664c-4.596 0-8.324 3.728-8.324 8.323 0 1.666.49 3.208 1.332 4.509l-.78 2.836 2.91-1.026c1.233.722 2.67 1.139 4.197 1.139 4.596 0 8.324-3.728 8.324-8.323 0-4.595-3.728-8.323-8.324-8.323z"/>
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M16.342 14.195c-.29-.145-1.713-.846-1.978-.942-.265-.097-.458-.146-.65.145-.192.292-.746.942-.915 1.137-.168.194-.337.218-.626.073-.29-.146-1.222-.45-2.327-1.436-.859-.766-1.44-1.714-1.608-2.005-.168-.292-.018-.45.127-.594.13-.13.29-.338.434-.508.145-.17.192-.29.29-.485.096-.194.048-.363-.024-.508-.073-.146-.65-1.57-.892-2.15-.236-.566-.475-.489-.65-.498-.168-.008-.362-.01-.555-.01-.192 0-.506.073-.77.363-.265.29-1.012.988-1.012 2.413 0 1.424 1.036 2.8 1.18 2.994.145.195 2.042 3.118 4.942 4.37.69.298 1.228.476 1.649.609.693.22 1.324.19 1.822.115.556-.083 1.713-.7 1.954-1.376.24-.676.24-1.256.168-1.376-.072-.12-.265-.194-.554-.338z"/>
+                                </svg>
+                            </a>
+                            ` : ''}
                             <button onclick="window.location.href='ficha_clinica.html?id=${apt.paciente_id}'" 
                                     class="p-1 text-gray-400 hover:text-[#4EABBE] rounded transition-colors" title="Ver Paciente">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -869,7 +886,7 @@ export async function initDiaria(container, dateStr) {
         enableDragDrop();
     }
 
-    // Actualizar estadÃ­sticas
+    // Actualizar estadísticas
     function updateStats(filtered) {
         const statTotal = $('#statTotalCitas');
         const statConfirmadas = $('#statConfirmadas');
@@ -983,14 +1000,47 @@ export async function initDiaria(container, dateStr) {
                     newMinutes = 0;
                 }
 
-                const durationMinutes = Number(draggedAppointment.duracion_minutos || config.defaultDuration || 30);
+                let durationMinutes = Number(draggedAppointment.duracion_minutos || config.defaultDuration || 30);
                 const startMinutes = (newHour * 60) + newMinutes;
+                
+                // Recorte automático si se cruza con la hora de comida
+                const lunchRange = getLunchRangeMinutes();
+                if (lunchRange && startMinutes < lunchRange.start) {
+                    const expectedEndMinutes = startMinutes + durationMinutes;
+                    if (expectedEndMinutes > lunchRange.start) {
+                        durationMinutes = lunchRange.start - startMinutes;
+                    }
+                }
+
                 const endMinutes = startMinutes + durationMinutes;
                 const scheduleValidation = getScheduleValidation(startMinutes, endMinutes);
                 if (!scheduleValidation.ok) {
                     alert(scheduleValidation.message);
                     draggedAppointment = null;
                     return;
+                }
+
+                const now = new Date();
+                const todayStr = toSQLDate(now);
+                const currentViewStr = toSQLDate(currentDate);
+
+                if (currentViewStr < todayStr) {
+                    alert('No se pueden agendar citas en días pasados.');
+                    draggedAppointment = null;
+                    const indicator = grid.querySelector('#dragIndicatorLine');
+                    if (indicator) indicator.style.display = 'none';
+                    return;
+                }
+                
+                if (currentViewStr === todayStr) {
+                    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+                    if (startMinutes < currentMinutes) {
+                        alert('No se puede agendar en una hora que ya ha pasado.');
+                        draggedAppointment = null;
+                        const indicator = grid.querySelector('#dragIndicatorLine');
+                        if (indicator) indicator.style.display = 'none';
+                        return;
+                    }
                 }
 
                 const oldDateTime = new Date(draggedAppointment.fecha_hora);
@@ -1002,7 +1052,7 @@ export async function initDiaria(container, dateStr) {
                 const oldTime = `${String(oldDateTime.getHours()).padStart(2, '0')}:${String(oldDateTime.getMinutes()).padStart(2, '0')}`;
                 const newTime = `${String(newHour).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
 
-                if (confirm(`Â¿Mover de ${oldTime} a ${newTime}?`)) {
+                if (confirm(`¿Mover de ${oldTime} a ${newTime}?`)) {
                     try {
                         // Formatear para SQL: YYYY-MM-DD HH:MM:SS
                         const year = newDateTime.getFullYear();
@@ -1012,14 +1062,16 @@ export async function initDiaria(container, dateStr) {
                         const minutes = String(newDateTime.getMinutes()).padStart(2, '0');
                         const sqlDateTime = `${year}-${month}-${day} ${hours}:${minutes}:00`;
 
-                        await window.api.db.run(
-                            'UPDATE citas SET fecha_hora = ? WHERE id = ?',
-                            [sqlDateTime, draggedAppointment.id]
-                        );
+                        const draggedId = draggedAppointment.id;
+                        await window.api.appointments.move({
+                            id: draggedId,
+                            fecha_hora: sqlDateTime,
+                            duracion_minutos: durationMinutes
+                        });
                         await loadAppointments();
                     } catch (err) {
                         console.error('Error al mover cita:', err);
-                        alert('âŒ Error al mover: ' + err.message);
+                        alert('❌ Error al mover: ' + err.message);
                     }
                 }
 
@@ -1034,7 +1086,7 @@ export async function initDiaria(container, dateStr) {
         }
     }
 
-    // BÃºsqueda
+    // Búsqueda
     const searchInput = $('#searchInput');
     const clearSearch = $('#clearSearch');
 
@@ -1076,7 +1128,10 @@ export async function initDiaria(container, dateStr) {
     // Funciones globales
     window.updateStatus = async (id, status) => {
         try {
-            await window.api.db.run('UPDATE citas SET estado = ? WHERE id = ?', [status, id]);
+            await window.api.appointments.updateStatus({
+                id: id,
+                estado: status
+            });
             loadAppointments();
         } catch (err) {
             alert('Error al actualizar estado');
@@ -1084,9 +1139,9 @@ export async function initDiaria(container, dateStr) {
     };
 
     window.deleteAppointment = async (id) => {
-        if (!confirm('Â¿Eliminar esta cita?')) return;
+        if (!confirm('¿Eliminar esta cita?')) return;
         try {
-            await window.api.db.run('DELETE FROM citas WHERE id = ?', [id]);
+            await window.api.appointments.remove(id);
             loadAppointments();
         } catch (err) {
             alert('Error al eliminar');
@@ -1114,7 +1169,15 @@ export async function initDiaria(container, dateStr) {
         const aptTime = `${String(aptDateObj.getHours()).padStart(2, '0')}:${String(aptDateObj.getMinutes()).padStart(2, '0')}`;
         const durationMinutes = Number(apt.duracion_minutos || config.defaultDuration || 30);
         const startMinutes = timeToMinutes(aptTime) ?? 0;
-        const aptEndTime = minutesToTime(startMinutes + durationMinutes);
+        
+        let dur = durationMinutes;
+        const lunch = getLunchRangeMinutes();
+        if (lunch && startMinutes < lunch.start) {
+            if (startMinutes + dur > lunch.start) {
+                dur = lunch.start - startMinutes;
+            }
+        }
+        const aptEndTime = minutesToTime(startMinutes + dur);
         const displayAptTime = formatDisplayTimeFromString(aptTime, config.timeFormat);
         const displayAptEndTime = formatDisplayTimeFromString(aptEndTime, config.timeFormat);
         const statusOptions = statusFilters.map(f => {
@@ -1164,11 +1227,13 @@ export async function initDiaria(container, dateStr) {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Hora inicio *</label>
-                            <input type="time" id="aptTimeEdit" required value="${aptTime}" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <input type="time" id="aptTimeEdit" required step="300" value="${aptTime}" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <p class="mt-1 text-[11px] text-[#0F2532]/50 dark:text-gray-500">Formato 24h — ej. 09:30</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Hora fin *</label>
-                            <input type="time" id="aptEndTimeEdit" required value="${aptEndTime}" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <input type="time" id="aptEndTimeEdit" required step="300" value="${aptEndTime}" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <p class="mt-1 text-[11px] text-[#0F2532]/50 dark:text-gray-500">Se calcula automático</p>
                         </div>
                     </div>
                     <div>
@@ -1179,7 +1244,7 @@ export async function initDiaria(container, dateStr) {
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Motivo</label>
-                        <input type="text" id="aptReasonEdit" value="${apt.motivo || ''}" placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                        <input type="text" id="aptReasonEdit" required value="${apt.motivo || ''}" placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
                     </div>
                     <div class="flex gap-3 pt-4">
                         <button type="button" id="cancelModalEdit" class="flex-1 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-white font-medium transition-colors">Cancelar</button>
@@ -1199,7 +1264,15 @@ export async function initDiaria(container, dateStr) {
         editStartInput?.addEventListener('change', () => {
             const startMinutesValue = timeToMinutes(editStartInput.value);
             if (startMinutesValue === null) return;
-            editEndInput.value = minutesToTime(startMinutesValue + durationMinutes);
+
+            let dur = durationMinutes;
+            const lunch = getLunchRangeMinutes();
+            if (lunch && startMinutesValue < lunch.start) {
+                if (startMinutesValue + dur > lunch.start) {
+                    dur = lunch.start - startMinutesValue;
+                }
+            }
+            editEndInput.value = minutesToTime(startMinutesValue + dur);
         });
 
         overlay.querySelector('#editAptForm').addEventListener('submit', async (e) => {
@@ -1230,10 +1303,16 @@ export async function initDiaria(container, dateStr) {
             }
 
             try {
-                await window.api.db.run(
-                    'UPDATE citas SET paciente_id = ?, dentista_id = ?, especialista_id = ?, fecha_hora = ?, duracion_minutos = ?, motivo = ?, estado = ? WHERE id = ?',
-                    [pacienteId, dentistId, especialistaId, `${fecha} ${hora}:00`, duracion, motivo, estado, apt.id]
-                );
+                await window.api.appointments.update({
+                    id: apt.id,
+                    paciente_id: pacienteId,
+                    dentista_id: dentistId,
+                    especialista_id: especialistaId,
+                    fecha_hora: `${fecha} ${hora}:00`,
+                    duracion_minutos: duracion,
+                    motivo: motivo,
+                    estado: estado
+                });
                 overlay.remove();
                 loadAppointments();
             } catch (err) {
@@ -1267,7 +1346,7 @@ export async function initDiaria(container, dateStr) {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-100 dark:border-gray-700" style="animation: slideUp 0.3s ease">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">Nueva Cita</h3>
-                    <p class="text-white/70 text-sm mt-1">Agendar para el dÃ­a seleccionado</p>
+                    <p class="text-white/70 text-sm mt-1">Agendar para el día seleccionado</p>
                 </div>
                 <form id="createAptForm" class="p-8 space-y-6">
                     <div>
@@ -1277,12 +1356,7 @@ export async function initDiaria(container, dateStr) {
                             ${patients.map(p => `<option value="${p.id}">${p.nombre} ${p.apellido}</option>`).join('')}
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Profesional</label>
-                        <select id="aptDentist" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
-                            ${dentistOptionsHtml}
-                        </select>
-                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Especialista</label>
                         <select id="aptEspecialista" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all">
@@ -1297,16 +1371,18 @@ export async function initDiaria(container, dateStr) {
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Hora inicio *</label>
-                            <input type="time" id="aptTime" required class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <input type="time" id="aptTime" required step="300" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <p class="mt-1 text-[11px] text-[#0F2532]/50 dark:text-gray-500">Formato 24h — ej. 09:30</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Hora fin *</label>
-                            <input type="time" id="aptEndTime" required class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <input type="time" id="aptEndTime" required step="300" class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                            <p class="mt-1 text-[11px] text-[#0F2532]/50 dark:text-gray-500">Se calcula automático</p>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">Motivo</label>
-                        <input type="text" id="aptReason" placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
+                        <input type="text" id="aptReason" required placeholder="Consulta, limpieza..." class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] outline-none transition-all"/>
                     </div>
                     <div class="flex gap-3 pt-4">
                         <button type="button" id="cancelModal" class="flex-1 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-white font-medium transition-colors">Cancelar</button>
@@ -1326,16 +1402,22 @@ export async function initDiaria(container, dateStr) {
         const setEndFromStart = () => {
             const startMinutes = timeToMinutes(startInput?.value);
             if (startMinutes === null) return;
-            const duration = Number(config.defaultDuration) || 30;
-            endInput.value = minutesToTime(startMinutes + duration);
+            
+            let dur = Number(config.defaultDuration) || 30;
+            const lunch = getLunchRangeMinutes();
+            if (lunch && startMinutes < lunch.start) {
+                if (startMinutes + dur > lunch.start) {
+                    dur = lunch.start - startMinutes;
+                }
+            }
+            endInput.value = minutesToTime(startMinutes + dur);
         };
         startInput?.addEventListener('change', setEndFromStart);
 
         overlay.querySelector('#createAptForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const pacienteId = overlay.querySelector('#aptPatient').value;
-            const dentistIdRaw = overlay.querySelector('#aptDentist')?.value || '';
-            const dentistId = parseDentistSelection(dentistIdRaw);
+            const dentistId = parseDentistSelection(defaultDentistValue);
             const especialistaId = overlay.querySelector('#aptEspecialista').value || null;
             const fecha = overlay.querySelector('#aptDate').value;
             const hora = overlay.querySelector('#aptTime').value;
@@ -1356,14 +1438,33 @@ export async function initDiaria(container, dateStr) {
                 return alert(scheduleValidation.message);
             }
 
+            const now = new Date();
+            const todayStr = toSQLDate(now);
+
+            if (fecha < todayStr) {
+                return alert('No se pueden agendar citas en días pasados.');
+            }
+            if (fecha === todayStr) {
+                const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+                if (startMinutes < currentMinutes) {
+                    return alert('No se puede agendar en una hora que ya ha pasado.');
+                }
+            }
+
             try {
                 const estado = config.autoConfirm ? 'confirmado' : 'pendiente';
-                await window.api.db.run(
-                    'INSERT INTO citas (paciente_id, dentista_id, especialista_id, fecha_hora, duracion_minutos, motivo, estado, monto) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    [pacienteId, dentistId, especialistaId, `${fecha} ${hora}:00`, duracion, motivo, estado, 0]
-                );
+                await window.api.appointments.create({
+                    paciente_id: pacienteId,
+                    dentista_id: dentistId,
+                    especialista_id: especialistaId,
+                    fecha_hora: `${fecha} ${hora}:00`,
+                    duracion_minutos: duracion,
+                    motivo: motivo,
+                    estado: estado,
+                    monto: 0
+                });
 
-                // Enviar notificaciÃ³n por email
+                // Enviar notificación por email
                 try {
                     // Obtener datos del paciente
                     const patient = await window.api.db.get(
@@ -1371,9 +1472,9 @@ export async function initDiaria(container, dateStr) {
                         [pacienteId]
                     );
 
-                    // DEBUG: Ver quÃ© datos del paciente se obtuvieron
-                    console.log('ðŸ“§ Datos del paciente:', patient);
-                    console.log('ðŸ“§ Email del paciente:', patient?.email);
+                    // DEBUG: Ver qué datos del paciente se obtuvieron
+                    console.log('📧 Datos del paciente:', patient);
+                    console.log('📧 Email del paciente:', patient?.email);
 
                     // Solo enviar si el paciente tiene email
                     if (patient && patient.email) {
@@ -1401,7 +1502,7 @@ export async function initDiaria(container, dateStr) {
                             }
                         }
 
-                        // Enviar notificaciÃ³n
+                        // Enviar notificación
                         const notificationResult = await window.api.sendAppointmentNotification({
                             patientEmail: patient.email,
                             patientName: `${patient.nombre} ${patient.apellido}`.trim(),
@@ -1413,12 +1514,12 @@ export async function initDiaria(container, dateStr) {
                         });
 
                         if (notificationResult.success) {
-                            console.log('âœ“ NotificaciÃ³n enviada a', patient.email);
+                            console.log('✅ Notificación enviada a', patient.email);
                         }
                     }
                 } catch (notifError) {
-                    // No bloquear si falla el envÃ­o de notificaciÃ³n
-                    console.warn('No se pudo enviar notificaciÃ³n:', notifError);
+                    // No bloquear si falla el envío de notificación
+                    console.warn('No se pudo enviar notificación:', notifError);
                 }
 
                 overlay.remove();
@@ -1448,9 +1549,9 @@ export async function initDiaria(container, dateStr) {
         setDentistListOpen(false);
     });
 
-    // Escuchar cambios en la configuraciÃ³n (mismo window)
+    // Escuchar cambios en la configuración (mismo window)
     window.addEventListener('configurationChanged', (e) => {
-        console.log('ConfiguraciÃ³n actualizada (mismo window), recargando timeline...');
+        console.log('Configuración actualizada (mismo window), recargando timeline...');
         config = loadConfig();
         syncLunchInputs();
         START_HOUR = config.workStart;
@@ -1462,10 +1563,10 @@ export async function initDiaria(container, dateStr) {
         loadAppointments();
     });
 
-    // Escuchar cambios en la configuraciÃ³n (otras pestaÃ±as)
+    // Escuchar cambios en la configuración (otras pestañas)
     window.addEventListener('storage', (e) => {
         if (e.key === 'work-start' || e.key === 'work-end' || e.key === 'default-duration' || e.key === 'appointment-interval' || e.key === 'time-format' || e.key === 'app_settings' || e.key === 'lunch-start' || e.key === 'lunch-end') {
-            console.log('ConfiguraciÃ³n actualizada (otra pestaÃ±a), recargando timeline...');
+            console.log('Configuración actualizada (otra pestaña), recargando timeline...');
             config = loadConfig();
             syncLunchInputs();
             START_HOUR = config.workStart;
@@ -1491,21 +1592,23 @@ export async function initDiaria(container, dateStr) {
     // ============================================================================
 
     let reminderInterval = null;
-    const notifiedAppointments = new Set(
-        JSON.parse(sessionStorage.getItem('notifiedAppointments') || '[]')
-    );
+    const getReminderStates = () => {
+        try { return JSON.parse(sessionStorage.getItem('appointmentReminders') || '{}'); } 
+        catch { return {}; }
+    };
+    const setReminderStates = (states) => sessionStorage.setItem('appointmentReminders', JSON.stringify(states));
 
-    // Verificar citas prÃ³ximas
+    // Verificar citas próximas
     async function checkUpcomingAppointments() {
         try {
             const now = new Date();
-            const in5Minutes = new Date(now.getTime() + 5 * 60000);
+            // Buscar citas desde hace 20 minutos hasta 1 minuto en el futuro
+            const past20Mins = new Date(now.getTime() - 20 * 60000);
+            const in1Min = new Date(now.getTime() + 1 * 60000);
 
-            // Formatear fechas para SQL
-            const nowSQL = `${toSQLDate(now)} ${formatTime(now)}`;
-            const in5MinSQL = `${toSQLDate(in5Minutes)} ${formatTime(in5Minutes)}`;
+            const pastSQL = `${toSQLDate(past20Mins)} ${formatTime(past20Mins)}`;
+            const in1MinSQL = `${toSQLDate(in1Min)} ${formatTime(in1Min)}`;
 
-            // Buscar citas prÃ³ximas que no estÃ©n canceladas ni atendidas
             const upcomingAppointments = await window.api.db.all(`
                 SELECT c.id, c.paciente_id, c.fecha_hora, c.motivo, c.estado,
                        p.nombre, p.apellido,
@@ -1516,24 +1619,47 @@ export async function initDiaria(container, dateStr) {
                 WHERE c.fecha_hora BETWEEN ? AND ?
                   AND c.estado IN ('pendiente', 'confirmado')
                 ORDER BY c.fecha_hora
-            `, [nowSQL, in5MinSQL]);
+            `, [pastSQL, in1MinSQL]);
 
-            // Mostrar toast para citas no notificadas
+            const states = getReminderStates();
+            const nowMs = now.getTime();
+            let changed = false;
+
             upcomingAppointments.forEach(apt => {
-                if (!notifiedAppointments.has(apt.id)) {
+                let state = states[apt.id] || {};
+                
+                // Si la hora de la cita ha cambiado (movió de lugar), resetear el estado
+                if (state.time && state.time !== apt.fecha_hora) {
+                    delete states[apt.id];
+                    state = {};
+                    changed = true;
+                }
+
+                // Si ya fue notificada y no está postergada, ignorar
+                if (state.status === 'notified') return;
+
+                // Si está postergada, esperar tiempo estipulado
+                if (state.status === 'postponed' && state.postponedUntil > nowMs) return;
+
+                const aptTimeMs = new Date(apt.fecha_hora.replace(' ', 'T')).getTime();
+                
+                // Justo en la hora de la cita o unos minutos pasados
+                if (nowMs >= aptTimeMs) {
                     showAppointmentReminderToast(apt);
-                    notifiedAppointments.add(apt.id);
-                    sessionStorage.setItem('notifiedAppointments', JSON.stringify([...notifiedAppointments]));
+                    states[apt.id] = { time: apt.fecha_hora, status: 'notified' };
+                    changed = true;
                 }
             });
+
+            if (changed) setReminderStates(states);
         } catch (err) {
-            console.error('Error verificando citas prÃ³ximas:', err);
+            console.error('Error verificando citas próximas:', err);
         }
     }
 
 
 
-    // Mostrar modal de recordatorio (diseÃ±o simple consistente con la app)
+    // Mostrar modal de recordatorio (diseño simple consistente con la app)
     function showAppointmentReminderToast(apt) {
         const appointmentTime = new Date(apt.fecha_hora);
         const timeStr = formatDisplayTimeFromString(formatTime(appointmentTime), config.timeFormat);
@@ -1555,8 +1681,8 @@ export async function initDiaria(container, dateStr) {
                             </svg>
                         </div>
                         <div>
-                            <h3 class="text-xl font-bold">Â¡Cita PrÃ³xima!</h3>
-                            <p class="text-white/80 text-sm">La cita estÃ¡ por comenzar</p>
+                            <h3 class="text-xl font-bold">¡Cita Próxima!</h3>
+                            <p class="text-white/80 text-sm">La cita está por comenzar</p>
                         </div>
                     </div>
                 </div>
@@ -1568,17 +1694,17 @@ export async function initDiaria(container, dateStr) {
                         </h4>
                         <div class="space-y-2 text-sm">
                             <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                <span>ðŸ•</span>
+                                <span>🕒 </span>
                                 <span class="font-semibold">${timeStr}</span>
                             </div>
                             ${apt.motivo ? `
                                 <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                    <span>ðŸ“‹</span>
+                                    <span>📋</span>
                                     <span>${apt.motivo}</span>
                                 </div>
                             ` : ''}
                             <div class="flex items-center gap-2 text-gray-600 dark:text-gray-300">
-                                <span>ðŸ‘¨â€âš•ï¸</span>
+                                <span>🧑‍⚕️ </span>
                                 <span>${especialistaInfo}</span>
                             </div>
                         </div>
@@ -1591,19 +1717,23 @@ export async function initDiaria(container, dateStr) {
                         <div class="grid grid-cols-2 gap-2">
                             <button onclick="handleAppointmentAction(${apt.id}, 'confirmado', this)" 
                                     class="px-4 py-3 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors">
-                                âœ“ Confirmar
+                                ✅ Confirmar
                             </button>
                             <button onclick="handleAppointmentAction(${apt.id}, 'atendido', this)" 
                                     class="px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
-                                âœ“ Atendido
+                                ✅ Atendido
+                            </button>
+                            <button onclick="postponeAppointmentReminder(${apt.id}, '${apt.fecha_hora}', this)" 
+                                    class="px-4 py-3 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold rounded-lg transition-colors">
+                                ⏳ Esperar 5m
                             </button>
                             <button onclick="handleAppointmentAction(${apt.id}, 'cancelado', this)" 
                                     class="px-4 py-3 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-colors">
-                                âœ— Cancelar
+                                ❌ Cancelar
                             </button>
                             <button onclick="this.closest('.animate-fadeIn').remove()" 
-                                    class="px-4 py-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-white text-sm font-semibold rounded-lg transition-colors">
-                                Cerrar
+                                    class="col-span-2 px-4 py-2 mt-1 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-white text-sm font-semibold rounded-lg transition-colors">
+                                Cerrar aviso
                             </button>
                         </div>
                     </div>
@@ -1613,7 +1743,7 @@ export async function initDiaria(container, dateStr) {
 
         document.body.appendChild(overlay);
 
-        // Auto-remover despuÃ©s de 60 segundos si no se interactÃºa
+        // Auto-remover después de 60 segundos si no se interactúa
         setTimeout(() => {
             if (overlay.parentElement) {
                 overlay.style.animation = 'fadeOut 0.3s ease';
@@ -1625,13 +1755,25 @@ export async function initDiaria(container, dateStr) {
 
 
 
-    // Manejar acciÃ³n de confirmaciÃ³n/cancelaciÃ³n
+    // Manejar acción de confirmación/cancelación
     window.handleAppointmentAction = async (appointmentId, newStatus, button) => {
         try {
-            await window.api.db.run(
-                'UPDATE citas SET estado = ? WHERE id = ?',
-                [newStatus, appointmentId]
-            );
+            if (newStatus === 'cancelado') {
+                const reason = prompt('Motivo de cancelación (obligatorio):');
+                if (!reason || reason.trim() === '') {
+                    showToast('Debe ingresar un motivo para cancelar la cita', 'warning');
+                    return;
+                }
+                await window.api.db.run(
+                    'UPDATE citas SET estado = ?, motivo = CASE WHEN motivo IS NULL OR motivo = "" THEN ? ELSE motivo || " - Cancelada: " || ? END WHERE id = ?',
+                    [newStatus, 'Cancelada: ' + reason.trim(), reason.trim(), appointmentId]
+                );
+            } else {
+                await window.api.db.run(
+                    'UPDATE citas SET estado = ? WHERE id = ?',
+                    [newStatus, appointmentId]
+                );
+            }
 
             // Cerrar modal overlay
             const overlay = button.closest('.animate-fadeIn');
@@ -1640,7 +1782,7 @@ export async function initDiaria(container, dateStr) {
                 setTimeout(() => overlay.remove(), 300);
             }
 
-            // Mostrar confirmaciÃ³n
+            // Mostrar confirmación
             const statusText = newStatus === 'confirmado' ? 'confirmada' : 'cancelada';
             showToast(`Cita ${statusText} exitosamente`, 'success');
 
@@ -1651,9 +1793,29 @@ export async function initDiaria(container, dateStr) {
         }
     };
 
+    // Postergar recordatorio 5 minutos
+    window.postponeAppointmentReminder = (appointmentId, aptTime, button) => {
+        const states = getReminderStates();
+        const nowMs = Date.now();
+        
+        states[appointmentId] = {
+            time: aptTime,
+            status: 'postponed',
+            postponedUntil: nowMs + 5 * 60000
+        };
+        setReminderStates(states);
+
+        const overlay = button.closest('.animate-fadeIn');
+        if (overlay) {
+            overlay.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => overlay.remove(), 300);
+        }
+        showToast('Confirmación postergada 5 minutos', 'info');
+    };
 
 
-    // Agregar estilos de animaciÃ³n
+
+    // Agregar estilos de animación
     if (!document.getElementById('reminder-animations')) {
         const style = document.createElement('style');
         style.id = 'reminder-animations';
@@ -1681,7 +1843,7 @@ export async function initDiaria(container, dateStr) {
     }
 
 
-    // Iniciar verificaciÃ³n de citas cada minuto
+    // Iniciar verificación de citas cada minuto
     reminderInterval = setInterval(checkUpcomingAppointments, 60000);
     // Verificar inmediatamente al cargar
     checkUpcomingAppointments();

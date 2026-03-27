@@ -1,24 +1,12 @@
 <!-- Navbar Component HTML-->
 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] shadow-lg">
     <div class="flex items-center justify-between px-8 py-4 border-b border-white/10">
-        <div class="flex items-center gap-6">
+        <div class="flex items-center">
             <img src="../assets/V2 BLANCO .png" alt="Sonalia" class="w-20 h-auto object-contain drop-shadow-md"
                 onerror="this.style.display='none'" />
-            <div class="relative">
-                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[#4EABBE] pointer-events-none">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <input type="text" id="navbar-search" placeholder="Busca pacientes por nombre o documento"
-                    class="w-[420px] pl-12 pr-4 py-3 rounded-xl border border-white/20 bg-white/95 dark:bg-gray-800/95 text-[#0F2532] dark:text-white placeholder:text-[#0F2532]/50 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:bg-white dark:focus:bg-gray-800 shadow-md transition-all"
-                    autocomplete="off" />
-            </div>
         </div>
 
         <div class="flex items-center gap-4">
-
 
             <div class="flex items-center gap-4">
                 <div class="text-right">
@@ -27,9 +15,14 @@
                 </div>
                 <div class="relative">
                     <button
-                        class="w-11 h-11 rounded-full bg-white dark:bg-gray-800 border-3 border-white/30 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer"
+                        class="w-11 h-11 rounded-full bg-white dark:bg-gray-800 border-2 border-white/40 flex items-center justify-center shadow-lg hover:scale-110 transition-transform cursor-pointer overflow-hidden"
                         type="button" aria-label="Menú de usuario" aria-expanded="false" id="avatar-btn">
-                        <svg class="w-5 h-5 text-[#4EABBE] dark:text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <!-- Photo (shown when available) -->
+                        <img id="navbar-avatar-img" src="" alt="Foto de usuario"
+                            class="w-full h-full object-cover hidden rounded-full"
+                            onerror="this.classList.add('hidden'); document.getElementById('navbar-avatar-svg').classList.remove('hidden')" />
+                        <!-- Fallback SVG icon -->
+                        <svg id="navbar-avatar-svg" class="w-5 h-5 text-[#4EABBE] dark:text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
                                 clip-rule="evenodd" />
                         </svg>

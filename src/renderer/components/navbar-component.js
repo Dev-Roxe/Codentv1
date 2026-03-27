@@ -152,8 +152,6 @@ export class NavbarComponent extends HTMLElement {
         this.dispatchEvent(new CustomEvent('logout', { bubbles: true, composed: true }));
       });
     }
-
-
   }
 
   updateUser(userName, userRole) {
@@ -161,9 +159,28 @@ export class NavbarComponent extends HTMLElement {
     const role = this.querySelector('.user-role');
     if (name) name.textContent = this.escapeHtml(userName);
     if (role) role.textContent = this.escapeHtml(userRole);
+
+    // Show user photo if available in sesionActual
+    const avatarImg = this.querySelector('#navbar-avatar-img');
+    const avatarSvg = this.querySelector('#navbar-avatar-svg');
+    if (avatarImg && avatarSvg) {
+      let session = {};
+      try {
+        session = JSON.parse(localStorage.getItem('sesionActual') || '{}') || {};
+      } catch (e) {
+        session = {};
+      }
+      const foto = session.foto_perfil || null;
+      if (foto) {
+        avatarImg.src = foto;
+        avatarImg.classList.remove('hidden');
+        avatarSvg.classList.add('hidden');
+      } else {
+        avatarImg.classList.add('hidden');
+        avatarSvg.classList.remove('hidden');
+      }
+    }
   }
-
-
 }
 
 customElements.define('app-navbar', NavbarComponent);

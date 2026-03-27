@@ -8,7 +8,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recetas</title>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Recetas</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -17,6 +19,7 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
@@ -28,22 +31,12 @@
         <p class="text-sm text-[#0F2532] dark:text-slate-400">Genera y consulta las recetas registradas.</p>
       </div>
       <div class="flex gap-2">
-        <button id="btn-receta-rapida"
+        <button id="btn-nueva-receta"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-            </path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
           </svg>
-          Receta Rápida
-        </button>
-        <button id="btn-nueva-receta"
-          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#4EABBE] text-[#1D5D69] dark:text-[#4EABBE] hover:bg-[#4EABBE]/10 font-semibold transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-            </path>
-          </svg>
-          Receta Completa
+          Receta
         </button>
         <button id="btn-lista-recetas"
           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-[#4EABBE] text-[#1D5D69] dark:text-[#4EABBE] hover:bg-[#4EABBE]/10 font-semibold transition">

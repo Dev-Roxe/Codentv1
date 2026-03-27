@@ -1,6 +1,19 @@
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const db = require('../db/database');
 const { sendEmail } = require('./google/gmail-service');
+
+const GENERIC_RESET_RESPONSE = {
+    success: true,
+    codeSent: false,
+    message: 'Si existe una cuenta con ese correo, te enviaremos un codigo de recuperacion.'
+};
+
+const RESET_EMAIL_SENT_RESPONSE = {
+    success: true,
+    codeSent: true,
+    message: 'Se ha enviado un correo con instrucciones para crear o restablecer tu contrasena'
+};
 
 /**
  * Generate a secure random token for password reset
@@ -12,82 +25,64 @@ function generateResetToken() {
 /**
  * Create a password reset token and send email
  * @param {string} email - User's email address
- * @returns {Promise<{success: boolean, message?: string, error?: string}>}
+ * @returns {Promise<{success: boolean, codeSent?: boolean, message?: string, error?: string}>}
  */
 async function requestPasswordReset(email) {
     return new Promise((resolve, reject) => {
-        // Find user by email
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+
         db.get(
-            'SELECT id, nombre, email, auth_provider FROM usuarios WHERE email = ?',
-            [email],
-            async (err, user) => {
-                if (err) {
-                    return reject(err);
+            'SELECT id, nombre, email, auth_provider FROM usuarios WHERE lower(email) = ?',
+            [normalizedEmail],
+            async (lookupErr, user) => {
+                if (lookupErr) {
+                    return reject(lookupErr);
                 }
 
-                // For security, don't reveal if email exists or not
+                // Keep the same public response when the account cannot receive a reset code.
                 if (!user) {
-                    return resolve({
-                        success: true,
-                        message: 'Si el correo existe, recibirás un enlace de recuperación'
-                    });
+                    return resolve({ ...GENERIC_RESET_RESPONSE });
                 }
 
-                // Check if user is OAuth user (no password to reset)
-                if (user.auth_provider === 'google') {
-                    return resolve({
-                        success: true,
-                        message: 'Si el correo existe, recibirás un enlace de recuperación'
-                    });
-                }
-
-                // Generate token
                 const token = generateResetToken();
-                const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+                const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+                const emailHtml = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #1D5D69;">Recuperacion de Contrasena</h2>
+                        <p>Hola ${user.nombre},</p>
+                        <p>Recibimos una solicitud para crear o restablecer la contrasena de tu cuenta en Sonalia.</p>
+                        <p>Para continuar, copia y pega el siguiente codigo en la aplicacion:</p>
+                        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                            <code style="font-size: 18px; font-weight: bold; color: #1D5D69;">${token}</code>
+                        </div>
+                        <p>Este codigo expirara en 1 hora.</p>
+                        <p>Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+                        <p style="color: #666; font-size: 12px;">
+                            Este es un correo automatico, por favor no respondas a este mensaje.
+                        </p>
+                    </div>
+                `;
 
-                // Store token in database
                 db.run(
                     'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
                     [user.id, token, expiresAt.toISOString()],
-                    async (err) => {
-                        if (err) {
-                            return reject(err);
+                    async (insertErr) => {
+                        if (insertErr) {
+                            return reject(insertErr);
                         }
 
-                        // Send email with reset link
                         try {
-                            const resetLink = `codent://reset-password?token=${token}`;
-                            const emailHtml = `
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                                    <h2 style="color: #1D5D69;">Recuperación de Contraseña</h2>
-                                    <p>Hola ${user.nombre},</p>
-                                    <p>Recibimos una solicitud para restablecer la contraseña de tu cuenta en Sonalia.</p>
-                                    <p>Para restablecer tu contraseña, copia y pega el siguiente código en la aplicación:</p>
-                                    <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                                        <code style="font-size: 18px; font-weight: bold; color: #1D5D69;">${token}</code>
-                                    </div>
-                                    <p>Este código expirará en 1 hora.</p>
-                                    <p>Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
-                                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-                                    <p style="color: #666; font-size: 12px;">
-                                        Este es un correo automático, por favor no respondas a este mensaje.
-                                    </p>
-                                </div>
-                            `;
-
                             await sendEmail({
                                 to: user.email,
-                                subject: 'Recuperación de Contraseña - Sonalia',
+                                subject: 'Recuperacion de Contrasena - Sonalia',
                                 html: emailHtml
                             });
 
-                            resolve({
-                                success: true,
-                                message: 'Se ha enviado un correo con instrucciones para restablecer tu contraseña'
-                            });
+                            resolve({ ...RESET_EMAIL_SENT_RESPONSE });
                         } catch (emailErr) {
                             console.error('Error sending password reset email:', emailErr);
-                            reject(new Error('No se pudo enviar el correo de recuperación'));
+                            reject(new Error('No se pudo enviar el correo de recuperacion'));
                         }
                     }
                 );
@@ -104,17 +99,17 @@ async function requestPasswordReset(email) {
 async function validateResetToken(token) {
     return new Promise((resolve, reject) => {
         db.get(
-            `SELECT user_id, expires_at, used 
-             FROM password_reset_tokens 
+            `SELECT user_id, expires_at, used
+             FROM password_reset_tokens
              WHERE token = ?`,
             [token],
-            (err, row) => {
-                if (err) {
-                    return reject(err);
+            (lookupErr, row) => {
+                if (lookupErr) {
+                    return reject(lookupErr);
                 }
 
                 if (!row) {
-                    return resolve({ valid: false, error: 'Token inválido' });
+                    return resolve({ valid: false, error: 'Token invalido' });
                 }
 
                 if (row.used === 1) {
@@ -139,39 +134,39 @@ async function validateResetToken(token) {
  * @returns {Promise<{success: boolean, message?: string, error?: string}>}
  */
 async function resetPassword(token, newPassword) {
-    const bcrypt = require('bcryptjs');
-
-    // Validate token first
     const validation = await validateResetToken(token);
     if (!validation.valid) {
         return { success: false, error: validation.error };
     }
 
     return new Promise((resolve, reject) => {
-        // Hash new password
         const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
-        // Update user password
         db.run(
-            'UPDATE usuarios SET password = ? WHERE id = ?',
+            `UPDATE usuarios
+             SET password = ?,
+                 auth_provider = CASE
+                   WHEN trim(COALESCE(google_id, '')) <> '' THEN 'hybrid'
+                   ELSE COALESCE(NULLIF(auth_provider, ''), 'local')
+                 END
+             WHERE id = ?`,
             [hashedPassword, validation.userId],
-            function (err) {
-                if (err) {
-                    return reject(err);
+            function onPasswordUpdated(updateErr) {
+                if (updateErr) {
+                    return reject(updateErr);
                 }
 
-                // Mark token as used
                 db.run(
                     'UPDATE password_reset_tokens SET used = 1 WHERE token = ?',
                     [token],
-                    (err) => {
-                        if (err) {
-                            console.error('Error marking token as used:', err);
+                    (markErr) => {
+                        if (markErr) {
+                            console.error('Error marking token as used:', markErr);
                         }
 
                         resolve({
                             success: true,
-                            message: 'Contraseña actualizada correctamente'
+                            message: 'Contrasena actualizada correctamente'
                         });
                     }
                 );
@@ -185,10 +180,10 @@ async function resetPassword(token, newPassword) {
  */
 function cleanupExpiredTokens() {
     db.run(
-        'DELETE FROM password_reset_tokens WHERE expires_at < datetime("now")',
-        (err) => {
-            if (err) {
-                console.error('Error cleaning up expired tokens:', err);
+        'DELETE FROM password_reset_tokens WHERE datetime(expires_at) < datetime("now")',
+        (cleanupErr) => {
+            if (cleanupErr) {
+                console.error('Error cleaning up expired tokens:', cleanupErr);
             } else {
                 console.log('Cleaned up expired password reset tokens');
             }
@@ -196,7 +191,6 @@ function cleanupExpiredTokens() {
     );
 }
 
-// Run cleanup on module load and then every hour
 cleanupExpiredTokens();
 setInterval(cleanupExpiredTokens, 60 * 60 * 1000);
 

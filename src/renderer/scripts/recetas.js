@@ -108,7 +108,6 @@ async function init() {
 
 function setupRecetas() {
   const btnNuevaReceta = document.getElementById('btn-nueva-receta');
-  const btnRecetaRapida = document.getElementById('btn-receta-rapida');
   const btnListaRecetas = document.getElementById('btn-lista-recetas');
   const modal = document.getElementById('modal-receta');
   const closeBtn = document.getElementById('closeRecetaModal');
@@ -121,13 +120,6 @@ function setupRecetas() {
   if (!btnNuevaReceta) {
     console.warn('Elementos de recetas no encontrados en el DOM.');
     return;
-  }
-
-  // Abrir receta rápida con modal
-  if (btnRecetaRapida) {
-    btnRecetaRapida.addEventListener('click', async () => {
-      await openRecetaModal();
-    });
   }
 
   // Abrir nueva receta médica en ventana nueva
@@ -318,17 +310,50 @@ async function loadRecetasList() {
   }
 }
 
-window.addEventListener('message', (event) => {
+window.addEventListener('message', async (event) => {
   const trustedOrigin = !event?.origin || event.origin === 'null' || event.origin === 'file://' || event.origin === window.location.origin;
   if (!trustedOrigin) return;
   if (event.source !== recetaPopup) return;
   const data = event && event.data;
-  if (!data || data.type !== 'receta-guardada') return;
-  if (!currentPacienteId) {
-    currentPacienteId = getQueryParam('id');
+  if (!data) return;
+
+  // Manejar peticiones de base de datos desde la receta médica
+  if (data.type === 'db-all' || data.type === 'db-get' || data.type === 'db-run') {
+    try {
+      let result;
+      if (data.type === 'db-all') {
+        result = await dbAll(data.sql, data.params);
+      } else if (data.type === 'db-get') {
+        const rows = await dbAll(data.sql, data.params);
+        result = rows[0] || null;
+      } else if (data.type === 'db-run') {
+        result = await dbRun(data.sql, data.params);
+      }
+
+      event.source.postMessage({
+        type: `${data.type}-response`,
+        requestId: data.requestId,
+        result: result
+      }, '*');
+    } catch (err) {
+      console.error(`Error procesando ${data.type} para la receta:`, err);
+      event.source.postMessage({
+        type: `${data.type}-response`,
+        requestId: data.requestId,
+        error: err.message
+      }, '*');
+    }
+    return;
   }
-  if (data.pacienteId && currentPacienteId && String(data.pacienteId) !== String(currentPacienteId)) return;
-  loadRecetasList();
+
+  // Manejar evento de receta guardada
+  if (data.type === 'receta-guardada') {
+    if (!currentPacienteId) {
+      currentPacienteId = getQueryParam('id');
+    }
+    if (data.pacienteId && currentPacienteId && String(data.pacienteId) !== String(currentPacienteId)) return;
+    loadRecetasList();
+  }
 });
 
 if (document.readyState === 'loading') {

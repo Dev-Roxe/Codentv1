@@ -828,17 +828,20 @@ async function saveTemplate() {
   }
 
   try {
+    const payload = {
+      id: State.editingTemplateId,
+      nombre,
+      asunto,
+      contenido,
+      imagen: State.editingTemplateImage,
+      tipo: State.templateType
+    };
+
+    await window.api.crm.saveTemplate(payload);
+
     if (State.editingTemplateId) {
-      await dbRun(
-        `UPDATE crm_templates SET nombre = ?, asunto = ?, contenido = ?, imagen = ?, tipo = ?, fecha_actualizacion = datetime('now') WHERE id = ?`,
-        [nombre, asunto, contenido, State.editingTemplateImage, State.templateType, State.editingTemplateId]
-      );
       showToast('Plantilla actualizada correctamente', 'success', '✓ Guardado');
     } else {
-      await dbRun(
-        `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, activo, fecha_creacion, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, 1, datetime('now'), datetime('now'))`,
-        [nombre, asunto, contenido, State.editingTemplateImage, State.templateType]
-      );
       showToast('Nueva plantilla creada exitosamente', 'success', '✓ Creada');
     }
 
@@ -858,15 +861,15 @@ async function archiveTemplate(id) {
   const template = State.templates.find(t => String(t.id) === String(id));
   if (!template) return;
   if (template.es_predeterminada === 1) {
-    showToast('Las plantillas predeterminadas no se pueden eliminar. Puedes editarlas o duplicarlas.', 'warning', 'AcciÃ³n no permitida');
+    showToast('Las plantillas predeterminadas no se pueden eliminar. Puedes editarlas o duplicarlas.', 'warning', 'Acción no permitida');
     return;
   }
 
   if (!confirm(`Archivar la plantilla "${template.nombre}"? Podras restaurarla despues.`)) return;
   try {
-    await dbRun(`UPDATE crm_templates SET activo = 0, fecha_actualizacion = datetime('now') WHERE id = ?`, [id]);
+    await window.api.crm.archiveTemplate(id);
     await loadTemplates();
-    showToast('Plantilla archivada correctamente', 'success', 'âœ“ Archivada');
+    showToast('Plantilla archivada correctamente', 'success', '✅ Archivada');
   } catch (e) {
     console.error('archiveTemplate error', e);
     showToast('No se pudo archivar la plantilla', 'error', 'Error');
@@ -878,10 +881,10 @@ async function restoreTemplate(id) {
   if (!template) return;
 
   try {
-    await dbRun(`UPDATE crm_templates SET activo = 1, fecha_actualizacion = datetime('now') WHERE id = ?`, [id]);
+    await window.api.crm.restoreTemplate(id);
     State.templateView = 'active';
     await loadTemplates();
-    showToast('Plantilla restaurada correctamente', 'success', 'âœ“ Restaurada');
+    showToast('Plantilla restaurada correctamente', 'success', '✅ Restaurada');
   } catch (e) {
     console.error('restoreTemplate error', e);
     showToast('No se pudo restaurar la plantilla', 'error', 'Error');
@@ -896,13 +899,7 @@ async function duplicateTemplate(id) {
       return;
     }
 
-    const newName = `${template.nombre} (Copia)`;
-    await dbRun(
-      `INSERT INTO crm_templates (nombre, asunto, contenido, imagen, tipo, activo, es_predeterminada, fecha_creacion, fecha_actualizacion) 
-       VALUES (?, ?, ?, ?, ?, 1, 0, datetime('now'), datetime('now'))`,
-      [newName, template.asunto, template.contenido, template.imagen, template.tipo]
-    );
-
+    await window.api.crm.duplicateTemplate(id);
     await loadTemplates();
     showToast('Plantilla duplicada exitosamente', 'success', '✓ Duplicada');
   } catch (e) {
@@ -913,7 +910,7 @@ async function duplicateTemplate(id) {
 
 async function setDefaultReminderTemplate(id) {
   try {
-    await dbRun(`UPDATE crm_templates SET es_predeterminada = CASE WHEN id = ? THEN 1 ELSE 0 END WHERE tipo = 'reminder'`, [id]);
+    await window.api.crm.setDefaultReminderTemplate(id);
     await loadTemplates();
   } catch (e) {
     console.error('setDefaultReminderTemplate error', e);
@@ -1066,40 +1063,24 @@ async function saveCampaign() {
   }
 
   try {
+    const payload = {
+      id: State.editingCampaignId,
+      nombre,
+      descripcion,
+      tipo,
+      estado,
+      audiencia,
+      template_id: templateId || null,
+      asunto: asunto || null,
+      contenido: contenido || null,
+      programada_para: programadaPara
+    };
+
+    await window.api.crm.saveCampaign(payload);
+
     if (State.editingCampaignId) {
-      await dbRun(
-        `UPDATE crm_campaigns SET nombre = ?, descripcion = ?, tipo = ?, estado = ?, audiencia = ?, audiencia_ids = ?, template_id = ?, asunto = ?, contenido = ?, programada_para = ?, fecha_actualizacion = datetime('now') WHERE id = ?`,
-        [
-          nombre,
-          descripcion,
-          tipo,
-          estado,
-          audiencia,
-          null,
-          templateId || null,
-          asunto || null,
-          contenido || null,
-          programadaPara,
-          State.editingCampaignId
-        ]
-      );
       showToast('Campaña actualizada correctamente', 'success', '✓ Guardado');
     } else {
-      await dbRun(
-        `INSERT INTO crm_campaigns (nombre, descripcion, tipo, estado, audiencia, audiencia_ids, template_id, asunto, contenido, programada_para, fecha_actualizacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
-        [
-          nombre,
-          descripcion,
-          tipo,
-          estado,
-          audiencia,
-          null,
-          templateId || null,
-          asunto || null,
-          contenido || null,
-          programadaPara
-        ]
-      );
       showToast('Nueva campaña creada exitosamente', 'success', '✓ Creada');
     }
 
@@ -1114,7 +1095,7 @@ async function saveCampaign() {
 async function deleteCampaign(id) {
   if (!confirm('Eliminar esta campaña?')) return;
   try {
-    await dbRun('DELETE FROM crm_campaigns WHERE id = ?', [id]);
+    await window.api.crm.deleteCampaign(id);
     await loadCampaigns();
   } catch (e) {
     console.error('deleteCampaign error', e);
@@ -1522,11 +1503,11 @@ async function sendSurveyEmails() {
       if (surveyStatusText) setInlineStatus(surveyStatusText, STATUS_ICONS.success, `Enviado: ${result.sent}/${recipientsSource.length}`);
       if (surveyProgress) surveyProgress.style.width = '100%';
       try {
-        await dbRun(`INSERT INTO crm_encuestas (titulo, link, destinatarios) VALUES (?, ?, ?)`, [
-          title,
-          link,
-          recipientsSource.length
-        ]);
+        await window.api.crm.logSurveyDispatch({
+          titulo: title,
+          link: link,
+          destinatarios: recipientsSource.length
+        });
         await loadSurveyHistory();
       } catch (e) {
         console.warn('survey log error', e);
@@ -1639,12 +1620,22 @@ async function sendReminderEmails() {
       errorMap.set(err.email, err.error || 'error');
     });
 
-    for (const r of recipients) {
+    const entries = recipients.map(r => {
       const failed = errorMap.has(r.email);
-      await dbRun(
-        `INSERT INTO crm_recordatorios (paciente_id, cita_id, template_id, canal, estado, enviado_en, error) VALUES (?, ?, ?, 'email', ?, datetime('now'), ?)`,
-        [r.paciente_id, r.cita_id, template.id, failed ? 'failed' : 'sent', failed ? errorMap.get(r.email) : null]
-      );
+      return {
+        paciente_id: r.paciente_id,
+        cita_id: r.cita_id,
+        template_id: template.id,
+        canal: 'email',
+        estado: failed ? 'failed' : 'sent',
+        error: failed ? errorMap.get(r.email) : null
+      };
+    });
+
+    try {
+      await window.api.crm.recordReminderDeliveries({ entries });
+    } catch (e) {
+      console.warn('recordReminderDeliveries error', e);
     }
   } catch (e) {
     console.error('sendReminderEmails error', e);
@@ -1796,7 +1787,8 @@ function setupTemplateActions() {
   }
 
   if (templateImageDropzone && templateImageInput) {
-    templateImageDropzone.addEventListener('click', () => {
+    templateImageDropzone.addEventListener('click', (e) => {
+      if (e.target === templateImageInput) return;
       templateImageInput.click();
     });
   }
@@ -2053,17 +2045,19 @@ async function saveSurveyTemplate() {
   }
 
   try {
+    const payload = {
+      id: State.editingSurveyTemplateId,
+      nombre,
+      titulo,
+      link,
+      descripcion
+    };
+
+    await window.api.crm.saveSurveyTemplate(payload);
+
     if (State.editingSurveyTemplateId) {
-      await dbRun(
-        `UPDATE crm_encuestas_plantillas SET nombre = ?, titulo = ?, link = ?, descripcion = ?, fecha_actualizacion = datetime('now') WHERE id = ?`,
-        [nombre, titulo, link, descripcion, State.editingSurveyTemplateId]
-      );
       showToast('Plantilla actualizada correctamente', 'success', '✓ Actualizado');
     } else {
-      await dbRun(
-        `INSERT INTO crm_encuestas_plantillas (nombre, titulo, link, descripcion) VALUES (?, ?, ?, ?)`,
-        [nombre, titulo, link, descripcion]
-      );
       showToast('Plantilla creada correctamente', 'success', '✓ Creado');
     }
 
@@ -2084,7 +2078,7 @@ async function deleteSurveyTemplate(id) {
   if (!confirmDelete) return;
 
   try {
-    await dbRun(`UPDATE crm_encuestas_plantillas SET activo = 0 WHERE id = ?`, [id]);
+    await window.api.crm.archiveSurveyTemplate(id);
     showToast('Plantilla eliminada', 'success', '✓ Eliminado');
     await loadSurveyTemplates();
   } catch (e) {

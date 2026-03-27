@@ -129,6 +129,7 @@ function switchFrame(name) {
     'recetas': 'recetas.html',
     'odontograma': 'odontograma.html',
     'periodontograma': 'periodontograma.html',
+    'rx': 'rx.html',
     'pagos': 'pagos.html',
     'galeria': 'datos.html', // Temporal: usar datos hasta que exista
     'contactos': 'datos.html', // Temporal: usar datos hasta que exista
@@ -159,10 +160,14 @@ function switchFrame(name) {
       console.log(`Loading iframe ${name} with URL:`, frame.src);
 
       // Al cargar, sincroniza el tema con el iframe
-      frame.addEventListener('load', () => syncFrameTheme(frame));
+      frame.addEventListener('load', () => {
+        syncFrameTheme(frame);
+        focusFrame(frame);
+      });
     }
 
     frame.classList.remove('hidden');
+    focusFrame(frame);
   }
 
   // Actualiza estilos de botones (tanto en nav como en aside)
@@ -210,6 +215,36 @@ function syncFrameTheme(frame) {
   } catch (e) {
     console.warn('No pude sincronizar tema con iframe', e);
   }
+}
+
+function focusFrame(frame) {
+  if (!frame || frame.classList.contains('hidden')) return;
+
+  requestAnimationFrame(() => {
+    window.ensureAppFocus?.();
+
+    try {
+      frame.focus();
+    } catch (e) {
+      // Ignore Chromium iframe focus issues.
+    }
+
+    try {
+      frame.contentWindow?.focus();
+    } catch (e) {
+      // Ignore Chromium iframe focus issues.
+    }
+
+    try {
+      const doc = frame.contentDocument || frame.contentWindow?.document;
+      const active = doc?.activeElement;
+      if (active && active !== doc.body && typeof active.focus === 'function') {
+        active.focus({ preventScroll: true });
+      }
+    } catch (e) {
+      // Ignore frame document focus issues.
+    }
+  });
 }
 
 function calculateAge(fechaNacimiento) {

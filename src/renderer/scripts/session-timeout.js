@@ -7,7 +7,7 @@
  *
  * When the user is inactive for SESSION_TIMEOUT_MS, a lock overlay appears.
  * They must re-enter their password to continue.
- * The session user is read from sessionStorage key 'currentUser'.
+ * The session user is read from localStorage key 'sesionActual'.
  */
 
 (function () {
@@ -73,7 +73,7 @@
 
         async function attemptUnlock() {
             const password = pwInput.value;
-            const user = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+            const user = JSON.parse(localStorage.getItem('sesionActual') || '{}');
             if (!user.email) { doLogout(); return; }
 
             errDiv.textContent = '';
@@ -81,7 +81,7 @@
             unlockBtn.disabled = true;
 
             try {
-                await window.api.loginUser({ email: user.email, password });
+                await window.api.verifySessionPassword(user.email, password);
                 // Success — remove overlay and restart timer
                 lockOverlay.remove();
                 lockOverlay = null;
@@ -104,6 +104,9 @@
 
     function doLogout() {
         sessionStorage.clear();
+        localStorage.removeItem('sesionActual');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('sesionLastLogin');
         if (window.api && window.api.openView) {
             window.api.openView('login').catch(() => { window.location = 'login.html'; });
         } else {
@@ -141,7 +144,7 @@
 
     // ── Start ─────────────────────────────────────────────────────────────────
     // Only activate if a user is logged in (has sessionStorage entry)
-    if (sessionStorage.getItem('currentUser')) {
+    if (localStorage.getItem('sesionActual')) {
         resetTimer();
         console.info('[Sonalia Security] Session timeout activo — inactivity lock en 15 min');
     }

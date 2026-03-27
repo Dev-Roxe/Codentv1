@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Agenda
         workStartInput: document.getElementById('work-start'),
         workEndInput: document.getElementById('work-end'),
+        lunchStartInput: document.getElementById('lunch-start'),
+        lunchEndInput: document.getElementById('lunch-end'),
         defaultDurationSelect: document.getElementById('default-duration'),
         workDaysCheckboxes: document.querySelectorAll('input[name="work-days"]'),
         appointmentIntervalSelect: document.getElementById('appointment-interval'),
@@ -44,10 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
         twoFactorCheckbox: document.getElementById('two-factor'),
         autoLockSelect: document.getElementById('auto-lock'),
 
-        // Región
         currencySelect: document.getElementById('currency'),
         timeFormatSelect: document.getElementById('time-format'),
-        firstDayWeekSelect: document.getElementById('first-day-week')
+        firstDayWeekSelect: document.getElementById('first-day-week'),
+
+        // Identidad Clínica
+        clinicaNombreInput: document.getElementById('clinica-nombre'),
+        clinicaTitularNombreInput: document.getElementById('clinica-titular-nombre'),
+        clinicaTitularEspecialidadInput: document.getElementById('clinica-titular-especialidad'),
+        clinicaTitularCedulaInput: document.getElementById('clinica-titular-cedula'),
+        clinicaTitularRfcInput: document.getElementById('clinica-titular-rfc'),
+        clinicaTelefonoInput: document.getElementById('clinica-telefono'),
+        clinicaDireccionInput: document.getElementById('clinica-direccion')
     };
 
     // ==========================================
@@ -69,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Agenda
         workStart: '08:00',
         workEnd: '18:00',
+        lunchStart: '14:00',
+        lunchEnd: '15:00',
         defaultDuration: '30',
         workDays: [1, 2, 3, 4, 5], // Lunes a Viernes por defecto
         appointmentInterval: '10',
@@ -132,6 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Agenda
         if (elements.workStartInput) elements.workStartInput.value = settings.workStart || defaultSettings.workStart;
         if (elements.workEndInput) elements.workEndInput.value = settings.workEnd || defaultSettings.workEnd;
+        if (elements.lunchStartInput) elements.lunchStartInput.value = settings.lunchStart || defaultSettings.lunchStart;
+        if (elements.lunchEndInput) elements.lunchEndInput.value = settings.lunchEnd || defaultSettings.lunchEnd;
         if (elements.defaultDurationSelect) elements.defaultDurationSelect.value = settings.defaultDuration || defaultSettings.defaultDuration;
 
         // Días laborales
@@ -164,6 +178,29 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[configuracion] Configuración cargada:', settings);
     };
 
+    const loadClinicIdentity = async () => {
+        console.log('[configuracion] Cargando identidad clínica desde BD...');
+        const api = window.api?.clinicConfig;
+        if (!api) {
+            console.warn('[configuracion] API clinicConfig no disponible');
+            return;
+        }
+        try {
+            const configMap = await api.getConfig();
+            console.log('[configuracion] Datos de identidad cargados:', configMap);
+
+            if (elements.clinicaNombreInput) elements.clinicaNombreInput.value = configMap['clinica_nombre'] || '';
+            if (elements.clinicaTitularNombreInput) elements.clinicaTitularNombreInput.value = configMap['clinica_titular'] || '';
+            if (elements.clinicaTitularEspecialidadInput) elements.clinicaTitularEspecialidadInput.value = configMap['clinica_especialidad'] || '';
+            if (elements.clinicaTitularCedulaInput) elements.clinicaTitularCedulaInput.value = configMap['clinica_cedula'] || '';
+            if (elements.clinicaTitularRfcInput) elements.clinicaTitularRfcInput.value = configMap['clinica_rfc'] || '';
+            if (elements.clinicaTelefonoInput) elements.clinicaTelefonoInput.value = configMap['clinica_telefono'] || '';
+            if (elements.clinicaDireccionInput) elements.clinicaDireccionInput.value = configMap['clinica_direccion'] || '';
+        } catch (error) {
+            console.error('[configuracion] Error cargando identidad clinica:', error);
+        }
+    };
+
     // ==========================================
     // GUARDAR CONFIGURACIÓN
     // ==========================================
@@ -191,6 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Agenda
             workStart: elements.workStartInput?.value || defaultSettings.workStart,
             workEnd: elements.workEndInput?.value || defaultSettings.workEnd,
+            lunchStart: elements.lunchStartInput?.value || defaultSettings.lunchStart,
+            lunchEnd: elements.lunchEndInput?.value || defaultSettings.lunchEnd,
             defaultDuration: elements.defaultDurationSelect?.value || defaultSettings.defaultDuration,
             workDays: Array.from(elements.workDaysCheckboxes)
                 .filter(cb => cb.checked)
@@ -218,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // También guardar en formato individual para compatibilidad con agenda
         localStorage.setItem('work-start', settings.workStart);
         localStorage.setItem('work-end', settings.workEnd);
+        localStorage.setItem('lunch-start', settings.lunchStart);
+        localStorage.setItem('lunch-end', settings.lunchEnd);
         localStorage.setItem('default-duration', settings.defaultDuration);
         localStorage.setItem('appointment-interval', settings.appointmentInterval);
         localStorage.setItem('time-format', settings.timeFormat);
@@ -235,8 +276,35 @@ document.addEventListener('DOMContentLoaded', () => {
             detail: settings
         }));
 
+        saveClinicIdentity(); // Guardar a la BD
+
         console.log('[configuracion] Configuración guardada:', settings);
         toast.show('Configuracion guardada correctamente', 'success');
+    };
+
+    const saveClinicIdentity = async () => {
+        const api = window.api?.clinicConfig;
+        if (!api) {
+            console.warn('[configuracion] API clinicConfig no disponible para guardar');
+            return;
+        }
+        try {
+            const payload = {
+                clinica_nombre: elements.clinicaNombreInput?.value?.trim() || '',
+                clinica_titular: elements.clinicaTitularNombreInput?.value?.trim() || '',
+                clinica_especialidad: elements.clinicaTitularEspecialidadInput?.value?.trim() || '',
+                clinica_cedula: elements.clinicaTitularCedulaInput?.value?.trim() || '',
+                clinica_rfc: elements.clinicaTitularRfcInput?.value?.trim() || '',
+                clinica_telefono: elements.clinicaTelefonoInput?.value?.trim() || '',
+                clinica_direccion: elements.clinicaDireccionInput?.value?.trim() || '',
+            };
+
+            console.log('[configuracion] Guardando identidad clínica:', payload);
+            await api.saveConfig(payload);
+        } catch (error) {
+            console.error('[configuracion] Error guardando identidad de clinica:', error);
+            throw error; // Propagar para que saveSettings pueda manejar el error si es necesario
+        }
     };
 
     // ==========================================
@@ -352,8 +420,10 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.reminderTimeSelect,
             elements.workStartInput,
             elements.workEndInput,
+            elements.lunchStartInput,
+            elements.lunchEndInput,
             elements.defaultDurationSelect,
-            ...elements.workDaysCheckboxes,
+            elements.workDaysCheckboxes,
             elements.appointmentIntervalSelect,
             elements.autoConfirmCheckbox,
             elements.weeklyViewCheckbox,
@@ -363,7 +433,14 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.autoLockSelect,
             elements.currencySelect,
             elements.timeFormatSelect,
-            elements.firstDayWeekSelect
+            elements.firstDayWeekSelect,
+            elements.clinicaNombreInput,
+            elements.clinicaTitularNombreInput,
+            elements.clinicaTitularEspecialidadInput,
+            elements.clinicaTitularCedulaInput,
+            elements.clinicaTitularRfcInput,
+            elements.clinicaTelefonoInput,
+            elements.clinicaDireccionInput
         ].filter(Boolean);
 
         allInputs.forEach(input => {
@@ -560,6 +637,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
 
     loadSettings();
+    loadClinicIdentity();
 
     elements.changePasswordBtn?.addEventListener('click', openPasswordResetModal);
     elements.viewSessionsBtn?.addEventListener('click', openSessionsModal);

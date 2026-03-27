@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" class="h-full">
 
 <head>
@@ -122,15 +122,15 @@
     /* Celda de diente (colspan 3) */
     .perio-table .tooth-cell {
       height: 130px;
-      padding: 2px;
-      background: #fff;
+      padding: 0;
+      background: transparent;
       border-left: 2px solid #94a3b8;
       border-right: 1px solid #e2e8f0;
       position: relative;
     }
 
     .dark .perio-table .tooth-cell {
-      background: #1e293b;
+      background: transparent;
       border-left-color: #475569;
     }
 
@@ -700,7 +700,7 @@
 
     .codent-mode .tooth-cell {
       height: 108px;
-      background: #ffffff;
+      background: transparent;
       border-left: 1px solid #c5dbe2;
       border-right: 1px solid #c5dbe2;
     }
@@ -765,10 +765,53 @@
     }
 
     .codent-mode .dark-tooth-bg {
-      background: #ffffff !important;
+      background: transparent !important;
       border-left-color: #c5dbe2 !important;
       border-right-color: #c5dbe2 !important;
     }
+
+    /* Geometric Tooth Styles (OdontoRender) */
+    .geo-mini {
+      display: inline-block;
+      position: relative;
+    }
+
+    .geo-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .geo-circle {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+      stroke-width: 1.2;
+      transition: all .16s ease;
+    }
+
+    .geo-sector {
+      fill: #ffffff;
+      stroke: #94a3b8;
+      stroke-width: 0.6;
+      transition: all .12s ease;
+    }
+
+    .dark .geo-circle {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+    }
+
+    .dark .geo-sector {
+      fill: #ffffff;
+      stroke: #cbd5e1;
+    }
+
+
+    .geo-cross {
+      stroke: #ef4444;
+      stroke-width: 4;
+    }
+
   </style>
 </head>
 
@@ -882,6 +925,7 @@
     </div>
   </div>
 
+  <script src="../scripts/odonto-render.js"></script>
   <script src="../scripts/periodontograma.js"></script>
   <script src="../scripts/session-timeout.js"></script>
 </body>

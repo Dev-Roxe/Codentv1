@@ -4,57 +4,479 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CRM - Sonalía</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class'
-    }
-  </script>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>CRM - Sonalía</title>
+  <link href="../styles/output.css" rel="stylesheet">
   <link rel="stylesheet" href="../styles/toast.css">
+  <style>
+    :root {
+      --crm-ink: #102235;
+      --crm-muted: #5d7086;
+      --crm-line: rgba(29, 93, 105, 0.14);
+      --crm-line-strong: rgba(78, 171, 190, 0.28);
+      --crm-panel: rgba(255, 255, 255, 0.82);
+      --crm-panel-strong: rgba(255, 255, 255, 0.92);
+      --crm-soft: rgba(238, 248, 250, 0.92);
+      --crm-brand: #1d5d69;
+      --crm-brand-soft: #4eabbe;
+      --crm-brand-deep: #0d3244;
+      --crm-glow: 0 26px 70px rgba(15, 37, 50, 0.12);
+      --crm-radius-xl: 28px;
+      --crm-radius-lg: 22px;
+    }
+
+    .dark:root,
+    .dark {
+      --crm-ink: #e6edf7;
+      --crm-muted: #94a8bf;
+      --crm-line: rgba(148, 168, 191, 0.18);
+      --crm-line-strong: rgba(95, 208, 230, 0.24);
+      --crm-panel: rgba(12, 20, 33, 0.82);
+      --crm-panel-strong: rgba(8, 15, 28, 0.94);
+      --crm-soft: rgba(18, 31, 48, 0.9);
+      --crm-brand: #8bcfdd;
+      --crm-brand-soft: #68b9cc;
+      --crm-brand-deep: #102235;
+      --crm-glow: 0 26px 70px rgba(2, 8, 23, 0.42);
+    }
+
+    body.crm-page {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(78, 171, 190, 0.18), transparent 28rem),
+        radial-gradient(circle at top right, rgba(29, 93, 105, 0.12), transparent 24rem),
+        linear-gradient(180deg, rgba(247, 251, 252, 0.98), rgba(241, 246, 248, 0.92));
+      color: var(--crm-ink);
+    }
+
+    .dark body.crm-page {
+      background:
+        radial-gradient(circle at top left, rgba(78, 171, 190, 0.14), transparent 28rem),
+        radial-gradient(circle at top right, rgba(29, 93, 105, 0.16), transparent 26rem),
+        linear-gradient(180deg, #07111d, #0b1625 55%, #0f1d30 100%);
+    }
+
+    .crm-page::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.18), transparent 70%);
+      opacity: 0.45;
+    }
+
+    .crm-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 1480px;
+    }
+
+    .crm-hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--crm-line);
+      border-radius: var(--crm-radius-xl);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(236, 248, 250, 0.78) 52%, rgba(219, 241, 244, 0.92)),
+        linear-gradient(135deg, rgba(78, 171, 190, 0.18), transparent);
+      box-shadow: var(--crm-glow);
+      padding: 2rem;
+    }
+
+    .dark .crm-hero {
+      background:
+        linear-gradient(135deg, rgba(11, 24, 39, 0.96), rgba(14, 33, 51, 0.86) 56%, rgba(12, 26, 41, 0.95)),
+        linear-gradient(135deg, rgba(78, 171, 190, 0.14), transparent);
+    }
+
+    .crm-hero::after {
+      content: "";
+      position: absolute;
+      width: 18rem;
+      height: 18rem;
+      right: -5rem;
+      top: -8rem;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(78, 171, 190, 0.25), transparent 62%);
+      pointer-events: none;
+    }
+
+    .crm-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid rgba(78, 171, 190, 0.2);
+      color: var(--crm-brand);
+      backdrop-filter: blur(14px);
+    }
+
+    .dark .crm-kicker {
+      background: rgba(9, 19, 31, 0.72);
+    }
+
+    .crm-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    .crm-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--crm-line);
+      background: rgba(255, 255, 255, 0.6);
+      padding: 0.65rem 0.95rem;
+      font-size: 0.83rem;
+      color: var(--crm-muted);
+      backdrop-filter: blur(12px);
+    }
+
+    .dark .crm-chip {
+      background: rgba(8, 15, 28, 0.68);
+    }
+
+    .crm-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      border-radius: 999px;
+      border: 1px solid var(--crm-line);
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(14px);
+      padding: 0.45rem;
+      box-shadow: 0 18px 40px rgba(15, 37, 50, 0.08);
+    }
+
+    .dark .crm-tabs {
+      background: rgba(7, 17, 29, 0.84);
+    }
+
+    .tab-btn {
+      border-radius: 999px;
+      padding: 0.82rem 1.2rem;
+      border: 1px solid transparent;
+      color: var(--crm-muted);
+      font-size: 0.94rem;
+      font-weight: 600;
+      transition: all 180ms ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--crm-ink);
+      background: rgba(78, 171, 190, 0.08);
+    }
+
+    .tab-btn.active {
+      color: white;
+      background: linear-gradient(135deg, var(--crm-brand-soft), var(--crm-brand));
+      border-color: rgba(255, 255, 255, 0.22);
+      box-shadow: 0 14px 30px rgba(29, 93, 105, 0.22);
+    }
+
+    .crm-grid {
+      display: grid;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .crm-card {
+      position: relative;
+      border-radius: var(--crm-radius-lg);
+      border: 1px solid var(--crm-line);
+      background: var(--crm-panel);
+      box-shadow: var(--crm-glow);
+      backdrop-filter: blur(18px);
+    }
+
+    .crm-card-strong {
+      background: var(--crm-panel-strong);
+    }
+
+    .crm-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(78, 171, 190, 0.28), transparent 34%, rgba(29, 93, 105, 0.1));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .crm-card-header {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .crm-title {
+      color: var(--crm-brand);
+      font-size: 1.28rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .crm-subtitle {
+      color: var(--crm-muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .crm-side-card {
+      top: 1.5rem;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 247, 249, 0.88)),
+        linear-gradient(135deg, rgba(78, 171, 190, 0.16), transparent);
+    }
+
+    .dark .crm-side-card {
+      background:
+        linear-gradient(180deg, rgba(8, 17, 30, 0.96), rgba(12, 24, 39, 0.92)),
+        linear-gradient(135deg, rgba(78, 171, 190, 0.08), transparent);
+    }
+
+    .crm-side-card > h2.text-xl {
+      display: none;
+    }
+
+    .crm-notice {
+      overflow: hidden;
+      position: relative;
+      border-radius: 20px;
+      border: 1px solid rgba(78, 171, 190, 0.32);
+      background:
+        linear-gradient(135deg, rgba(29, 93, 105, 0.1), rgba(78, 171, 190, 0.08)),
+        rgba(240, 249, 251, 0.92);
+      padding: 1rem;
+    }
+
+    .dark .crm-notice {
+      background:
+        linear-gradient(135deg, rgba(78, 171, 190, 0.12), rgba(11, 28, 44, 0.78)),
+        rgba(8, 20, 34, 0.92);
+    }
+
+    .crm-notice::after {
+      content: "";
+      position: absolute;
+      inset: auto -2rem -2rem auto;
+      width: 8rem;
+      height: 8rem;
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(78, 171, 190, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    .crm-field {
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .crm-page input:not([type="file"]),
+    .crm-page select,
+    .crm-page textarea {
+      border-radius: 16px !important;
+      border-color: rgba(93, 112, 134, 0.18) !important;
+      background: rgba(255, 255, 255, 0.82) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+    }
+
+    .dark .crm-page input:not([type="file"]),
+    .dark .crm-page select,
+    .dark .crm-page textarea {
+      background: rgba(14, 25, 41, 0.88) !important;
+      border-color: rgba(148, 168, 191, 0.16) !important;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    }
+
+    .crm-page textarea {
+      min-height: 170px;
+    }
+
+    .crm-utility-box {
+      border-radius: 20px;
+      border: 1px solid var(--crm-line);
+      background: var(--crm-soft);
+      padding: 1rem;
+    }
+
+    .crm-cta-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--crm-brand-soft), var(--crm-brand));
+      box-shadow: 0 16px 28px rgba(29, 93, 105, 0.24);
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .crm-cta-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 34px rgba(29, 93, 105, 0.28);
+    }
+
+    .crm-cta-secondary {
+      border-radius: 16px;
+      border: 1px solid var(--crm-line);
+      background: rgba(255, 255, 255, 0.72);
+      transition: all 180ms ease;
+    }
+
+    .dark .crm-cta-secondary {
+      background: rgba(15, 27, 44, 0.92);
+    }
+
+    .crm-cta-secondary:hover:not(:disabled) {
+      border-color: var(--crm-line-strong);
+      background: rgba(255, 255, 255, 0.92);
+    }
+
+    .dark .crm-cta-secondary:hover:not(:disabled) {
+      background: rgba(19, 34, 54, 0.96);
+    }
+
+    .crm-token {
+      border-radius: 999px;
+      border: 1px solid rgba(78, 171, 190, 0.2);
+      background: rgba(241, 250, 252, 0.92);
+      box-shadow: inset 0 -1px 0 rgba(78, 171, 190, 0.08);
+      transition: all 160ms ease;
+    }
+
+    .dark .crm-token {
+      background: rgba(14, 25, 41, 0.9);
+    }
+
+    .crm-token:hover {
+      transform: translateY(-1px);
+      border-color: rgba(78, 171, 190, 0.42);
+      background: rgba(226, 245, 248, 0.98);
+    }
+
+    .dark .crm-token:hover {
+      background: rgba(18, 36, 56, 0.94);
+    }
+
+    .crm-template-grid,
+    .crm-survey-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .crm-template-card,
+    .crm-survey-card,
+    .crm-history-card {
+      border-radius: 20px;
+      border: 1px solid var(--crm-line);
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 18px 34px rgba(15, 37, 50, 0.08);
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .dark .crm-template-card,
+    .dark .crm-survey-card,
+    .dark .crm-history-card {
+      background: rgba(10, 18, 31, 0.9);
+    }
+
+    .crm-template-card:hover,
+    .crm-survey-card:hover,
+    .crm-history-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--crm-line-strong);
+      box-shadow: 0 20px 40px rgba(15, 37, 50, 0.12);
+    }
+
+    .crm-modal-card {
+      border-radius: 28px;
+      border: 1px solid var(--crm-line);
+      background: var(--crm-panel-strong);
+      box-shadow: 0 28px 80px rgba(15, 37, 50, 0.22);
+      backdrop-filter: blur(20px);
+    }
+
+    @media (min-width: 1280px) {
+      .crm-grid {
+        grid-template-columns: minmax(0, 1.48fr) minmax(330px, 420px);
+      }
+    }
+  </style>
   <script src="../scripts/init.js" type="module"></script>
 </head>
 
-<body class="bg-[#F8F7F7] dark:bg-gray-900 text-[#0F2532] dark:text-gray-100 font-sans transition-colors duration-200">
+<body class="crm-page text-[#0F2532] dark:text-gray-100 font-sans transition-colors duration-200">
   <app-navbar current="crm"></app-navbar>
 
-  <div class="min-h-screen p-6 max-w-7xl mx-auto">
+  <div class="crm-shell min-h-screen p-4 sm:p-6 xl:p-8 mx-auto">
     <!-- Header -->
     <div class="mb-8">
-      <div>
+      <div class="crm-hero">
+        <div class="crm-kicker">
+          <span class="h-2 w-2 rounded-full bg-[#4EABBE]"></span>
+          CRM Sonalia
+        </div>
         <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">CRM - Comunicación con pacientes</h1>
         <p class="text-[#0F2532]/60 dark:text-gray-400 mt-1">Correos, recordatorios y encuestas en un solo lugar</p>
+        <div class="crm-chip-row">
+          <span class="crm-chip">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+            Plantillas reutilizables
+          </span>
+          <span class="crm-chip">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-sky-500"></span>
+            Envio centralizado
+          </span>
+          <span class="crm-chip">
+            <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+            Seguimiento rapido
+          </span>
+        </div>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="border-b border-[#D9D9D9] dark:border-gray-700 mb-6">
-      <div class="flex gap-6 overflow-x-auto">
-        <button
-          class="tab-btn active pb-4 px-2 border-b-4 border-[#4EABBE] text-[#1D5D69] dark:text-white font-semibold"
-          data-tab="email">Correos</button>
-        <button
-          class="tab-btn pb-4 px-2 text-[#0F2532]/60 dark:text-gray-400 font-medium hover:text-[#1D5D69] dark:hover:text-white transition"
-          data-tab="encuestas">Encuestas</button>
+    <div class="mb-6">
+      <div class="crm-tabs overflow-x-auto">
+        <button class="tab-btn active" data-tab="email">Correos</button>
+        <button class="tab-btn" data-tab="encuestas">Encuestas</button>
       </div>
     </div>
 
     <div id="tab-content">
       <!-- TAB: CORREOS -->
       <div id="email-tab" class="tab-content">
-        <div class="grid grid-cols-3 gap-6">
+        <div class="crm-grid">
           <!-- Templates Section -->
-          <div class="col-span-2 space-y-6">
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
-              <div class="flex items-center justify-between mb-6">
-                <div>
-                  <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white">Plantillas de correo</h2>
-                  <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Selecciona o crea plantillas
-                    personalizadas</p>
+          <div class="space-y-6">
+            <div class="crm-card crm-card-strong p-6 sm:p-7">
+              <div class="crm-card-header">
+                <div class="crm-field">
+                  <h2 class="crm-title">Plantillas de correo</h2>
+                  <p class="crm-subtitle mt-1">Selecciona, archiva o reutiliza mensajes con una vista mas limpia y enfocada.</p>
                 </div>
                 <button id="newTemplateBtn"
-                  class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                  class="crm-cta-primary px-4 py-2.5 text-white text-sm font-semibold">Nueva
                   plantilla</button>
               </div>
               <div class="flex flex-col gap-4 mb-4">
@@ -87,7 +509,7 @@
                   Tus plantillas se archivan para no perder informacion.
                 </p>
               </div>
-              <div id="templateGrid" class="grid grid-cols-2 gap-4">
+              <div id="templateGrid" class="crm-template-grid">
                 <!-- Templates rendered by JS -->
               </div>
             </div>
@@ -96,39 +518,35 @@
           </div>
 
           <!-- Email Composer -->
-          <div class="col-span-1">
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 sticky top-6">
+          <div>
+            <div class="crm-card crm-side-card p-6 sm:p-7 sticky">
+              <div class="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h2 class="crm-title">Envio masivo</h2>
+                  <p class="crm-subtitle mt-1">Prepara el envio, verifica una prueba y controla el ritmo sin salir del CRM.</p>
+                </div>
+                <span class="hidden sm:inline-flex rounded-full border border-[rgba(78,171,190,0.22)] bg-white/60 dark:bg-slate-900/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1D5D69] dark:text-[#8BCFDD]">Workspace</span>
+              </div>
               <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Envío masivo</h2>
 
-              <!-- Gmail Connection -->
-              <div
-                class="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <!-- Official Sender -->
+              <div class="crm-notice mb-5">
                 <div class="flex items-center justify-between gap-3 mb-3">
                   <div>
-                    <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Conexion Gmail</p>
-                    <p class="text-xs text-blue-700 dark:text-blue-300">Autoriza una sola vez la cuenta fija del proyecto desde el navegador del sistema.</p>
+                    <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">Correo del sistema</p>
+                    <p class="text-xs text-blue-700 dark:text-blue-300">El remitente es oficial, fijo y gestionado por la configuracion central.</p>
                   </div>
                   <span id="gmailStatus"
                     class="inline-flex items-center px-2.5 py-1 rounded-full bg-white/80 dark:bg-blue-950/60 text-blue-800 dark:text-blue-200 text-xs font-medium border border-blue-200/70 dark:border-blue-800">
                     Verificando...
                   </span>
                 </div>
-                <div class="flex flex-col gap-2 mb-2">
-                  <button id="connectGmailBtn" type="button"
-                    class="w-full px-4 py-2.5 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition">
-                    1. Obtener código
-                  </button>
-                  <input type="text" id="gmailCodeInput" placeholder="2. Pega aquí el código de Google"
-                    class="hidden flex-1 px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                  <button id="saveGmailCode"
-                    onclick="(async()=>{const c=document.getElementById('gmailCodeInput').value.trim();if(!c){alert('Pega el código primero');return;}const s=await window.electronAPI.invoke('gmail-save-token',c);alert(s?.success?'✅ Gmail conectado!':'Error: '+s?.error);if(s?.success)location.reload();})();"
-                    class="hidden px-3 py-1.5 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                    3. Guardar
-                  </button>
-                </div>
-                <p class="text-xs text-blue-700 dark:text-blue-300">Haz clic en "Obtener código", autoriza en Google,
-                  copia el código y pégalo arriba</p>
+                <p class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                  Correo remitente oficial: softwaresonalia@gmail.com
+                </p>
+                <p id="gmailHelperText" class="text-xs text-blue-700 dark:text-blue-300">
+                  El CRM usa siempre esta cuenta oficial. No puedes cambiar el remitente ni conectar cuentas personales desde aqui.
+                </p>
               </div>
 
               <div class="space-y-5">
@@ -153,7 +571,7 @@
                       <option value="active">Pacientes activos</option>
                       <option value="inactive">Pacientes inactivos (6+ meses)</option>
                       <option value="upcoming">Próximas citas (7 días)</option>
-                      <option value="custom">Selección manual</option>
+                      <option value="custom">Seleccion personalizada</option>
                     </select>
                     <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                       <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-400" fill="none" stroke="currentColor"
@@ -164,18 +582,18 @@
                   </div>
                   <div class="flex items-center justify-between mt-2">
                     <div id="recipientCount" class="text-xs text-[#0F2532]/60 dark:text-gray-400">
-                      Selecciona destinatarios
+                      Elige un grupo o usa una seleccion personalizada
                     </div>
                     <button id="selectRecipientsBtn" data-recipient-target="email"
                       class="text-xs text-[#4EABBE] hover:text-[#1D5D69] font-medium transition">
-                      Selección avanzada →
+                      Elegir pacientes manualmente
                     </button>
                   </div>
                   <div id="selectedPatientsContainer" class="mt-2"></div>
                 </div>
 
                 <!-- Subject -->
-                <div>
+                <div class="crm-field">
                   <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
                     Asunto
                   </label>
@@ -192,17 +610,17 @@
                   </div>
                   <div id="emailVarTokens" class="flex flex-wrap gap-2">
                     <button type="button" data-token="{nombre}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{nombre}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{nombre}</button>
                     <button type="button" data-token="{apellido}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{apellido}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{apellido}</button>
                     <button type="button" data-token="{email}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{email}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{email}</button>
                     <button type="button" data-token="{telefono}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{telefono}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{telefono}</button>
                     <button type="button" data-token="{fecha_cita}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{fecha_cita}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{fecha_cita}</button>
                     <button type="button" data-token="{doctor}"
-                      class="px-3 py-1.5 rounded-full bg-[#F0FAFC] dark:bg-gray-700 text-[#1D5D69] dark:text-white text-xs font-medium border border-[#CDE8EE] dark:border-gray-600 hover:border-[#4EABBE] transition">{doctor}</button>
+                      class="crm-token px-3 py-1.5 text-[#1D5D69] dark:text-white text-xs font-medium">{doctor}</button>
                   </div>
                 </div>
 
@@ -218,57 +636,15 @@
                     class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg resize-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition"></textarea>
                 </div>
                 <!-- Action Buttons -->
-                <div
-                  class="rounded-xl border border-[#E6E6E6] dark:border-gray-700 bg-[#F8F7F7] dark:bg-gray-900/40 p-4 space-y-4">
-                  <div class="flex items-start justify-between gap-3">
-                    <div>
-                      <h3 class="text-sm font-semibold text-[#0F2532] dark:text-white">Prueba y ritmo de envio</h3>
-                      <p class="text-xs text-[#0F2532]/55 dark:text-gray-400 mt-1">Verifica el mensaje antes del envio masivo.</p>
-                    </div>
-                    <span id="emailEstimate" class="text-xs text-[#0F2532]/50 dark:text-gray-400 text-right">Selecciona destinatarios para ver la espera.</span>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
-                      Correo de prueba
-                    </label>
-                    <div class="flex gap-2">
-                      <input id="emailTestAddress" type="email" placeholder="tu@correo.com"
-                        class="flex-1 px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition" />
-                      <button id="sendTestEmailBtn" type="button"
-                        class="px-4 py-2.5 bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm border border-[#D9D9D9] dark:border-gray-600 transition opacity-60 cursor-not-allowed"
-                        disabled>
-                        Enviar prueba
-                      </button>
-                    </div>
-                    <p id="testEmailStatus" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Completa asunto y mensaje para enviar una prueba.</p>
-                  </div>
-
-                  <div>
-                    <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
-                      Pausa entre correos
-                    </label>
-                    <select id="emailThrottle"
-                      class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white transition">
-                      <option value="0">Sin pausa adicional</option>
-                      <option value="1500">1.5 segundos</option>
-                      <option value="3000">3 segundos</option>
-                      <option value="5000">5 segundos</option>
-                      <option value="10000">10 segundos</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Action Buttons -->
                 <div class="space-y-2 pt-2">
                   <button id="sendBulkEmailBtn"
-                    class="w-full py-3 bg-gradient-to-r from-[#4EABBE] to-[#1D5D69] text-white rounded-lg hover:shadow-lg font-semibold text-sm transition-all duration-200 opacity-60 cursor-not-allowed"
+                    class="crm-cta-primary w-full py-3 text-white font-semibold text-sm opacity-60 cursor-not-allowed"
                     disabled>
-                    📧 Enviar a todos
+                    ðŸ“§ Enviar a todos
                   </button>
                   <button id="previewEmailBtn"
-                    class="w-full py-2 bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium text-sm border border-[#D9D9D9] dark:border-gray-600 transition">
-                    👁️ Vista previa completa
+                    class="crm-cta-secondary w-full py-2 text-[#0F2532] dark:text-white font-medium text-sm">
+                    ðŸ‘ï¸ Vista previa completa
                   </button>
                 </div>
 
@@ -287,48 +663,52 @@
         </div>
       </div>
 
-
       <!-- TAB: ENCUESTAS -->
       <div id="encuestas-tab" class="tab-content hidden">
-        <div class="grid grid-cols-3 gap-6">
+        <div class="crm-grid">
           <!-- Survey Templates Section -->
-          <div class="col-span-2 space-y-6">
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6">
-              <div class="flex items-center justify-between mb-6">
+          <div class="space-y-6">
+            <div class="crm-card crm-card-strong p-6 sm:p-7">
+              <div class="crm-card-header">
                 <div>
-                  <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white">Plantillas de encuestas</h2>
+                  <h2 class="crm-title">Plantillas de encuestas</h2>
                   <p class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea y gestiona plantillas reutilizables
                   </p>
                 </div>
                 <button id="newSurveyTemplateBtn"
-                  class="px-4 py-2 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] text-sm font-semibold">Nueva
+                  class="crm-cta-primary px-4 py-2.5 text-white text-sm font-semibold">Nueva
                   plantilla</button>
               </div>
-              <div id="surveyTemplateGrid" class="grid grid-cols-2 gap-4">
+              <div id="surveyTemplateGrid" class="crm-survey-grid">
                 <!-- Templates rendered by JS -->
               </div>
             </div>
           </div>
 
           <!-- Survey Send Form -->
-          <div class="col-span-1">
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 sticky top-6">
-              <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Enviar encuesta</h2>
-              <div class="space-y-4">
+          <div>
+            <div class="crm-card crm-side-card p-6 sm:p-7 sticky">
+              <div class="flex items-start justify-between gap-4 mb-5">
                 <div>
+                  <h2 class="crm-title">Envio de encuestas</h2>
+                  <p class="crm-subtitle mt-1">Comparte formularios con la audiencia adecuada y monitorea los envios recientes desde el mismo panel.</p>
+                </div>
+                <span class="hidden sm:inline-flex rounded-full border border-[rgba(78,171,190,0.22)] bg-white/60 dark:bg-slate-900/60 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#1D5D69] dark:text-[#8BCFDD]">Feedback</span>
+              </div>
+              <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Enviar encuesta</h2>
+              <div class="space-y-5">
+                <div class="crm-field">
                   <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-1">Título</label>
                   <input id="surveyTitleInput" type="text" placeholder="Ej: Encuesta de satisfacción"
                     class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
                 </div>
-                <div>
+                <div class="crm-field">
                   <label class="block text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-1">Link de la
                     encuesta</label>
                   <input id="surveyLinkInput" type="text" placeholder="https://..."
                     class="w-full px-4 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition" />
                 </div>
-                <div>
+                <div class="crm-field">
                   <label
                     class="flex items-center justify-between text-sm font-semibold text-[#0F2532] dark:text-gray-200 mb-2">
                     <span>Destinatarios</span>
@@ -338,7 +718,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M21 21l-4.35-4.35m1.85-5.65a7 7 0 11-14 0 7 7 0 0114 0z" />
                       </svg>
-                      <span>Selección avanzada</span>
+                      <span>Elegir pacientes manualmente</span>
                     </button>
                   </label>
                   <select id="surveyRecipients"
@@ -348,16 +728,20 @@
                     <option value="active">Pacientes activos</option>
                     <option value="inactive">Pacientes inactivos (6+ meses)</option>
                     <option value="upcoming">Próximas citas (7 días)</option>
-                    <option value="custom">Selección manual</option>
+                    <option value="custom">Seleccion personalizada</option>
                   </select>
-                  <div id="surveyRecipientCount" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Selecciona
-                    destinatarios</div>
+                  <div id="surveyRecipientCount" class="text-xs text-[#0F2532]/50 dark:text-gray-400 mt-2">Elige un
+                    grupo o usa una seleccion personalizada</div>
                   <div id="surveySelectedPatientsContainer"></div>
                 </div>
+                <div class="crm-utility-box">
+                  <p class="text-sm font-semibold text-[#0F2532] dark:text-white">Envio controlado</p>
+                  <p class="text-xs text-[#0F2532]/55 dark:text-gray-400 mt-1">Prepara el titulo, define el enlace y confirma los pacientes antes de disparar la encuesta.</p>
+                </div>
                 <button id="sendSurveyEmailsBtn"
-                  class="w-full py-3 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-semibold transition opacity-60 cursor-not-allowed"
+                  class="crm-cta-primary w-full py-3 text-white font-semibold transition opacity-60 cursor-not-allowed"
                   disabled>
-                  📊 Enviar encuesta
+                  ðŸ“Š Enviar encuesta
                 </button>
 
                 <div id="surveyStatus" class="hidden">
@@ -372,8 +756,7 @@
             </div>
 
             <!-- Survey History -->
-            <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-[#D9D9D9] dark:border-gray-700 p-6 mt-6">
+            <div class="crm-card p-6 mt-6">
               <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-4">Envíos recientes</h2>
               <div id="surveyHistoryList" class="space-y-3 text-sm text-[#0F2532]/70 dark:text-gray-300">
                 <div class="text-center py-8 text-[#0F2532]/50 dark:text-gray-400">Sin encuestas enviadas aún</div>
@@ -382,33 +765,13 @@
           </div>
         </div>
 
-
       </div>
 
       <!-- MODALS -->
-      <!-- Gmail Auth Modal -->
-      <div id="gmailAuthModal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-2xl w-full max-w-md mx-4">
-          <h2 class="text-xl font-bold text-[#1D5D69] dark:text-white mb-3">Conectar Gmail</h2>
-          <p class="text-sm text-[#0F2532]/70 dark:text-gray-300 mb-4">Pega el código de autorización de Google:</p>
-          <input id="gmailAuthCodeInput" type="text"
-            class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-lg mb-4 focus:ring-2 focus:ring-[#4EABBE] bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white"
-            placeholder="Pega tu código aquí..." />
-          <div class="flex gap-3">
-            <button id="cancelGmailAuthBtn"
-              class="flex-1 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 font-medium">Cancelar</button>
-            <button id="saveGmailAuthBtn"
-              class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-lg hover:bg-[#1D5D69] font-medium">Guardar
-              Token</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Recipients Modal -->
       <div id="recipientsModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+        <div class="crm-modal-card w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
               <div>
@@ -450,7 +813,7 @@
       <!-- Template Editor Modal -->
       <div id="templateEditorModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+        <div class="crm-modal-card w-full max-w-lg mx-4">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <h3 id="templateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla</h3>
             <p id="templateModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una plantilla
@@ -479,7 +842,7 @@
               <div id="templateImageDropzone"
                 class="border-2 border-dashed border-[#D9D9D9] dark:border-gray-600 rounded-lg p-4 text-center hover:border-[#4EABBE] transition cursor-pointer">
                 <input id="templateImageInput" type="file" accept="image/*" class="hidden" />
-                <label for="templateImageInput" class="cursor-pointer">
+                <label class="cursor-pointer">
                   <svg class="w-8 h-8 text-[#0F2532]/30 dark:text-gray-500 mx-auto mb-2" fill="none"
                     stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -490,7 +853,7 @@
                 </label>
               </div>
               <img id="templateImagePreview"
-                class="hidden mt-3 w-full h-32 object-cover rounded-lg border border-[#E6E6E6] dark:border-gray-600"
+                class="hidden mt-3 w-full h-40 object-contain rounded-lg border border-[#E6E6E6] dark:border-gray-600 bg-[#F8F7F7] dark:bg-gray-700/60 p-2"
                 alt="Vista previa" />
             </div>
 
@@ -516,7 +879,7 @@
       <!-- Email Full Preview Modal -->
       <div id="emailPreviewModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl mx-4">
+        <div class="crm-modal-card w-full max-w-xl mx-4">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700 flex items-center justify-between">
             <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Vista previa del email</h3>
             <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')"
@@ -538,11 +901,10 @@
         </div>
       </div>
 
-
       <!-- Survey Template Editor Modal -->
       <div id="surveyTemplateEditorModal"
         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg mx-4">
+        <div class="crm-modal-card w-full max-w-lg mx-4">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <h3 id="surveyTemplateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla
               de encuesta</h3>

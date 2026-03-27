@@ -1,4 +1,4 @@
-// cajas.js - GestiÃ³n de cajas registradoras
+// cajas.js - Gestión de cajas registradoras
 import toast from './toast.js';
 import '../components/navbar-component.js';
 import { initNavbarListeners, getUserName } from './navigation.js';
@@ -196,10 +196,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       filterCajas(query);
     },
     onSearchSubmit: (query) => {
-      console.log('BÃºsqueda:', query);
+      console.log('Búsqueda:', query);
     },
     onLogout: () => {
-      if (confirm('Â¿EstÃ¡s seguro que deseas cerrar sesiÃ³n?')) {
+      if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
         localStorage.clear();
         window.location.href = '../login.html';
       }
@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Event listener para bÃºsqueda local
+  // Event listener para búsqueda local
   const searchInput = document.getElementById('searchCaja');
   if (searchInput) {
     let debounceTimer;
@@ -239,11 +239,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Renderizar tab inicial
   renderCurrentTab();
 
-  // Inicializar grÃ¡ficas
+  // Inicializar gráficas
   createMovimientosChart();
   createComparacionChart();
 
-  // Observador de cambios de tema para actualizar grÃ¡ficas
+  // Observador de cambios de tema para actualizar gráficas
   setupThemeObserver();
 });
 
@@ -738,7 +738,7 @@ function printAdvancedReport() {
   popup.document.close();
 }
 
-// Actualizar estadÃ­sticas
+// Actualizar estadísticas
 function updateStats() {
   const cajasAbiertas = cajas.filter(c => c.estado === 'abierta').length;
   const totalDia = cajas
@@ -752,7 +752,7 @@ function updateStats() {
   if (statTotalDia) statTotalDia.textContent = formatCurrency(totalDia);
 }
 
-// Obtener colores segÃºn el tema
+// Obtener colores según el tema
 function getChartColors() {
   const isDark = document.documentElement.classList.contains('dark');
   return {
@@ -763,7 +763,7 @@ function getChartColors() {
   };
 }
 
-// Crear grÃ¡fica de movimientos diarios
+// Crear gráfica de movimientos diarios
 function createMovimientosChart() {
   const ctx = document.getElementById('movimientosChart');
   if (!ctx) return;
@@ -870,7 +870,7 @@ function createMovimientosChart() {
   });
 }
 
-// Crear grÃ¡fica de comparaciÃ³n de cajas
+// Crear gráfica de comparación de cajas
 function createComparacionChart() {
   const wrapper = document.getElementById('comparacionChartWrapper');
   if (!wrapper) return;
@@ -950,7 +950,7 @@ function createComparacionChart() {
   });
 }
 
-// Actualizar tema de las grÃ¡ficas
+// Actualizar tema de las gráficas
 function updateChartsTheme() {
   createMovimientosChart();
   createComparacionChart();
@@ -1004,7 +1004,7 @@ function renderCurrentTab() {
       filteredCajas = cajas.filter(c => c.estado === 'cerrada');
       break;
     case 'mi-caja':
-      // En producciÃ³n, filtrar por usuario actual
+      // En producción, filtrar por usuario actual
       const currentUserId = getCurrentUserId();
       filteredCajas = cajas.filter(c =>
         Number(c.usuario_id) === Number(currentUserId) && c.estado === 'abierta'
@@ -1157,7 +1157,7 @@ function attachRowEventListeners() {
   });
 }
 
-// Filtrar cajas por bÃºsqueda
+// Filtrar cajas por búsqueda
 function filterCajas(query) {
   searchQuery = query || '';
   renderCurrentTab();
@@ -1369,7 +1369,7 @@ function showCerrarCajaModal(cajaId) {
   overlay.querySelector('#btnCancelarCerrar').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
-  // BotÃ³n de arqueo
+  // Botón de arqueo
   overlay.querySelector('#btnArqueoCaja').addEventListener('click', () => {
     overlay.remove();
     showArqueoCajaModal(cajaId, totalAcumulado);
@@ -1516,7 +1516,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
 
   document.body.appendChild(overlay);
 
-  // FunciÃ³n para calcular totales
+  // Función para calcular totales
   function calcularTotales() {
     let totalContado = 0;
     const inputs = overlay.querySelectorAll('.denominacion-input');
@@ -1526,7 +1526,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
       const valor = parseFloat(input.dataset.valor);
       const subtotal = cantidad * valor;
 
-      // Actualizar subtotal de la denominaciÃ³n
+      // Actualizar subtotal de la denominación
       const subtotalElement = input.parentElement.querySelector('.subtotal-denominacion');
       subtotalElement.textContent = formatCurrency(subtotal);
 
@@ -1586,7 +1586,7 @@ function showArqueoCajaModal(cajaId, totalEsperado) {
     // Confirmar si hay diferencia significativa
     if (Math.abs(diferencia) > 50) {
       const confirmClose = confirm(
-        `Hay una diferencia de ${formatCurrency(Math.abs(diferencia))} ${diferencia > 0 ? 'a favor' : 'en contra'}.\n\nÂ¿Deseas cerrar la caja de todas formas?`
+        `Hay una diferencia de ${formatCurrency(Math.abs(diferencia))} ${diferencia > 0 ? 'a favor' : 'en contra'}.\n\n¿Deseas cerrar la caja de todas formas?`
       );
       if (!confirmClose) return;
     }
@@ -1735,9 +1735,9 @@ async function showDetalleCaja(cajaId) {
           </div>
         </div>
 
-        <!-- InformaciÃ³n de la caja -->
+        <!-- Información de la caja -->
         <div class="bg-white dark:bg-gray-700 rounded-xl p-4 mb-6">
-          <h4 class="font-bold text-lg text-[#0F2532] dark:text-white mb-3">InformaciÃ³n</h4>
+          <h4 class="font-bold text-lg text-[#0F2532] dark:text-white mb-3">Información</h4>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <p class="text-sm text-[#0F2532]/60 dark:text-gray-400">Fecha de apertura</p>
@@ -1826,7 +1826,7 @@ async function showDetalleCaja(cajaId) {
 
   overlay.querySelector('#btnExportarReporte')?.addEventListener('click', () => {
     showNotification('Exportando reporte...', 'info');
-    // SimulaciÃ³n de exportaciÃ³n
+    // Simulación de exportación
     setTimeout(() => {
       showNotification('Reporte exportado exitosamente', 'success');
     }, 1500);
@@ -1874,7 +1874,7 @@ function showNuevoMovimientoModal(cajaId) {
           </div>
         </div>
         <div>
-          <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">MÃ©todo</label>
+          <label class="block text-sm font-semibold text-[#0F2532] dark:text-white mb-2">Método</label>
           <select id="metodoMovimiento"
             class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] transition bg-white dark:bg-gray-700 text-[#0F2532] dark:text-white">
             <option value="">No especificado</option>
@@ -2010,7 +2010,7 @@ function showNuevoMovimientoModal(cajaId) {
   });
 }
 
-// NotificaciÃ³n toast mejorada
+// Notificación toast mejorada
 function showNotification(message, type = 'info') {
   toast.show(message, type);
 }

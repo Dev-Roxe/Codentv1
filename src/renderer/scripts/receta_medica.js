@@ -1,4 +1,4 @@
-﻿// receta_medica.js - Módulo para generar y gestionar recetas médicas
+// receta_medica.js - Módulo para generar y gestionar recetas médicas
 
 // Obtener parámetros de URL
 function getQueryParam(name) {
@@ -187,26 +187,51 @@ async function loadPatientData(pacienteId) {
 
 // Actualizar información del paciente en el DOM
 function updatePatientInfo(paciente) {
-    document.getElementById('paciente-nombre').textContent =
-        `${paciente.nombre} ${paciente.apellido}`;
+    const setElemText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
 
-    document.getElementById('paciente-fecha-nac').textContent =
-        paciente.fecha_nacimiento || 'Sin información';
+    let curpInfo = paciente.curp;
+    let sexoInfo = paciente.sexo;
 
-    document.getElementById('paciente-curp').textContent =
-        paciente.curp || 'Sin información';
+    if ((!curpInfo || !sexoInfo) && paciente.meta) {
+        try {
+            const meta = JSON.parse(paciente.meta);
+            curpInfo = curpInfo || meta.curp || meta.rfc;
+            sexoInfo = sexoInfo || meta.sexo;
+        } catch (e) {
+            console.error('Error parsing paciente meta', e);
+        }
+    }
 
-    document.getElementById('paciente-sexo').textContent =
-        paciente.sexo || 'Sin información';
+    curpInfo = curpInfo || 'Sin información';
+    sexoInfo = sexoInfo || 'Sin información';
+    
+    let dobDisplay = paciente.fecha_nacimiento || 'Sin información';
+    if (paciente.fecha_nacimiento) {
+        const parts = paciente.fecha_nacimiento.split('-');
+        if (parts.length === 3) {
+            dobDisplay = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            const dobDate = new Date(paciente.fecha_nacimiento);
+            const today = new Date();
+            let age = today.getFullYear() - dobDate.getFullYear();
+            const m = today.getMonth() - dobDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+            dobDisplay += ` (${age} años)`;
+        }
+    }
 
-    document.getElementById('paciente-direccion').textContent =
-        paciente.direccion || 'Sin información';
+    const nombreCompleto = `${paciente.nombre || ''} ${paciente.apellido || ''}`.trim().toUpperCase();
 
-    document.getElementById('paciente-telefono').textContent =
-        paciente.telefono || 'Sin información';
-
-    document.getElementById('fecha-receta').textContent = recetaData.fecha;
-    document.getElementById('folio-receta').textContent = recetaData.folio;
+    setElemText('paciente-nombre', nombreCompleto);
+    setElemText('paciente-fecha-nac', dobDisplay);
+    setElemText('paciente-curp', curpInfo.toUpperCase());
+    setElemText('paciente-sexo', sexoInfo.toUpperCase());
+    setElemText('paciente-direccion', paciente.direccion || 'Sin información');
+    setElemText('paciente-telefono', paciente.telefono || 'Sin información');
+    setElemText('fecha-receta', recetaData.fecha);
+    setElemText('folio-receta', recetaData.folio);
 }
 
 // Agregar medicamento a la receta
@@ -243,12 +268,12 @@ function renderMedications() {
 
     if (recetaData.medicamentos.length === 0) {
         container.innerHTML = `
-            <div class="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600">
+            <div class="text-center py-12 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl print:hidden">
                 <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <p class="text-gray-500 dark:text-gray-400">No hay medicamentos en esta receta</p>
-                <button onclick="openAddMedicationModal()" class="mt-4 px-6 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                <p class="text-gray-500">No hay medicamentos en esta receta</p>
+                <button onclick="openAddMedicationModal()" class="mt-4 px-6 py-2 bg-[#1B325F] text-white rounded-xl hover:bg-blue-800 transition">
                     Agregar Medicamento
                 </button>
             </div>
@@ -256,33 +281,20 @@ function renderMedications() {
         return;
     }
 
-    const colors = [
-        { bg: 'bg-primary/10 dark:bg-primary/20', border: 'border-primary', badge: 'bg-primary' },
-        { bg: 'bg-[#8BCFDD]/20 dark:bg-[#8BCFDD]/10', border: 'border-[#8BCFDD]', badge: 'bg-[#8BCFDD]' },
-        { bg: 'bg-[#1D5D69]/10 dark:bg-[#1D5D69]/20', border: 'border-[#1D5D69]', badge: 'bg-[#1D5D69]' }
-    ];
-
     container.innerHTML = recetaData.medicamentos.map((med, index) => {
-        const colorScheme = colors[index % colors.length];
         return `
-            <div class="medication-item ${colorScheme.bg} rounded-xl p-6 border-l-4 ${colorScheme.border} hover:shadow-lg transition-shadow">
-                <div class="flex items-start">
-                    <div class="medication-number ${colorScheme.badge} text-white rounded-full w-8 h-8 flex items-center justify-center font-bold mr-4 flex-shrink-0">${index + 1}</div>
-                    <div class="flex-1">
-                        <h3 class="text-xl font-bold text-[#0F2532] dark:text-white mb-2">${med.nombre}</h3>
-                        <p class="presentacion text-gray-600 dark:text-gray-400 text-sm mb-2">${med.presentacion || 'Comprimido'}</p>
-                        <div class="medication-instructions bg-white dark:bg-gray-700 rounded-lg p-4 mt-3">
-                            <p class="text-[#0F2532] dark:text-gray-300">
-                                <span class="font-semibold">Indicaciones:</span> ${med.indicaciones}
-                            </p>
-                        </div>
-                    </div>
-                    <button onclick="removeMedication(${index})" class="ml-2 text-red-500 hover:text-red-700 print:hidden">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                    </button>
+            <div class="medication-item group relative text-[11px] mb-6">
+                <div class="font-bold text-black uppercase mb-1">
+                    ${index + 1}.- ${med.nombre} / ${med.presentacion || 'COMPRIMIDO'}
                 </div>
+                <div class="text-black uppercase leading-relaxed ml-4 max-w-[90%] font-medium">
+                    TOMAR ${med.indicaciones}
+                </div>
+                <button onclick="removeMedication(${index})" class="absolute -right-4 top-0 text-red-500 hover:text-red-700 print:hidden opacity-0 group-hover:opacity-100 transition-opacity p-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
             </div>
         `;
     }).join('');
@@ -331,7 +343,7 @@ async function loadMedicamentosSelect(selectEl) {
 }
 
 // Modal para agregar medicamento
-async function openAddMedicationModal() {
+async function openAddMedicationModal(preFilledData = null) {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 print:hidden';
     modal.innerHTML = `
@@ -371,6 +383,12 @@ async function openAddMedicationModal() {
     const indicacionesInput = document.getElementById('medIndicaciones');
 
     await loadMedicamentosSelect(selectEl);
+
+    if (preFilledData) {
+        if (selectEl && preFilledData.id) selectEl.value = preFilledData.id;
+        if (presentacionInput) presentacionInput.value = preFilledData.descripcion || '';
+        if (indicacionesInput) indicacionesInput.focus();
+    }
 
     if (selectEl) {
         selectEl.addEventListener('change', () => {
@@ -465,6 +483,109 @@ async function saveReceta() {
     }
 }
 
+async function loadSidebarMedicamentos() {
+    const sidebarList = document.getElementById('sidebar-meds-lista');
+    const searchInput = document.getElementById('sidebar-search');
+    if (!sidebarList) return;
+
+    try {
+        const meds = await dbAll('SELECT id, nombre, descripcion, stock FROM medicamentos ORDER BY nombre ASC');
+        if (!meds.length) {
+            sidebarList.innerHTML = '<div class="text-center py-4 text-gray-400 text-dash text-sm">No hay medicamentos</div>';
+            return;
+        }
+
+        let allMeds = meds;
+
+        const renderList = (items) => {
+            if (items.length === 0) {
+                sidebarList.innerHTML = '<div class="text-center py-4 text-gray-400 text-sm">Sin resultados</div>';
+                return;
+            }
+            sidebarList.innerHTML = items.map(m => {
+                const stock = Number(m.stock || 0);
+                const isOutOfStock = stock <= 0;
+                return `
+                    <div class="sidebar-med-item p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer transition select-none ${isOutOfStock ? 'opacity-60' : ''}" 
+                         data-id="${m.id}" data-nombre="${m.nombre}" data-descripcion="${m.descripcion || ''}" data-stock="${stock}">
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="font-semibold text-sm text-[#0F2532] dark:text-white">${m.nombre}</span>
+                            <span class="text-xs ${isOutOfStock ? 'text-red-500' : 'text-green-500'} flex-shrink-0">${isOutOfStock ? 'Sin stock' : `Stock: ${stock}`}</span>
+                        </div>
+                        ${m.descripcion ? `<p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">${m.descripcion}</p>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            sidebarList.querySelectorAll('.sidebar-med-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const id = el.dataset.id;
+                    const stock = parseInt(el.dataset.stock || '0', 10);
+                    if (stock <= 0) {
+                        alert('Este medicamento no tiene stock disponible');
+                        return;
+                    }
+                    openAddMedicationModal({
+                        id: id,
+                        nombre: el.dataset.nombre,
+                        descripcion: el.dataset.descripcion
+                    });
+                });
+            });
+        };
+
+        renderList(allMeds);
+
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase().trim();
+                const filtered = allMeds.filter(m => 
+                    m.nombre.toLowerCase().includes(term) || 
+                    (m.descripcion && m.descripcion.toLowerCase().includes(term))
+                );
+                renderList(filtered);
+            });
+        }
+
+    } catch (error) {
+        console.error('Error cargando sidebar de medicamentos:', error);
+        sidebarList.innerHTML = '<div class="text-center py-4 text-red-500 text-sm">Error cargando medicamentos</div>';
+    }
+}
+
+async function loadClinicIdentity() {
+    try {
+        const rows = await dbAll("SELECT clave, valor FROM admin_config WHERE clave LIKE 'clinica_%'");
+        if (!rows || rows.length === 0) return;
+        const configMap = {};
+        rows.forEach(r => { configMap[r.clave] = r.valor; });
+
+        const setEl = (id, key, defaultVal) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = configMap[key] || defaultVal;
+        };
+
+        setEl('header-clinica-nombre', 'clinica_nombre', 'Corporativo Dental Codent');
+        setEl('footer-clinica-nombre', 'clinica_nombre', 'Corporativo Dental Codent');
+
+        setEl('header-titular-nombre', 'clinica_titular', 'Dra. EVA MARITZA SOSA TAPIA');
+        setEl('footer-titular-nombre', 'clinica_titular', 'Dra. EVA MARITZA SOSA TAPIA');
+
+        setEl('header-titular-especialidad', 'clinica_especialidad', 'Esp. General');
+        setEl('footer-titular-especialidad', 'clinica_especialidad', 'General');
+
+        setEl('header-titular-cedula', 'clinica_cedula', '6309167');
+        setEl('footer-titular-cedula', 'clinica_cedula', '6309167');
+
+        setEl('header-titular-rfc', 'clinica_rfc', 'SOTE53');
+
+        setEl('footer-clinica-direccion', 'clinica_direccion', '3 entre avenida 5 y 7, Córdoba, Veracruz');
+        setEl('footer-clinica-telefono', 'clinica_telefono', '+52 271 102 356');
+    } catch (error) {
+        console.error('Error cargando identidad clinica:', error);
+    }
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', async () => {
     const pacienteId = getQueryParam('paciente_id');
@@ -472,6 +593,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (pacienteId) {
         await loadPatientData(pacienteId);
     }
+    
+    await loadClinicIdentity();
 
     // Agregar botones de acción si no existen
     const printButton = document.querySelector('button[onclick="window.print()"]');
@@ -501,6 +624,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     renderMedications();
+    loadSidebarMedicamentos();
 });
 
 // Exponer funciones globalmente

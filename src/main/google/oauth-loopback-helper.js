@@ -1,14 +1,33 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require('net');
+const { exec } = require('child_process');
 const express = require('express');
-const { app, shell } = require('electron');
 const { OAuth2Client } = require('google-auth-library');
+
+let electronApp = null;
+let electronShell = null;
+
+try {
+  const electron = require('electron');
+  if (electron && typeof electron === 'object') {
+    electronApp = electron.app || null;
+    electronShell = electron.shell || null;
+  }
+} catch (error) {
+  electronApp = null;
+  electronShell = null;
+}
 
 const DEFAULT_HOST = process.env.GOOGLE_OAUTH_LOOPBACK_HOST || '127.0.0.1';
 const DEFAULT_PORT = Number(process.env.GOOGLE_OAUTH_LOOPBACK_PORT || 3000);
-const DEFAULT_TIMEOUT_MS = Number(process.env.GOOGLE_OAUTH_TIMEOUT_MS || 180000);
+const DEFAULT_TIMEOUT_MS = Number(process.env.GOOGLE_OAUTH_TIMEOUT_MS || 600000);
 const CREDENTIALS_PATH = process.env.GOOGLE_OAUTH_CREDENTIALS_PATH || path.join(__dirname, 'credentials.json');
+
+function isValidPort(value) {
+  return Number.isInteger(value) && value >= 0 && value <= 65535;
+}
 
 function ensureDir(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
@@ -17,14 +36,38 @@ function ensureDir(dirPath) {
 
 function getUserDataDir() {
   try {
-    if (app && typeof app.getPath === 'function') {
-      return ensureDir(app.getPath('userData'));
+    if (electronApp && typeof electronApp.getPath === 'function') {
+      return ensureDir(electronApp.getPath('userData'));
     }
   } catch (error) {
     // fallback below
   }
 
   return ensureDir(path.join(process.cwd(), '.sonalia-user-data'));
+}
+
+function openExternalUrl(url) {
+  if (electronShell && typeof electronShell.openExternal === 'function') {
+    return electronShell.openExternal(url);
+  }
+
+  const escapedUrl = String(url || '').replace(/"/g, '\\"');
+  let command = '';
+
+  if (process.platform === 'win32') {
+    command = `start "" "${escapedUrl}"`;
+  } else if (process.platform === 'darwin') {
+    command = `open "${escapedUrl}"`;
+  } else {
+    command = `xdg-open "${escapedUrl}"`;
+  }
+
+  return new Promise((resolve, reject) => {
+    exec(command, (error) => {
+      if (error) return reject(error);
+      resolve(true);
+    });
+  });
 }
 
 function secureWriteJson(filePath, value) {
@@ -71,21 +114,70 @@ function buildLoopbackRedirectUri(callbackPath, port = DEFAULT_PORT, host = DEFA
   return `http://${host}:${port}${callbackPath}`;
 }
 
-function createOAuthClient({ callbackPath, port = DEFAULT_PORT, host = DEFAULT_HOST }) {
-  const credentials = loadGoogleCredentials();
+function createOAuthClient({ callbackPath, port = DEFAULT_PORT, host = DEFAULT_HOST, credentials = null }) {
+  const resolvedCredentials = credentials || loadGoogleCredentials();
   const redirectUri = buildLoopbackRedirectUri(callbackPath, port, host);
 
-  if (credentials.clientType === 'web' && !credentials.redirectUris.includes(redirectUri)) {
+  if (resolvedCredentials.clientType === 'web' && !resolvedCredentials.redirectUris.includes(redirectUri)) {
     const error = new Error(`redirect_uri_mismatch: agrega ${redirectUri} a los URIs autorizados del cliente OAuth en Google Cloud`);
     error.code = 'redirect_uri_mismatch';
     throw error;
   }
 
   return {
-    client: new OAuth2Client(credentials.clientId, credentials.clientSecret, redirectUri),
+    client: new OAuth2Client(resolvedCredentials.clientId, resolvedCredentials.clientSecret, redirectUri),
     redirectUri,
-    credentials
+    credentials: resolvedCredentials
   };
+}
+
+function probePortAvailability(port, host = DEFAULT_HOST) {
+  return new Promise((resolve, reject) => {
+    const probe = net.createServer();
+    let settled = false;
+
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      if (error) reject(error);
+      else resolve(value);
+    };
+
+    probe.unref();
+    probe.once('error', (error) => finish(error));
+    probe.listen(port, host, () => {
+      const address = probe.address();
+      const actualPort = typeof address === 'object' && address ? address.port : port;
+      probe.close((closeError) => {
+        if (closeError) finish(closeError);
+        else finish(null, actualPort);
+      });
+    });
+  });
+}
+
+async function resolveLoopbackPort({
+  preferredPort = DEFAULT_PORT,
+  host = DEFAULT_HOST,
+  credentials = null,
+}) {
+  const resolvedCredentials = credentials || loadGoogleCredentials();
+  const requestedPort = Number(preferredPort);
+  const candidatePort = isValidPort(requestedPort) ? requestedPort : DEFAULT_PORT;
+  const allowFallback = resolvedCredentials.clientType !== 'web';
+
+  try {
+    const port = await probePortAvailability(candidatePort, host);
+    return { port, requestedPort: candidatePort, fallbackUsed: false };
+  } catch (error) {
+    if (error?.code !== 'EADDRINUSE' || !allowFallback) {
+      error.port = candidatePort;
+      throw error;
+    }
+  }
+
+  const fallbackPort = await probePortAvailability(0, host);
+  return { port: fallbackPort, requestedPort: candidatePort, fallbackUsed: true };
 }
 
 function buildResultHtml({ title, message, success }) {
@@ -143,7 +235,33 @@ function buildResultHtml({ title, message, success }) {
       <div class="badge">${success ? 'Autorizacion completada' : 'Autorizacion fallida'}</div>
       <h1>${title}</h1>
       <p>${message}</p>
+      ${success ? '<p id="countdownText" style="margin-top: 24px; font-size: 13px; color: #64748b; text-align: center;">Esta pestaña se cerrará en <span id="secs">5</span> segundos...</p>' : ''}
     </main>
+    ${success ? `<script>
+      let secs = 5;
+      const secsEl = document.getElementById('secs');
+      const textEl = document.getElementById('countdownText');
+      
+      const timer = setInterval(() => {
+        secs--;
+        if (secs > 0) {
+          if (secsEl) secsEl.textContent = secs;
+        } else {
+          clearInterval(timer);
+          try {
+            window.open('', '_self', '');
+            window.close();
+          } catch(e) {}
+          
+          setTimeout(() => {
+            if (textEl) {
+                textEl.innerHTML = "El navegador ha bloqueado el cierre automático.<br/><strong>Por favor, cierra esta pestaña manualmente.</strong>";
+                textEl.style.color = "#ef4444";
+            }
+          }, 300);
+        }
+      }, 1000);
+    </script>` : ''}
   </body>
 </html>`;
 }
@@ -153,7 +271,9 @@ function normalizeOAuthError(error) {
   if (error.code === 'redirect_uri_mismatch') return error;
 
   if (error.code === 'EADDRINUSE') {
-    const friendly = new Error(`El puerto ${DEFAULT_PORT} ya esta en uso. Cierra el proceso que lo ocupa o cambia GOOGLE_OAUTH_LOOPBACK_PORT.`);
+    const busyPort = Number(error.port);
+    const renderedPort = Number.isInteger(busyPort) ? busyPort : DEFAULT_PORT;
+    const friendly = new Error(`El puerto ${renderedPort} ya esta en uso. Cierra el proceso que lo ocupa o cambia GOOGLE_OAUTH_LOOPBACK_PORT.`);
     friendly.code = error.code;
     return friendly;
   }
@@ -178,7 +298,18 @@ async function runLoopbackOAuthFlow({
   port = DEFAULT_PORT,
   timeoutMs = DEFAULT_TIMEOUT_MS
 }) {
-  const { client, redirectUri, credentials } = createOAuthClient({ callbackPath, host, port });
+  const credentials = loadGoogleCredentials();
+  const resolvedPort = await resolveLoopbackPort({
+    preferredPort: port,
+    host,
+    credentials
+  });
+  const { client, redirectUri } = createOAuthClient({
+    callbackPath,
+    host,
+    port: resolvedPort.port,
+    credentials
+  });
   const state = crypto.randomUUID();
 
   const appExpress = express();
@@ -214,10 +345,9 @@ async function runLoopbackOAuthFlow({
       if (returnedState !== state) {
         res.status(400).send(buildResultHtml({
           title: 'Solicitud invalida',
-          message: 'El estado OAuth no coincide. Vuelve a iniciar el proceso desde la app.',
+          message: 'Este callback no corresponde al flujo activo. Regresa a la app y continua con la ventana mas reciente.',
           success: false
         }));
-        finish(Object.assign(new Error('Estado OAuth invalido'), { code: 'oauth_state_mismatch' }));
         return;
       }
 
@@ -264,7 +394,7 @@ async function runLoopbackOAuthFlow({
       }
     });
 
-    server = appExpress.listen(port, host, async () => {
+    server = appExpress.listen(resolvedPort.port, host, async () => {
       timeoutId = setTimeout(() => {
         finish(Object.assign(new Error('Tiempo agotado esperando la autorizacion de Google.'), { code: 'oauth_timeout' }));
       }, timeoutMs);
@@ -279,7 +409,11 @@ async function runLoopbackOAuthFlow({
           ...(loginHint ? { login_hint: loginHint } : {})
         });
 
-        await shell.openExternal(authUrl);
+        if (resolvedPort.fallbackUsed) {
+          console.warn(`[OAuth] Puerto ${resolvedPort.requestedPort} ocupado; usando puerto ${resolvedPort.port}.`);
+        }
+        console.log(`[OAuth] Abre esta URL si el navegador no se inicia automaticamente:\n${authUrl}`);
+        await openExternalUrl(authUrl);
       } catch (browserError) {
         finish(browserError);
       }
@@ -300,6 +434,7 @@ module.exports = {
   getUserDataDir,
   loadGoogleCredentials,
   readJsonIfExists,
+  resolveLoopbackPort,
   runLoopbackOAuthFlow,
   secureWriteJson
 };

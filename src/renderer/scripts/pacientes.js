@@ -28,30 +28,31 @@ const ICONS = {
 
 const masterFields = [
     { key: 'nombre', label: 'Nombre', type: 'text', mapTo: 'nombre', icon: ICONS.user },
-    { key: 'nombre_social', label: 'Nombre social', type: 'text', mapTo: 'meta' },
+    { key: 'nombre_social', label: 'Nombre social', type: 'text', mapTo: 'nombre_social' },
     { key: 'apellido', label: 'Apellidos', type: 'text', mapTo: 'apellido' },
-    { key: 'curp', label: 'CURP/RFC', type: 'text', mapTo: 'meta' },
+    { key: 'curp', label: 'CURP/RFC', type: 'text', mapTo: 'curp' },
     { key: 'email', label: 'Email', type: 'email', mapTo: 'email', icon: ICONS.mail },
-    { key: 'convenio', label: 'Convenio', type: 'text', mapTo: 'meta' },
-    { key: 'numero_interno', label: 'Número Interno', type: 'text', mapTo: 'meta' },
-    { key: 'sexo', label: 'Sexo', type: 'select', options: ['', 'Masculino', 'Femenino', 'Otro'], mapTo: 'meta' },
-    { key: 'genero', label: 'Género', type: 'text', mapTo: 'meta' },
+    { key: 'convenio', label: 'Convenio', type: 'text', mapTo: 'convenio' },
+    { key: 'numero_interno', label: 'Número Interno', type: 'text', mapTo: 'numero_interno' },
+    { key: 'sexo', label: 'Sexo', type: 'select', options: ['', 'Masculino', 'Femenino', 'Otro'], mapTo: 'sexo' },
     { key: 'fecha_nacimiento', label: 'Fecha de Nacimiento', type: 'date', mapTo: 'fecha_nacimiento', icon: ICONS.calendar },
-    { key: 'ciudad', label: 'Ciudad', type: 'text', mapTo: 'meta' },
-    { key: 'delegacion', label: 'Delegación', type: 'text', mapTo: 'meta' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text', mapTo: 'ciudad' },
+    { key: 'delegacion', label: 'Delegación', type: 'text', mapTo: 'delegacion' },
     { key: 'direccion', label: 'Dirección', type: 'text', mapTo: 'direccion', icon: ICONS.location },
     { key: 'telefono', label: 'Teléfono', type: 'tel', mapTo: 'telefono', icon: ICONS.phone },
-    { key: 'actividad', label: 'Actividad', type: 'text', mapTo: 'meta' },
-    { key: 'profesion', label: 'Profesión', type: 'text', mapTo: 'meta' },
-    { key: 'empleador', label: 'Empleador', type: 'text', mapTo: 'meta' },
-    { key: 'observaciones', label: 'Observaciones', type: 'textarea', mapTo: 'meta' },
-    { key: 'apoderado', label: 'Apoderado', type: 'text', mapTo: 'meta' }
+    { key: 'actividad', label: 'Actividad', type: 'text', mapTo: 'actividad' },
+    { key: 'profesion', label: 'Profesión', type: 'text', mapTo: 'profesion' },
+    { key: 'empleador', label: 'Empleador', type: 'text', mapTo: 'empleador' },
+    { key: 'observaciones', label: 'Observaciones', type: 'textarea', mapTo: 'observaciones' },
+    { key: 'apoderado', label: 'Apoderado', type: 'text', mapTo: 'apoderado' }
 ];
 
 /* ============================================================================
    UTILITIES
 ============================================================================ */
 import toast from './toast.js';
+import { generateMedicalFormHTML, attachMedicalFormListeners, extractMedicalFormData } from './medical-form-ui.js';
+import { generatePersonalFormHTML } from './personal-form-ui.js';
 
 const isShown = (key) => !!(State.fieldConfig[key]?.show);
 const isRequired = (key) => !!(State.fieldConfig[key]?.required);
@@ -552,9 +553,9 @@ function showNewPatientModal() {
             if (f.type === 'textarea') {
                 return `
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-[#0F2532] mb-2">${f.label} ${reqMark}</label>
+                        <label class="block text-sm font-medium text-[#0F2532] dark:text-gray-300 mb-2">${f.label} ${reqMark}</label>
                         <textarea name="${f.key}" ${reqAttr} rows="3" 
-                            class="w-full px-4 py-3 border border-[#D9D9D9] rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] resize-none transition"
+                            class="w-full px-4 py-3 border border-[#D9D9D9] dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] bg-white dark:bg-[#0F2532] dark:text-white resize-none transition"
                             placeholder="Escribe aquí..."></textarea>
                     </div>`;
             }
@@ -583,47 +584,89 @@ function showNewPatientModal() {
         modal.id = 'new-patient-modal';
         modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in';
         modal.innerHTML = `
-            <div class="bg-white dark:bg-[#0E1A25] border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-slide-up">
-                <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center">
+            <div class="bg-white dark:bg-[#0E1A25] border border-gray-100 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-hidden animate-slide-up flex flex-col">
+                <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 flex justify-between items-center shrink-0">
                     <div>
                         <h2 class="text-2xl font-bold">Nuevo Paciente</h2>
-                        <p class="text-white/70 text-sm mt-1">Completa la información del paciente</p>
+                        <p id="modal-subtitle" class="text-white/70 text-sm mt-1">Paso 1: Datos Personales</p>
                     </div>
-                    <button id="closeNewPatient" class="p-2 hover:bg-white/20 rounded-lg transition">
+                    <button type="button" id="closeNewPatient" class="p-2 hover:bg-white/20 rounded-lg transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </button>
                 </div>
-                <form id="form-new-patient" class="p-6 overflow-y-auto max-h-[calc(90vh-180px)] scrollbar-thin">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        ${fieldsHtml}
+                <form id="form-new-patient" class="flex-1 overflow-hidden flex relative w-full h-[90vh] min-h-[850px]">
+                    <!-- Step 1: Datos Personales -->
+                    <div id="step-1" class="flex flex-col w-full h-full absolute inset-0 transition-all duration-300 transform translate-x-0 opacity-100 z-10">
+                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                ${generatePersonalFormHTML({}, State.fieldConfig)}
+                            </div>
+                        </div>
+                        <div class="shrink-0 flex justify-end gap-3 px-6 py-4 border-t border-[#E6E6E6] dark:border-slate-700">
+                            <button type="button" id="cancelNewPatient" class="px-5 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-gray-200 font-medium transition">
+                                Cancelar
+                            </button>
+                            <button type="button" id="nextStepBtn" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold transition flex items-center gap-2">
+                                Siguiente
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex justify-end gap-3 mt-6 pt-6 border-t border-[#E6E6E6] dark:border-slate-700">
-                        <button type="button" id="cancelNewPatient" class="px-5 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-gray-200 font-medium transition">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold transition flex items-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            Guardar Paciente
-                        </button>
+
+                    <!-- Step 2: Antecedentes Medicos -->
+                    <div id="step-2" class="flex flex-col w-full h-full absolute inset-0 transition-all duration-300 transform translate-x-full opacity-0 -z-10">
+                        <div class="flex-1 overflow-y-auto p-6 scrollbar-thin">
+                            ${generateMedicalFormHTML()}
+                        </div>
+                        <div class="shrink-0 flex justify-between items-center px-6 py-4 border-t border-[#E6E6E6] dark:border-slate-700">
+                            <button type="button" id="prevStepBtn" class="px-5 py-2.5 border border-[#D9D9D9] dark:border-gray-600 rounded-xl hover:bg-[#F8F7F7] dark:hover:bg-gray-700 text-[#0F2532] dark:text-gray-200 font-medium transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                                Anterior
+                            </button>
+                            <button type="submit" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold transition flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                Guardar Paciente
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>`;
 
         document.body.appendChild(modal);
+        attachMedicalFormListeners(modal);
+
+        const step1 = modal.querySelector('#step-1');
+        const step2 = modal.querySelector('#step-2');
+        const subtitle = modal.querySelector('#modal-subtitle');
+        const formNewPatient = modal.querySelector('#form-new-patient');
+
+        modal.querySelector('#nextStepBtn').addEventListener('click', () => {
+            if (!formNewPatient.reportValidity()) return;
+            step1.classList.remove('translate-x-0', 'opacity-100', 'z-10');
+            step1.classList.add('-translate-x-full', 'opacity-0', '-z-10');
+            step2.classList.remove('translate-x-full', 'opacity-0', '-z-10');
+            step2.classList.add('translate-x-0', 'opacity-100', 'z-10');
+            subtitle.textContent = "Paso 2: Antecedentes Médicos";
+        });
+
+        modal.querySelector('#prevStepBtn').addEventListener('click', () => {
+            step2.classList.remove('translate-x-0', 'opacity-100', 'z-10');
+            step2.classList.add('translate-x-full', 'opacity-0', '-z-10');
+            step1.classList.remove('-translate-x-full', 'opacity-0', '-z-10');
+            step1.classList.add('translate-x-0', 'opacity-100', 'z-10');
+            subtitle.textContent = "Paso 1: Datos Personales";
+        });
 
         const closeModal = () => modal.remove();
         modal.querySelector('#closeNewPatient').addEventListener('click', closeModal);
         modal.querySelector('#cancelNewPatient').addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
         document.addEventListener('keydown', function onEsc(e) {
             if (e.key === 'Escape') { closeModal(); document.removeEventListener('keydown', onEsc); }
         });
 
-        modal.querySelector('#form-new-patient').addEventListener('submit', (e) => {
+        formNewPatient.addEventListener('submit', (e) => {
             e.preventDefault();
             savePatient(e.target);
         });
@@ -727,18 +770,17 @@ function savePatient(form) {
         return;
     }
 
-    const core = { nombre: '', apellido: '', telefono: null, email: null, direccion: null, fecha_nacimiento: null };
-    const meta = {};
+    const core = {
+        nombre: null, apellido: null, telefono: null, email: null, direccion: null, fecha_nacimiento: null,
+        nombre_social: null, curp: null, convenio: null, numero_interno: null, sexo: null,
+        ciudad: null, delegacion: null, actividad: null, profesion: null, empleador: null,
+        observaciones: null, apoderado: null
+    };
 
     masterFields.forEach(f => {
         const el = form[f.key];
         const val = el?.value?.trim() || '';
-
-        if (f.mapTo && f.mapTo !== 'meta') {
-            core[f.mapTo] = val || null;
-        } else if (f.mapTo === 'meta' && val) {
-            meta[f.key] = val;
-        }
+        core[f.mapTo] = val || null;
     });
 
     if (!core.nombre || !core.apellido) {
@@ -746,23 +788,44 @@ function savePatient(form) {
         return;
     }
 
-    const sql = `INSERT INTO pacientes(nombre, apellido, telefono, email, direccion, fecha_nacimiento, meta, created_at) VALUES(?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
-    const params = [core.nombre, core.apellido, core.telefono, core.email, core.direccion, core.fecha_nacimiento, JSON.stringify(meta)];
+    const sql = `INSERT INTO pacientes(
+        nombre, apellido, telefono, email, direccion, fecha_nacimiento,
+        nombre_social, curp, convenio, numero_interno, sexo, ciudad,
+        delegacion, actividad, profesion, empleador, observaciones, apoderado,
+        created_at
+    ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
+    
+    const params = [
+        core.nombre, core.apellido, core.telefono, core.email, core.direccion, core.fecha_nacimiento,
+        core.nombre_social, core.curp, core.convenio, core.numero_interno, core.sexo, core.ciudad,
+        core.delegacion, core.actividad, core.profesion, core.empleador, core.observaciones, core.apoderado
+    ];
 
     try {
-        const onSuccess = () => {
+        const onSuccess = async (patientId) => {
+            if (patientId && window.api.clinical) {
+                const medicalData = extractMedicalFormData(form);
+                medicalData.paciente_id = patientId;
+                try {
+                    await window.api.clinical.saveAntecedentes(medicalData);
+                } catch (err) {
+                    console.error('Error saving medical history:', err);
+                    showToast('Paciente guardado, pero hubo un error en antecedentes médicos', 'warning');
+                }
+            }
+
             document.getElementById('new-patient-modal')?.remove();
             showToast('Paciente registrado exitosamente', 'success');
             loadPatients();
         };
 
         if (db.run.length >= 3) {
-            db.run(sql, params, (err) => {
+            db.run(sql, params, (err, result) => {
                 if (err) return showToast('Error: ' + err.message, 'error');
-                onSuccess();
+                onSuccess(result?.lastID);
             });
         } else {
-            db.run(sql, params).then(onSuccess).catch(err => showToast('Error: ' + err.message, 'error'));
+            db.run(sql, params).then(result => onSuccess(result?.lastID)).catch(err => showToast('Error: ' + err.message, 'error'));
         }
     } catch (e) {
         showToast('Error: ' + e.message, 'error');

@@ -55,7 +55,7 @@ function pruneOldBackups(backupDir) {
         while (files.length > MAX_BACKUPS) {
             const oldest = files.shift();
             fs.unlinkSync(path.join(backupDir, oldest.name));
-            console.log('[Backup] Eliminado backup antiguo:', oldest.name);
+            // console.log('[Backup] Eliminado backup antiguo:', oldest.name);
         }
     } catch (err) {
         console.warn('[Backup] Error purgando backups antiguos:', err.message);
@@ -80,7 +80,7 @@ function runBackup() {
         const dest = path.join(backupDir, destName);
 
         fs.copyFileSync(src, dest);
-        pruneOldBackups(backupDir);
+        // pruneOldBackups(backupDir); // Desactivado por petición del usuario
 
         console.log('[Backup] ✅ Backup creado:', dest);
         return { success: true, file: dest, error: null };

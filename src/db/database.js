@@ -14,6 +14,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
     console.log('Conectado a SQLite');
 });
 
+// Habilitar WAL mode para mejorar rendimiento en lecturas concurrentes
+db.run(`PRAGMA journal_mode = WAL`, (err) => {
+    if (!err) console.log('WAL mode enabled');
+});
+// synchronous=NORMAL es seguro para apps desktop y ~3x más rápido que FULL
+db.run(`PRAGMA synchronous = NORMAL`, (err) => {
+    if (!err) console.log('synchronous=NORMAL set');
+});
+
 // Crear tablas
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -111,21 +120,10 @@ db.serialize(() => {
             }
         });
     });
-
     // Asegurar columnas adicionales en `pacientes`
     db.all("PRAGMA table_info(pacientes)", (err, rows) => {
         if (err) return console.error('Error leyendo info de tabla pacientes', err);
         const cols = (rows || []).map(r => r.name);
-
-        // Agregar columna meta si no existe
-        if (!cols.includes('meta')) {
-            try {
-                db.run(`ALTER TABLE pacientes ADD COLUMN meta TEXT`);
-                console.log('Added column to pacientes: meta');
-            } catch (e) {
-                console.warn('Could not add column meta to pacientes', e && e.message);
-            }
-        }
 
         // Agregar columna created_at si no existe
         if (!cols.includes('created_at')) {
@@ -142,6 +140,64 @@ db.serialize(() => {
                 );
             } catch (e) {
                 console.warn('Could not add column created_at to pacientes', e && e.message);
+            }
+        }
+
+        // Agregar columnas explicitas nuevas
+        const newCols = [
+            'nombre_social TEXT',
+            'curp TEXT',
+            'convenio TEXT',
+            'numero_interno TEXT',
+            'sexo TEXT',
+            'ciudad TEXT',
+            'delegacion TEXT',
+            'actividad TEXT',
+            'profesion TEXT',
+            'empleador TEXT',
+            'observaciones TEXT',
+            'apoderado TEXT'
+        ];
+
+        let addedAny = false;
+        newCols.forEach(colDef => {
+            const colName = colDef.split(' ')[0];
+            if (!cols.includes(colName)) {
+                try {
+                    db.run(`ALTER TABLE pacientes ADD COLUMN ${colDef}`);
+                    console.log(`Added column to pacientes: ${colName}`);
+                    addedAny = true;
+                } catch (e) {
+                    console.warn(`Could not add column ${colName} to pacientes`, e && e.message);
+                }
+            }
+        });
+
+        // Solo corremos la migración de meta si agregamos columnas nuevas
+        if (cols.includes('meta')) {
+            try {
+                db.run(`
+                    UPDATE pacientes 
+                    SET 
+                        nombre_social  = COALESCE(nombre_social,  json_extract(meta, '$.nombre_social')),
+                        curp           = COALESCE(curp,           json_extract(meta, '$.curp'), json_extract(meta, '$.rfc')),
+                        convenio       = COALESCE(convenio,       json_extract(meta, '$.convenio')),
+                        numero_interno = COALESCE(numero_interno, json_extract(meta, '$.numero_interno')),
+                        sexo           = COALESCE(sexo,           json_extract(meta, '$.sexo')),
+                        ciudad         = COALESCE(ciudad,         json_extract(meta, '$.ciudad')),
+                        delegacion     = COALESCE(delegacion,     json_extract(meta, '$.delegacion')),
+                        actividad      = COALESCE(actividad,      json_extract(meta, '$.actividad')),
+                        profesion      = COALESCE(profesion,      json_extract(meta, '$.profesion')),
+                        empleador      = COALESCE(empleador,      json_extract(meta, '$.empleador')),
+                        observaciones  = COALESCE(observaciones,  json_extract(meta, '$.observaciones')),
+                        apoderado      = COALESCE(apoderado,      json_extract(meta, '$.apoderado'))
+                    WHERE meta IS NOT NULL AND meta != '{}'
+                `, (err) => {
+                    if (!err) console.log('Migrated JSON meta fields to explicit columns in pacientes');
+                    if (err) console.warn('Could not migrate meta fields:', err.message);
+                });
+            } catch (e) {
+                 console.warn('Could not execute migration update', e && e.message);
             }
         }
     });
@@ -480,6 +536,14 @@ db.serialize(() => {
                 console.log('Added column to antecedentes_clinicos: padecimientos');
             } catch (e) {
                 console.warn('Could not add column padecimientos to antecedentes_clinicos', e && e.message);
+            }
+        }
+        if (!cols.includes('detalles_medicos')) {
+            try {
+                db.run(`ALTER TABLE antecedentes_clinicos ADD COLUMN detalles_medicos TEXT`);
+                console.log('Added column to antecedentes_clinicos: detalles_medicos');
+            } catch (e) {
+                console.warn('Could not add column detalles_medicos to antecedentes_clinicos', e && e.message);
             }
         }
         if (!cols.includes('cirugias')) {
@@ -1200,7 +1264,34 @@ db.serialize(() => {
     db.run(`PRAGMA foreign_keys = ON`, (err) => {
         if (!err) console.log('Foreign keys enabled');
     });
+
+    // ─── Índices de rendimiento para odontograma y módulos clínicos ───
+
+    // Diagnósticos del odontograma: filtra por paciente + tipo de registro
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tratamientos_paciente_tipo
+        ON tratamientos(paciente_id, registro_tipo)`, (err) => {
+        if (!err) console.log('Created index: idx_tratamientos_paciente_tipo');
+    });
+
+    // Diagnósticos del odontograma: lookup por diente
+    db.run(`CREATE INDEX IF NOT EXISTS idx_tratamientos_paciente_diente
+        ON tratamientos(paciente_id, diente)`, (err) => {
+        if (!err) console.log('Created index: idx_tratamientos_paciente_diente');
+    });
+
+    // Radiografías: lookup por paciente (si la tabla ya existe)
+    db.run(`CREATE INDEX IF NOT EXISTS idx_radiografias_paciente
+        ON radiografias_paciente(paciente_id)`, (err) => {
+        // Ignorar si la tabla aún no existe
+    });
+
+    // Periodontograma: lookup por fecha de actualización
+    db.run(`CREATE INDEX IF NOT EXISTS idx_periodontograma_updated
+        ON periodontograma(paciente_id, fecha_actualizacion)`, (err) => {
+        if (!err) console.log('Created index: idx_periodontograma_updated');
+    });
 });
+
 
 /**
  * S8 — Helper: Registra un acceso/modificación a expediente clínico.

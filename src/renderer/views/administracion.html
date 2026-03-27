@@ -1,33 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administración - Sonalía</title>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Administración - Sonalía</title>
   <link href="../styles/output.css" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              DEFAULT: '#4EABBE',
-              dark: '#1D5D69',
-              light: '#8BCFDD'
-            }
-          }
-        }
-      }
-    }
-    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
   <script src="../components/navbar-component.js" type="module"></script>
   <script src="../scripts/init.js" type="module"></script>
 </head>
@@ -781,7 +761,7 @@
         </h2>
         <button id="close-modal-medicamento"
           class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
-          ×
+          &times;
         </button>
       </div>
 
@@ -862,7 +842,7 @@
         </h2>
         <button id="close-modal-miscelanea"
           class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
-          ×
+          &times;
         </button>
       </div>
 
@@ -975,7 +955,7 @@
         </h2>
         <button id="close-modal-especialista"
           class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-3xl leading-none">
-          ×
+          &times;
         </button>
       </div>
 

@@ -1,12 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self' file: data:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: file:; font-src 'self' data: file:; connect-src 'self' file:; object-src 'none'; base-uri 'self';" />
-    <title>Pagos y Recaudación</title>
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+    <title>Pagos y Recaudacion</title>
     <link rel="stylesheet" href="../styles/output.css" />
     <script>
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -15,12 +14,13 @@
             document.documentElement.classList.remove('dark');
         }
     </script>
+    <script src="../scripts/init.js" type="module"></script>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
     <main class="max-w-7xl mx-auto p-6 space-y-6">
         <header class="space-y-1">
-            <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clínica</p>
+            <p class="text-xs uppercase tracking-[0.2em] text-[#1D5D69] dark:text-slate-400">Ficha clinica</p>
             <h1 class="text-2xl font-bold text-[#1D5D69] dark:text-white">Cobros, Cuotas y Devoluciones</h1>
             <p class="text-sm text-[#0F2532] dark:text-slate-400">Controla el saldo del paciente, pagos aplicados, cuotas pendientes y devoluciones.</p>
         </header>
@@ -58,7 +58,7 @@
             </button>
             <button id="btn-nueva-devolucion"
                 class="px-5 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-sm font-semibold text-white shadow-lg shadow-rose-500/20 transition">
-                Registrar devolución
+                Registrar devolucion
             </button>
             <button id="btn-nuevo-pago"
                 class="px-6 py-3 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-sm font-semibold text-white shadow-lg shadow-[#4EABBE]/30 transition">
@@ -66,33 +66,44 @@
             </button>
         </div>
 
-        <section class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <article class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
-                <div class="flex items-center justify-between gap-4 mb-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Planes y saldos</h2>
-                        <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Balance por tratamiento, descuento y forma de cobro.</p>
-                    </div>
+        <section class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-4 shadow-lg shadow-[#8BCFDD]/10">
+            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.12em] text-[#1D5D69] dark:text-slate-400">Vista</p>
+                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Alterna entre cobros y su historial</h2>
                 </div>
-                <div id="plans-list" class="space-y-4"></div>
-            </article>
-
-            <article class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
-                <div class="flex items-center justify-between gap-4 mb-4">
-                    <div>
-                        <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Cuotas y vencimientos</h2>
-                        <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Aplica pagos a cuotas y envía recordatorios de cobranza.</p>
-                    </div>
+                <div class="inline-flex w-full md:w-auto rounded-2xl bg-[#F8F7F7] dark:bg-slate-900/60 p-1 gap-1">
+                    <button id="btn-view-pagos"
+                        data-finance-view="plans"
+                        type="button"
+                        class="flex-1 md:flex-none px-4 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Pagos
+                    </button>
+                    <button id="btn-view-history"
+                        data-finance-view="history"
+                        type="button"
+                        class="flex-1 md:flex-none px-4 py-2.5 rounded-xl text-sm font-semibold transition">
+                        Historia de pagos
+                    </button>
                 </div>
-                <div id="installments-list" class="space-y-3"></div>
-            </article>
+            </div>
         </section>
 
-        <section class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
+        <section id="panel-plans" class="rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
             <div class="flex items-center justify-between gap-4 mb-4">
                 <div>
-                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Historial financiero</h2>
-                    <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Pagos y devoluciones registrados en caja.</p>
+                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Planes y saldos</h2>
+                    <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Cada plan se puede expandir para ver cuotas, vencimientos, pagos y resumen financiero sin perder contexto.</p>
+                </div>
+            </div>
+            <div id="plans-list" class="space-y-4"></div>
+        </section>
+
+        <section id="panel-history" class="hidden rounded-3xl border border-[#8BCFDD]/50 bg-white dark:bg-[#0E1A25] p-5 shadow-lg shadow-[#8BCFDD]/10">
+            <div class="flex items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-[#1D5D69] dark:text-white">Historia de pagos</h2>
+                    <p class="text-xs text-[#0F2532]/60 dark:text-slate-400">Cada movimiento muestra a que plan pertenece y, si aplica, a que cuota se asigno.</p>
                 </div>
             </div>
             <div id="payments-list" class="space-y-3"></div>
@@ -122,7 +133,7 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Método</label>
+                        <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Metodo</label>
                         <select id="pago-metodo" name="metodo" required
                             class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]">
                             <option value="">Seleccionar...</option>
@@ -146,12 +157,12 @@
                     <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Cuota</label>
                     <select id="pago-cuota" name="cuota_financiamiento_id"
                         class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]">
-                        <option value="">Aplicar automáticamente</option>
+                        <option value="">Aplicar automaticamente</option>
                     </select>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Descripción</label>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300 mb-2">Descripcion</label>
                     <textarea id="pago-descripcion" name="descripcion" rows="3"
                         class="w-full rounded-xl border border-[#8BCFDD] dark:border-slate-700 bg-white dark:bg-[#0F2532] px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]"
                         placeholder="Concepto, referencia o nota interna..."></textarea>
@@ -174,7 +185,7 @@
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <script src="../scripts/pagos.js"></script>
-  <script src="../scripts/session-timeout.js"></script>
+    <script src="../scripts/session-timeout.js"></script>
 </body>
 
 </html>

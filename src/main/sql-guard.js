@@ -5,7 +5,7 @@ function normalizeSql(sql) {
 
   const normalized = sql.trim().replace(/;+\s*$/g, '');
   if (!normalized) {
-    throw new Error('La sentencia SQL está vacía');
+    throw new Error('La sentencia SQL esta vacia');
   }
   if (normalized.length > 50000) {
     throw new Error('La sentencia SQL es demasiado larga');
@@ -17,7 +17,7 @@ function normalizeSql(sql) {
 function validateParams(params) {
   if (params == null) return [];
   if (!Array.isArray(params)) {
-    throw new Error('Los parámetros SQL deben enviarse como arreglo');
+    throw new Error('Los parametros SQL deben enviarse como arreglo');
   }
 
   params.forEach((value) => {
@@ -25,33 +25,31 @@ function validateParams(params) {
     const type = typeof value;
     if (type === 'string' || type === 'number' || type === 'boolean') return;
     if (value instanceof Date) return;
-    throw new Error('Se detectó un parámetro SQL no soportado');
+    throw new Error('Se detecto un parametro SQL no soportado');
   });
 
   return params;
 }
 
-// ⚠️ SECURITY FIX S6: Lista extendida de tokens peligrosos.
-// Bloquea inyección SQL avanzada: UNION, DROP, EXEC, ATTACH, etc.
 const BLOCKED_SQL_PATTERNS = [
-  /--/,                         // Comentarios SQL inline
-  /\/\*/,                       // Inicio comentario bloque
-  /\*\//,                       // Fin comentario bloque
-  /\bunion\b/i,                 // UNION (exfiltración de datos)
-  /\bdrop\b/i,                  // DROP TABLE/INDEX
-  /\bexec\b/i,                  // EXEC / sp_executesql
-  /\bexecute\b/i,               // EXECUTE
-  /\battach\b/i,                // ATTACH DATABASE
-  /\bdetach\b/i,                // DETACH DATABASE
-  /\bload_extension\b/i,        // Carga de extensiones SQLite
-  /\bxp_\w+/i,                  // Stored procedures de SQL Server
-  /\bdeclare\b/i,               // Declaración de variables T-SQL
-  /\bcast\s*\(/i,               // CAST con funciones anidadas
-  /\bconvert\s*\(/i,            // CONVERT
-  /\bsleep\s*\(/i,              // Time-based blind injection
-  /\bwaitfor\b/i,               // SQL Server delay
-  /char\s*\(\s*\d/i,            // CHAR() encoding bypass
-  /0x[0-9a-f]{4,}/i,            // Hex encoding bypass
+  /--/,
+  /\/\*/,
+  /\*\//,
+  /\bunion\b/i,
+  /\bdrop\b/i,
+  /\bexec\b/i,
+  /\bexecute\b/i,
+  /\battach\b/i,
+  /\bdetach\b/i,
+  /\bload_extension\b/i,
+  /\bxp_\w+/i,
+  /\bdeclare\b/i,
+  /\bcast\s*\(/i,
+  /\bconvert\s*\(/i,
+  /\bsleep\s*\(/i,
+  /\bwaitfor\b/i,
+  /char\s*\(\s*\d/i,
+  /0x[0-9a-f]{4,}/i,
 ];
 
 function hasBlockedTokens(sql) {
@@ -73,8 +71,18 @@ function isWriteStatement(sql) {
 function isAllowedSchemaMaintenance(sql) {
   return (
     /^create\s+table\s+if\s+not\s+exists\s+periodontograma\b/i.test(sql) ||
-    /^alter\s+table\s+periodontograma\s+add\s+column\s+[a-z_][a-z0-9_]*\b/i.test(sql)
+    /^alter\s+table\s+periodontograma\s+add\s+column\s+[a-z_][a-z0-9_]*\b/i.test(sql) ||
+    /^create\s+table\s+if\s+not\s+exists\s+radiografias_paciente\b/i.test(sql) ||
+    /^alter\s+table\s+radiografias_paciente\s+add\s+column\s+[a-z_][a-z0-9_]*\b/i.test(sql)
   );
+}
+
+function targetsProtectedAuthTable(sql) {
+  return /^(insert(?:\s+or\s+replace)?\s+into|update|delete\s+from)\s+(usuarios|password_reset_tokens)\b/i.test(sql);
+}
+
+function targetsTypedWorkflowTables(sql) {
+  return /^(insert(?:\s+or\s+replace)?\s+into|update|delete\s+from)\s+(pacientes|citas|especialistas|admin_config|tratamientos|tratamientos_catalogo|medicamentos|miscelanea|antecedentes_clinicos|padecimientos_default|radiografias_paciente|periodontograma|cajas|movimientos_caja|auditoria_financiera|planes_tratamiento|planes_tratamiento_historial|planes_financiamiento|cuotas_financiamiento|pagos_aplicaciones|facturas_simuladas|cobranza_recordatorios|planes_tratamiento_versiones|planes_tratamiento_cancelaciones|planes_tratamiento_diagnosticos|planes_tratamiento_medicinas|comunicacion_especialistas|pagos|crm_templates|crm_campaigns|crm_recordatorios|crm_encuestas|crm_encuestas_plantillas)\b/i.test(sql);
 }
 
 function assertSafeSql(channel, sql, params) {
@@ -94,7 +102,14 @@ function assertSafeSql(channel, sql, params) {
 
   if (channel === 'db-run') {
     if (!isWriteStatement(normalizedSql) && !isAllowedSchemaMaintenance(normalizedSql)) {
-      throw new Error('La operación de escritura no está permitida');
+      throw new Error('La operacion de escritura no esta permitida');
+    }
+    if (targetsProtectedAuthTable(normalizedSql)) {
+      throw new Error('La tabla de autenticacion solo puede modificarse desde el modulo de auth');
+    }
+    if (targetsTypedWorkflowTables(normalizedSql)) {
+      console.log('[DEBUG SQL-GUARD] Failing Query on Channel db-run:', normalizedSql);
+      throw new Error('Esta escritura debe ejecutarse desde un modulo IPC tipado');
     }
     return { sql: normalizedSql, params: safeParams };
   }

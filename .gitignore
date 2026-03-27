@@ -37,6 +37,7 @@ electron-bin/
 !.env.example
 src/main/google/credentials.json
 src/main/google/token.json
+src/main/google/official-mail-token.json
 
 # Configuración local de IDE
 .vscode/
@@ -45,3 +46,13 @@ src/main/google/token.json
 *.ntvs*
 *.njsproj
 *.sln
+
+dist_installer/
+*.txt
+tmp_*
+test_*
+status.txt
+git_log*.txt
+push_error.txt
+large_files.txt
+tmp_query.js

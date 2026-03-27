@@ -1,16 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial Clínico</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        }
-    </script>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Historial Clínico</title>
+  <link href="../styles/output.css" rel="stylesheet">
     <script src="../scripts/init.js" type="module"></script>
 </head>
 
@@ -73,6 +70,7 @@
                 <option value="">Todos los estados</option>
                 <option value="completado">Completado</option>
                 <option value="en_proceso">En Proceso</option>
+                <option value="terminado_con_saldo">Terminado con saldo</option>
                 <option value="pendiente">Pendiente</option>
                 <option value="cancelado">Cancelado</option>
             </select>

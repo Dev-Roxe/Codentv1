@@ -202,6 +202,7 @@ async function loadReportData() {
                 labels: monthlyBuckets.map(bucket => bucket.label),
                 data: monthlyBuckets.map(bucket => byMonth.get(bucket.key) || 0),
             };
+            State.data.patientRisk = financeReport.patientRisk || { patients: [] };
         } else {
             const ingresosQuery = `
                 SELECT COUNT(*) as total_citas, SUM(COALESCE(monto, 0)) as total_ingresos
@@ -249,6 +250,7 @@ async function loadReportData() {
             State.data.overdueAmount = 0;
             State.data.overduePatients = 0;
             State.data.incomeChange = 0;
+            State.data.patientRisk = { patients: [] };
         }
 
         State.data.citasEstado = await loadCitasEstado();
@@ -714,6 +716,58 @@ function updateProfesionalesTable() {
 }
 
 /* ============================================================================
+   MODAL FUNCTIONS
+============================================================================ */
+function openRiskDetailsModal() {
+    const modal = document.getElementById('riskDetailsModal');
+    const content = document.getElementById('riskModalContent');
+    const tbody = document.getElementById('riskPatientsTable');
+
+    if (!modal || !content || !tbody) return;
+
+    const patients = State.data.patientRisk?.patients || [];
+
+    if (!patients.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" class="py-6 text-center text-slate-500 dark:text-slate-400">
+                    No hay pacientes en riesgo para mostrar
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = patients.map(p => `
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                <td class="py-3 px-4 font-medium text-slate-900 dark:text-white">${escapeHtml(`${p.nombre || ''} ${p.apellido || ''}`.trim())}</td>
+                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${formatDate(p.ultima_actividad)}</td>
+                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${p.dias_sin_actividad || 0}</td>
+                <td class="py-3 px-4 text-slate-700 dark:text-slate-300">${p.telefono || p.email || 'N/A'}</td>
+            </tr>
+        `).join('');
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+    }, 10);
+}
+
+function closeRiskDetailsModal() {
+    const modal = document.getElementById('riskDetailsModal');
+    const content = document.getElementById('riskModalContent');
+
+    if (!modal || !content) return;
+
+    content.classList.remove('scale-100', 'opacity-100');
+    content.classList.add('scale-95', 'opacity-0');
+
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+/* ============================================================================
    EXPORT FUNCTIONS
 ============================================================================ */
 async function exportReport(type) {
@@ -797,6 +851,16 @@ function setupEventListeners() {
     // Exportar reporte principal
     document.getElementById('exportBtn')?.addEventListener('click', () => {
         exportReport('general');
+    });
+
+    // Ver detalles de pacientes en riesgo
+    document.getElementById('viewRiskDetailsBtn')?.addEventListener('click', openRiskDetailsModal);
+    document.getElementById('closeRiskModal')?.addEventListener('click', closeRiskDetailsModal);
+    document.getElementById('closeRiskModalBtn')?.addEventListener('click', closeRiskDetailsModal);
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('riskDetailsModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'riskDetailsModal') closeRiskDetailsModal();
     });
 
     // Reportes rápidos

@@ -8,7 +8,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Datos del Paciente</title>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Datos del Paciente</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -17,7 +19,12 @@
       document.documentElement.classList.remove('dark');
     }
   </script>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
+
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+    <header class="space-y-1">
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
   <main class="max-w-5xl mx-auto p-6 space-y-6">
@@ -29,105 +36,29 @@
     </header>
 
     <section
-      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-6 space-y-5 dark:bg-[#0E1A25] dark:border-slate-800">
-      <form id="form-datos" class="space-y-4">
-        <div class="grid gap-4 md:grid-cols-2">
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Nombre</label>
-            <input type="text" name="nombre"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Apellido</label>
-            <input type="text" name="apellido"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Telefono</label>
-            <input type="tel" name="telefono"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Email</label>
-            <input type="email" name="email"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div class="md:col-span-2">
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Direccion</label>
-            <input type="text" name="direccion"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Fecha
-              de
-              nacimiento</label>
-            <input type="date" name="fecha_nacimiento"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Nombre
-              social</label>
-            <input type="text" name="nombre_social"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">CURP</label>
-            <input type="text" name="curp"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Convenio</label>
-            <input type="text" name="convenio"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Numero
-              interno</label>
-            <input type="text" name="numero_interno"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Profesion</label>
-            <input type="text" name="profesion"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
-          <div>
-            <label
-              class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Empleador</label>
-            <input type="text" name="empleador"
-              class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100" />
-          </div>
+      class="bg-white border border-[#8BCFDD]/60 rounded-3xl shadow-lg shadow-[#8BCFDD]/20 p-6 dark:bg-[#0E1A25] dark:border-slate-800">
+      <form id="form-datos">
+        <div id="personal-data-container" class="grid gap-4 md:grid-cols-2">
+            <!-- Dynamically populated by datos.js -->
+            <div class="col-span-full flex justify-center py-10">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4EABBE]"></div>
+            </div>
         </div>
 
-        <div class="space-y-2">
-          <label
-            class="block text-xs font-semibold uppercase tracking-[0.12em] text-[#0F2532] dark:text-slate-300">Observaciones</label>
-          <textarea name="observaciones" rows="4"
-            class="w-full px-3 py-2.5 rounded-xl bg-white border border-[#8BCFDD] text-sm text-[#0F2532] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4EABBE] focus:border-[#4EABBE] dark:bg-[#0F2532] dark:border-slate-700 dark:text-slate-100"></textarea>
-        </div>
-
-        <div class="flex justify-end">
+        <div class="flex justify-end mt-6 pt-4 border-t border-gray-100 dark:border-slate-800">
           <button type="button" id="save-datos"
-            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition dark:shadow-[#4EABBE]/20">
-            Guardar
+            class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition dark:shadow-[#4EABBE]/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Guardar Cambios
           </button>
         </div>
       </form>
     </section>
   </main>
 
-  <script src="../scripts/datos.js"></script>
+  <script src="../scripts/datos.js" type="module"></script>
   <script src="../scripts/session-timeout.js"></script>
 </body>
 

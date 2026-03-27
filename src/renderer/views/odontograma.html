@@ -4,7 +4,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Odontograma</title>
+  
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
+<title>Odontograma</title>
   <link rel="stylesheet" href="../styles/output.css" />
   <script>
     if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -1036,6 +1038,7 @@
       }
     }
   </style>
+  <script src="../scripts/init.js" type="module"></script>
 </head>
 
 <body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
@@ -1097,7 +1100,6 @@
     <!-- Panel tratamientos eliminado: ahora todo se gestiona desde el circulo de diagnostico -->
 
     <!-- Leyenda -->
-
 
     <!-- Diagnosticos -->
     <section
@@ -1248,6 +1250,8 @@
   </div>
 
   <!-- Scripts -->
+  <script src="../scripts/odonto-render.js"></script>
+  <script src="../scripts/treatment-cancellation-flow.js"></script>
   <script src="../scripts/odontograma.js"></script>
   <script src="../scripts/session-timeout.js"></script>
 </body>

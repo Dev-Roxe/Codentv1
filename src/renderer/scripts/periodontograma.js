@@ -1,4 +1,4 @@
-﻿// periodontograma.js â€” Formato SEPA completo
+// periodontograma.js â€” Formato SEPA completo
 'use strict';
 
 // ===== BD =====
@@ -6,8 +6,13 @@ let db = (window.api && window.api.db) ? window.api.db : null;
 if (!db && window.parent && window.parent !== window && window.parent.api && window.parent.api.db) {
   db = window.parent.api.db;
 }
+// 'api' exposes clinical IPC methods (savePeriodontogram, getPeriodontogram, etc.)
+const api = (window.api && window.api.clinical) ? window.api
+  : (window.parent && window.parent !== window && window.parent.api && window.parent.api.clinical) ? window.parent.api
+  : null;
 let currentPacienteId = null;
 
+// dbGet is still used in init() for patient details, so keep it.
 function dbGet(sql, params = []) {
   return new Promise((resolve, reject) => {
     try {
@@ -18,26 +23,27 @@ function dbGet(sql, params = []) {
     } catch (e) { reject(e); }
   });
 }
-function dbAll(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    try {
-      if (!db) return resolve([]);
-      if (db.all && db.all.length >= 3) db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows || []));
-      else if (db.all) db.all(sql, params).then(r => resolve(r || [])).catch(reject);
-      else resolve([]);
-    } catch (e) { reject(e); }
-  });
-}
-function dbRun(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    try {
-      if (!db) return resolve();
-      if (db.run && db.run.length >= 3) db.run(sql, params, (err) => err ? reject(err) : resolve());
-      else if (db.run) db.run(sql, params).then(resolve).catch(reject);
-      else resolve();
-    } catch (e) { reject(e); }
-  });
-}
+// dbAll and dbRun are no longer used after removing ensurePeriodontogramaSchema and rewriting guardar.
+// function dbAll(sql, params = []) {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       if (!db) return resolve([]);
+//       if (db.all && db.all.length >= 3) db.all(sql, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+//       else if (db.all) db.all(sql, params).then(r => resolve(r || [])).catch(reject);
+//       else resolve([]);
+//     } catch (e) { reject(e); }
+//   });
+// }
+// function dbRun(sql, params = []) {
+//   return new Promise((resolve, reject) => {
+//     try {
+//       if (!db) return resolve();
+//       if (db.run && db.run.length >= 3) db.run(sql, params, (err) => err ? reject(err) : resolve());
+//       else if (db.run) db.run(sql, params).then(resolve).catch(reject);
+//       else resolve();
+//     } catch (e) { reject(e); }
+//   });
+// }
 function getQueryParam(name) {
   const p = new URLSearchParams(window.location.search);
   const v = p.get(name);
@@ -63,7 +69,8 @@ function toothLabel(n) {
 // ===== ESTADO =====
 const perioData = {};
 let imageEditionLocked = false;
-let periodontogramaColumns = new Set();
+// periodontogramaColumns is no longer needed
+// let periodontogramaColumns = new Set();
 let autoSaveTimer = null;
 let saveInFlight = false;
 let saveQueued = false;
@@ -164,9 +171,10 @@ function updateHeaderDateTime() {
 
 function normalizeToothImageFields(d) {
   if (!d || typeof d !== 'object') return;
-  if (typeof d.imagen_v !== 'string') d.imagen_v = '';
-  if (typeof d.imagen_p !== 'string') d.imagen_p = '';
-  if (typeof d.imagen_url !== 'string') d.imagen_url = '';
+  const isValidStr = (s) => typeof s === 'string' && s !== 'undefined' && s !== 'null' && s !== '[object Object]' && s.trim() !== '';
+  if (!isValidStr(d.imagen_v)) d.imagen_v = '';
+  if (!isValidStr(d.imagen_p)) d.imagen_p = '';
+  if (!isValidStr(d.imagen_url)) d.imagen_url = '';
   if (!d.imagen_v && !d.imagen_p && d.imagen_url) {
     d.imagen_v = d.imagen_url;
     d.imagen_p = d.imagen_url;
@@ -185,8 +193,16 @@ function updateToothImageControls() {
 
   const loaded = countToothImages();
   const total = allTeeth.length * 2;
+  
+  const d18 = perioData[18] || {};
+  let dbg = 'no';
+  if (d18.imagen_v && d18.imagen_v.length > 50) dbg = 'v-ok';
+  else if (d18.imagen_url && d18.imagen_url.length > 50) dbg = 'url-ok';
+  else if (d18.imagen_p && d18.imagen_p.length > 50) dbg = 'p-ok';
+  else if (d18.imagen_v || d18.imagen_url || d18.imagen_p) dbg = 'corrupt';
+
   if (status) {
-    status.textContent = `${loaded} / ${total}`;
+    status.textContent = `${loaded} / ${total} [18:${dbg}]`;
   }
 }
 
@@ -198,7 +214,7 @@ function onToothClick(tooth, imageSide, ev) {
 }
 window.onToothClick = onToothClick;
 
-// ===== SVG DIENTE (mismo diseÃ±o que odontograma) =====
+// ===== SVG DIENTE (mismo diseño que odontograma) =====
 function getToothType(n) {
   if ([16, 17, 18, 26, 27, 28, 36, 37, 38, 46, 47, 48].includes(n)) return 'molar';
   if ([14, 15, 24, 25, 34, 35, 44, 45].includes(n)) return 'premolar';
@@ -210,122 +226,45 @@ function toothSVG(num, isUpper, opts = {}) {
   const w = 80, h = 104;
   const type = getToothType(num);
   const d = perioData[num] || {};
-  const smooth = !!opts.smooth;
   const isImplant = d.implante;
   const imageSide = opts.imageSide === 'p' ? 'p' : 'v';
   const imageKey = imageSide === 'p' ? 'imagen_p' : 'imagen_v';
-  const imageUrl = (d[imageKey] || d.imagen_url || '').trim();
+  
+  const isValidStr = (s) => typeof s === 'string' && s !== 'undefined' && s !== 'null' && s !== '[object Object]' && s.trim() !== '';
+  let imageUrl = '';
+  if (isValidStr(d[imageKey])) {
+    imageUrl = d[imageKey].trim();
+  }
 
+  const baseOpacity = d.ausente ? '0.45' : '1';
+  let missingMark = d.ausente ? `
+    <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="#dc2626" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+    <line x1="${w * 0.8}" y1="${h * 0.2}" x2="${w * 0.2}" y2="${h * 0.8}" stroke="#dc2626" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
+  ` : '';
+
+  // Rendering IMAGES from Database if available
   if (imageUrl) {
-    const opacity = d.ausente ? '0.4' : '1';
-    const ausenteSVG = d.ausente
-      ? `<svg viewBox="0 0 ${w} ${h}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
-          <path d="M ${w * .2} ${h * .2} L ${w * .8} ${h * .8} M ${w * .8} ${h * .2} L ${w * .2} ${h * .8}"
-            stroke="rgba(15, 37, 50, 0.75)" stroke-width="4" stroke-linecap="round"/>
-        </svg>`
-      : '';
-
-    return `<div style="width:100%;height:100%;position:relative;">
-      <img src="${escAttr(imageUrl)}" alt="Diente ${num}"
-        style="width:100%;height:100%;display:block;object-fit:contain;opacity:${opacity};" />
-      ${ausenteSVG}
-    </div>`;
+    return `
+      <div style="width:100%;height:100%;position:relative;padding:2px;">
+        <div style="position:relative;width:100%;height:100%;border-radius:12px;overflow:hidden;background:#fff;">
+          <img src="${escAttr(imageUrl)}" alt="Diente ${num}"
+            style="width:100%;height:100%;display:block;object-fit:contain;opacity:${baseOpacity};" draggable="false" />
+          <svg viewBox="0 0 80 104" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+            ${missingMark}
+          </svg>
+        </div>
+      </div>
+    `;
   }
 
-  const gradientId = `tg-${num}-${isUpper ? 'u' : 'l'}`;
-  const shineId = `ts-${num}-${isUpper ? 'u' : 'l'}`;
-
-  let path = '', detail = '';
-
-  if (isImplant) {
-    // Tornillo de implante
-    if (isUpper) {
-      path = `M${w * .25} ${h * .2} L${w * .75} ${h * .2} L${w * .65} ${h * .8} L${w * .35} ${h * .8} Z`;
-      detail = `<path d="M${w * .25} ${h * .3} L${w * .75} ${h * .3} M${w * .28} ${h * .4} L${w * .72} ${h * .4} M${w * .31} ${h * .5} L${w * .69} ${h * .5} M${w * .33} ${h * .6} L${w * .67} ${h * .6} M${w * .35} ${h * .7} L${w * .65} ${h * .7}" stroke="rgba(15,37,50,.5)" stroke-width="2"/>`;
-    } else {
-      path = `M${w * .25} ${h * .8} L${w * .75} ${h * .8} L${w * .65} ${h * .2} L${w * .35} ${h * .2} Z`;
-      detail = `<path d="M${w * .25} ${h * .7} L${w * .75} ${h * .7} M${w * .28} ${h * .6} L${w * .72} ${h * .6} M${w * .31} ${h * .5} L${w * .69} ${h * .5} M${w * .33} ${h * .4} L${w * .67} ${h * .4} M${w * .35} ${h * .3} L${w * .65} ${h * .3}" stroke="rgba(15,37,50,.5)" stroke-width="2"/>`;
-    }
-  } else if (type === 'molar') {
-    if (isUpper) {
-      path = `M ${w * 0.18} ${h * 0.12}
-              L ${w * 0.45} ${h * 0.08} L ${w * 0.55} ${h * 0.08} L ${w * 0.82} ${h * 0.12}
-              Q ${w * 0.92} ${h * 0.18} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72}
-              Q ${w * 0.92} ${h * 0.86} ${w * 0.82} ${h * 0.92} L ${w * 0.18} ${h * 0.92}
-              Q ${w * 0.08} ${h * 0.86} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28}
-              Q ${w * 0.08} ${h * 0.18} ${w * 0.18} ${h * 0.12} Z`;
-      detail = `
-        <path d="M ${w * 0.25} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>
-        <path d="M ${w * 0.75} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>
-        <path d="M ${w * 0.5} ${h * 0.26} L ${w * 0.5} ${h * 0.56}" stroke="rgba(15,37,50,0.10)" stroke-width="1" fill="none"/>`;
-    } else {
-      path = `M ${w * 0.18} ${h * 0.08} L ${w * 0.82} ${h * 0.08}
-              Q ${w * 0.92} ${h * 0.14} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72}
-              Q ${w * 0.92} ${h * 0.82} ${w * 0.82} ${h * 0.88}
-              L ${w * 0.55} ${h * 0.92} L ${w * 0.45} ${h * 0.92} L ${w * 0.18} ${h * 0.88}
-              Q ${w * 0.08} ${h * 0.82} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28}
-              Q ${w * 0.08} ${h * 0.14} ${w * 0.18} ${h * 0.08} Z`;
-      detail = `
-        <path d="M ${w * 0.25} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>
-        <path d="M ${w * 0.75} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>`;
-    }
-  } else if (type === 'premolar') {
-    if (isUpper) {
-      path = `M ${w * 0.22} ${h * 0.15} L ${w * 0.5} ${h * 0.10} L ${w * 0.78} ${h * 0.15}
-              Q ${w * 0.88} ${h * 0.22} ${w * 0.88} ${h * 0.32} L ${w * 0.88} ${h * 0.70}
-              Q ${w * 0.88} ${h * 0.84} ${w * 0.78} ${h * 0.90} L ${w * 0.22} ${h * 0.90}
-              Q ${w * 0.12} ${h * 0.84} ${w * 0.12} ${h * 0.70} L ${w * 0.12} ${h * 0.32}
-              Q ${w * 0.12} ${h * 0.22} ${w * 0.22} ${h * 0.15} Z`;
-      detail = `
-        <path d="M ${w * 0.35} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50,0.11)" stroke-width="1.1" fill="none"/>
-        <path d="M ${w * 0.65} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50,0.11)" stroke-width="1.1" fill="none"/>`;
-    } else {
-      path = `M ${w * 0.22} ${h * 0.10} L ${w * 0.78} ${h * 0.10}
-              Q ${w * 0.88} ${h * 0.16} ${w * 0.88} ${h * 0.30} L ${w * 0.88} ${h * 0.68}
-              Q ${w * 0.88} ${h * 0.78} ${w * 0.78} ${h * 0.85}
-              L ${w * 0.5} ${h * 0.90} L ${w * 0.22} ${h * 0.85}
-              Q ${w * 0.12} ${h * 0.78} ${w * 0.12} ${h * 0.68} L ${w * 0.12} ${h * 0.30}
-              Q ${w * 0.12} ${h * 0.16} ${w * 0.22} ${h * 0.10} Z`;
-      detail = `
-        <path d="M ${w * 0.35} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50,0.11)" stroke-width="1.1" fill="none"/>
-        <path d="M ${w * 0.65} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50,0.11)" stroke-width="1.1" fill="none"/>`;
-    }
-  } else if (type === 'canine') {
-    if (isUpper) {
-      path = `M ${w * 0.25} ${h * 0.15}
-              Q ${w * 0.15} ${h * 0.25} ${w * 0.18} ${h * 0.35} L ${w * 0.18} ${h * 0.70}
-              Q ${w * 0.15} ${h * 0.82} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90}
-              Q ${w * 0.85} ${h * 0.82} ${w * 0.82} ${h * 0.70} L ${w * 0.82} ${h * 0.35}
-              Q ${w * 0.85} ${h * 0.25} ${w * 0.75} ${h * 0.15} L ${w * 0.5} ${h * 0.08} Z`;
-      detail = `<path d="M ${w * 0.5} ${h * 0.14} L ${w * 0.5} ${h * 0.54}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>`;
-    } else {
-      path = `M ${w * 0.25} ${h * 0.10}
-              Q ${w * 0.15} ${h * 0.18} ${w * 0.18} ${h * 0.30} L ${w * 0.18} ${h * 0.65}
-              Q ${w * 0.15} ${h * 0.75} ${w * 0.25} ${h * 0.85}
-              L ${w * 0.5} ${h * 0.92} L ${w * 0.75} ${h * 0.85}
-              Q ${w * 0.85} ${h * 0.75} ${w * 0.82} ${h * 0.65} L ${w * 0.82} ${h * 0.30}
-              Q ${w * 0.85} ${h * 0.18} ${w * 0.75} ${h * 0.10} Z`;
-      detail = `<path d="M ${w * 0.5} ${h * 0.88} L ${w * 0.5} ${h * 0.50}" stroke="rgba(15,37,50,0.12)" stroke-width="1.2" fill="none"/>`;
-    }
-  } else { // incisor
-    if (isUpper) {
-      path = `M ${w * 0.25} ${h * 0.12}
-              Q ${w * 0.20} ${h * 0.18} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72}
-              Q ${w * 0.20} ${h * 0.84} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90}
-              Q ${w * 0.80} ${h * 0.84} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28}
-              Q ${w * 0.80} ${h * 0.18} ${w * 0.75} ${h * 0.12} Z`;
-      detail = `<path d="M ${w * 0.35} ${h * 0.30} Q ${w * 0.5} ${h * 0.35} ${w * 0.65} ${h * 0.30}" stroke="rgba(15,37,50,0.10)" stroke-width="1" fill="none"/>`;
-    } else {
-      path = `M ${w * 0.25} ${h * 0.10}
-              Q ${w * 0.20} ${h * 0.16} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72}
-              Q ${w * 0.20} ${h * 0.82} ${w * 0.25} ${h * 0.88} L ${w * 0.75} ${h * 0.88}
-              Q ${w * 0.80} ${h * 0.82} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28}
-              Q ${w * 0.80} ${h * 0.16} ${w * 0.75} ${h * 0.10} Z`;
-      detail = `<path d="M ${w * 0.35} ${h * 0.70} Q ${w * 0.5} ${h * 0.65} ${w * 0.65} ${h * 0.70}" stroke="rgba(15,37,50,0.10)" stroke-width="1" fill="none"/>`;
-    }
-  }
-
-
+  // --- Fallback to high-fidelity SVG from odonto-render.js ---
+  const isSelected = false; // Add parameter logic if needed
+  const treatColor = null;
+  const surfaces = null;
+  
+  // Create beautiful tooth SVG
+  const renderedTooth = window.OdontoRender ? window.OdontoRender.createToothSVG(num, !isUpper, isSelected, treatColor, surfaces, d.ausente) : '';
+  
   let furcaSVG = '';
   if (d.furca > 0 && (type === 'molar' || type === 'premolar')) {
     const fy = isUpper ? h * 0.65 : h * 0.35;
@@ -347,36 +286,21 @@ function toothSVG(num, isUpper, opts = {}) {
     }
   });
 
-  let ausenteSVG = '';
-  if (d.ausente) {
-    ausenteSVG = `<path d="M ${w * .2} ${h * .2} L ${w * .8} ${h * .8} M ${w * .8} ${h * .2} L ${w * .2} ${h * .8}" stroke="rgba(15, 37, 50, 0.7)" stroke-width="4" stroke-linecap="round"/>`;
-  }
-
-  const opacity = d.ausente ? '0.4' : '1';
-  const fillStyle = d.implante ? '#e2e8f0' : `url(#${gradientId})`;
-
-  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:100%;display:block; opacity:${opacity};">
-    <defs>
-      <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1"/>
-        <stop offset="55%" style="stop-color:#FFF7E9;stop-opacity:1"/>
-        <stop offset="100%" style="stop-color:#F3E9DC;stop-opacity:1"/>
-      </linearGradient>
-      <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? '70%' : '30%'}">
-        <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1"/>
-        <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0"/>
-      </radialGradient>
-    </defs>
-    <path d="${path}" fill="${fillStyle}" stroke="#4EABBE" stroke-width="${d.implante ? '1.5' : '2.6'}" stroke-linejoin="round" opacity="${d.ausente ? '0.45' : '1'}"/>
-    ${smooth ? '' : detail}
-    <ellipse cx="${w * .5}" cy="${isUpper ? h * .72 : h * .28}" rx="${w * .28}" ry="${h * .16}" fill="url(#${shineId})" opacity="0.85"/>
-    ${furcaSVG}
-    ${placaSVG}
-    ${ausenteSVG}
-  </svg>`;
+  return `
+    <div style="width:100%;height:100%;position:relative;padding:2px;">
+      <div class="${d.ausente ? 'dark-tooth-bg' : ''}" style="position:relative;width:100%;height:100%;border-radius:12px;overflow:hidden;background:#fff;">
+        ${renderedTooth || `<svg viewBox="0 0 80 104" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">${missingMark}</svg>`}
+        <svg viewBox="0 0 ${w} ${h}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+          ${furcaSVG}
+          ${placaSVG}
+          ${missingMark}
+        </svg>
+      </div>
+    </div>
+  `;
 }
 
-// ===== FILA DE DIENTES CON OVERLAY DE GRÃFICA =====
+// ===== FILA DE DIENTES CON OVERLAY DE GRÁFICA =====
 function teethRowWithChart(teeth, isUpper, labelText, fieldProf, fieldMargen, quadSepTooth, flipSVG = false) {
   const n = teeth.length;
   const colSpan = n * 3;
@@ -389,11 +313,10 @@ function teethRowWithChart(teeth, isUpper, labelText, fieldProf, fieldMargen, qu
     const isQ = t === quadSepTooth;
     const borderRight = isQ ? '3px solid #ef4444' : '1px solid #e2e8f0';
     const borderLeft = ti === 0 ? 'none' : '2px solid #94a3b8';
-    const smoothVestibular = fieldProf === 'profundidad_v';
     teethHtml += `<div style="flex:1;min-width:0;height:${toothH}px;position:relative;
             border-left:${borderLeft};border-right:${borderRight};
-            background:white;cursor:pointer;" class="dark-tooth-bg" onclick="onToothClick(${t}, '${imageSide}', event)">
-            ${toothSVG(t, displayUpper, { smooth: smoothVestibular, imageSide })}
+            background:transparent;cursor:pointer;" class="dark-tooth-bg" onclick="onToothClick(${t}, '${imageSide}', event)">
+            ${toothSVG(t, displayUpper, { imageSide })}
         </div>`;
   });
 
@@ -412,7 +335,7 @@ function teethRowWithChart(teeth, isUpper, labelText, fieldProf, fieldMargen, qu
     </tr>`;
 }
 
-// ===== OVERLAY DE GRÃFICA =====
+// ===== OVERLAY DE GRÁFICA =====
 function drawChartOverlay(teeth, isUpper, fieldProf, fieldMargen) {
   const overlayId = `overlay-${isUpper ? 'u' : 'l'}-${fieldProf.replace('_', '')}`;
   const svg = document.getElementById(overlayId);
@@ -889,6 +812,66 @@ function onTextInput(e) {
 }
 window.onTextInput = onTextInput;
 
+// ===== OPCION MANUAl PARA REEMPLAZAR IMAGENES =====
+function onToothClick(tooth, side, e) {
+  if (imageEditionLocked) {
+    toast('La edición de imágenes está bloqueada. Para modificarlas, desbloquéalas primero.', 'warn');
+    return;
+  }
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png, image/jpeg, image/jpg, image/webp';
+  input.onchange = async (evt) => {
+    const file = evt.target.files[0];
+    if (!file) return;
+    try {
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxW = 400; // Optimal size for teeth
+          const maxH = 400;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxW) {
+              height *= maxW / width;
+              width = maxW;
+            }
+          } else {
+            if (height > maxH) {
+              width *= maxH / height;
+              height = maxH;
+            }
+          }
+          canvas.width = Math.round(width);
+          canvas.height = Math.round(height);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          const imgUrl = canvas.toDataURL('image/jpeg', 0.85);
+          const d = perioData[tooth];
+          if (d) {
+            d['imagen_' + side] = imgUrl; // Update standard image side
+            
+            render();
+            scheduleAutoSave(100);
+            toast('Imagen del diente actualizada', 'ok');
+          }
+        };
+        img.src = re.target.result;
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      toast('Error al leer imagen', 'error');
+    }
+  };
+  input.click();
+}
+window.onToothClick = onToothClick;
+
 // ===== GUARDAR / CARGAR =====
 function getToothImagesPayload() {
   const payload = {};
@@ -911,36 +894,77 @@ function applyToothImagesPayload(payload) {
     const src = payload[t];
     const d = perioData[t];
     if (!d || !src || typeof src !== 'object') return;
-    if (typeof src.imagen_v === 'string') d.imagen_v = src.imagen_v;
-    if (typeof src.imagen_p === 'string') d.imagen_p = src.imagen_p;
-    if (typeof src.imagen_url === 'string') d.imagen_url = src.imagen_url;
+    
+    const isValidString = (s) => typeof s === 'string' && s !== 'undefined' && s !== 'null' && s !== '[object Object]';
+    
+    if (isValidString(src.imagen_v)) d.imagen_v = src.imagen_v;
+    if (isValidString(src.imagen_p)) d.imagen_p = src.imagen_p;
+    if (isValidString(src.imagen_url)) d.imagen_url = src.imagen_url;
     normalizeToothImageFields(d);
   });
 }
 
-async function ensurePeriodontogramaSchema() {
-  await dbRun(`CREATE TABLE IF NOT EXISTS periodontograma(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      paciente_id INTEGER NOT NULL,
-      datos TEXT,
-      fecha TEXT,
-      UNIQUE(paciente_id)
-    )`);
-
-  const cols = await dbAll('PRAGMA table_info(periodontograma)');
-  const names = new Set((cols || []).map(c => c.name));
-  periodontogramaColumns = names;
-  if (!names.has('dientes_imagenes')) {
-    await dbRun('ALTER TABLE periodontograma ADD COLUMN dientes_imagenes TEXT');
-    names.add('dientes_imagenes');
-  }
-  if (!names.has('dientes_bloqueados')) {
-    await dbRun('ALTER TABLE periodontograma ADD COLUMN dientes_bloqueados INTEGER DEFAULT 0');
-    names.add('dientes_bloqueados');
-  }
-  periodontogramaColumns = names;
+function countToothImagesInPayload(payload) {
+  if (!payload || typeof payload !== 'object') return 0;
+  return Object.values(payload).reduce((acc, entry) => {
+    if (!entry || typeof entry !== 'object') return acc;
+    return acc + (((entry.imagen_v && String(entry.imagen_v).trim())
+      || (entry.imagen_p && String(entry.imagen_p).trim())
+      || (entry.imagen_url && String(entry.imagen_url).trim())) ? 1 : 0);
+  }, 0);
 }
 
+// extractStoredToothImages is no longer needed as the API will return structured data
+// function extractStoredToothImages(row) {
+//   const payload = {};
+//   const append = (source) => {
+//     if (!source || typeof source !== 'object') return;
+//     const rawTeeth = source.teeth && typeof source.teeth === 'object' ? source.teeth : source;
+//     if (!rawTeeth || typeof rawTeeth !== 'object') return;
+//     Object.entries(rawTeeth).forEach(([tooth, entry]) => {
+//       if (!/^\d+$/.test(String(tooth)) || !entry || typeof entry !== 'object') return;
+//       payload[tooth] = {
+//         imagen_v: typeof entry.imagen_v === 'string' ? entry.imagen_v : '',
+//         imagen_p: typeof entry.imagen_p === 'string' ? entry.imagen_p : '',
+//         imagen_url: typeof entry.imagen_url === 'string' ? entry.imagen_url : '',
+//       };
+//     });
+//   };
+
+//   try {
+//     if (row?.datos) append(JSON.parse(row.datos));
+//   } catch (_) { }
+
+//   try {
+//     if (row?.dientes_imagenes) append(JSON.parse(row.dientes_imagenes));
+//   } catch (_) { }
+
+//   return payload;
+// }
+
+// ensurePeriodontogramaSchema is removed
+// async function ensurePeriodontogramaSchema() {
+//   await dbRun(`CREATE TABLE IF NOT EXISTS periodontograma(
+//       id INTEGER PRIMARY KEY AUTOINCREMENT,
+//       paciente_id INTEGER NOT NULL,
+//       datos TEXT,
+//       fecha TEXT,
+//       UNIQUE(paciente_id)
+//     )`);
+
+//   const cols = await dbAll('PRAGMA table_info(periodontograma)');
+//   const names = new Set((cols || []).map(c => c.name));
+//   periodontogramaColumns = names;
+//   if (!names.has('dientes_imagenes')) {
+//     await dbRun('ALTER TABLE periodontograma ADD COLUMN dientes_imagenes TEXT');
+//     names.add('dientes_imagenes');
+//   }
+//   if (!names.has('dientes_bloqueados')) {
+//     await dbRun('ALTER TABLE periodontograma ADD COLUMN dientes_bloqueados INTEGER DEFAULT 0');
+//     names.add('dientes_bloqueados');
+//   }
+//   periodontogramaColumns = names;
+// }
 async function guardar(opts = {}) {
   const { silent = false } = opts;
   if (!currentPacienteId) {
@@ -953,51 +977,26 @@ async function guardar(opts = {}) {
   }
   saveInFlight = true;
   try {
-    if (!periodontogramaColumns.size) await ensurePeriodontogramaSchema();
-    const datos = JSON.stringify({
-      version: 2,
-      teeth: perioData
+    const datos = { version: 2, teeth: perioData };
+    const dientesImagenes = getToothImagesPayload();
+
+    if (!api) {
+      throw new Error('window.api no disponible en este contexto (sin preload)');
+    }
+
+    const result = await api.clinical.savePeriodontogram({
+      paciente_id: currentPacienteId,
+      datos,
+      dientes_imagenes: dientesImagenes,
+      dientes_bloqueados: imageEditionLocked ? 1 : 0,
     });
-    const dientesImagenes = JSON.stringify(getToothImagesPayload());
-    const dientesBloqueados = imageEditionLocked ? 1 : 0;
-    const fecha = new Date().toISOString().slice(0, 10);
 
-    const insertCols = ['paciente_id', 'datos'];
-    const insertVals = [currentPacienteId, datos];
-    const updateSet = ['datos=excluded.datos'];
-
-    if (periodontogramaColumns.has('fecha')) {
-      insertCols.push('fecha');
-      insertVals.push(fecha);
-      updateSet.push('fecha=excluded.fecha');
-    }
-    if (periodontogramaColumns.has('dientes_imagenes')) {
-      insertCols.push('dientes_imagenes');
-      insertVals.push(dientesImagenes);
-      updateSet.push('dientes_imagenes=excluded.dientes_imagenes');
-    }
-    if (periodontogramaColumns.has('dientes_bloqueados')) {
-      insertCols.push('dientes_bloqueados');
-      insertVals.push(dientesBloqueados);
-      updateSet.push('dientes_bloqueados=excluded.dientes_bloqueados');
-    }
-    if (periodontogramaColumns.has('fecha_actualizacion')) {
-      updateSet.push('fecha_actualizacion=CURRENT_TIMESTAMP');
-    }
-
-    const placeholders = insertCols.map(() => '?').join(',');
-    await dbRun(
-      `INSERT INTO periodontograma(${insertCols.join(',')})
-       VALUES(${placeholders})
-       ON CONFLICT(paciente_id) DO UPDATE SET
-         ${updateSet.join(', ')}`,
-      insertVals
-    );
+    if (!result) throw new Error('El backend retornó null/false');
     if (!silent) toast('Guardado correctamente', 'ok');
     return true;
   } catch (err) {
-    console.error(err);
-    if (!silent) toast('Error al guardar', 'error');
+    console.error('Error en guardar():', err);
+    if (!silent) toast('Error al guardar: ' + err.message, 'error');
     return false;
   } finally {
     saveInFlight = false;
@@ -1011,32 +1010,21 @@ async function guardar(opts = {}) {
 async function cargar() {
   if (!currentPacienteId) return;
   try {
-    if (!periodontogramaColumns.size) await ensurePeriodontogramaSchema();
-    const selectCols = ['datos'];
-    if (periodontogramaColumns.has('dientes_imagenes')) selectCols.push('dientes_imagenes');
-    if (periodontogramaColumns.has('dientes_bloqueados')) selectCols.push('dientes_bloqueados');
-
-    const row = await dbGet(`SELECT ${selectCols.join(', ')} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+    const row = await api.clinical.getPeriodontogram(currentPacienteId);
     if (row) {
       if (row.datos) {
-        const parsed = JSON.parse(row.datos);
-
-        if (parsed && typeof parsed === 'object' && parsed.teeth && typeof parsed.teeth === 'object') {
-          Object.keys(parsed.teeth).forEach(k => {
-            if (perioData[k]) Object.assign(perioData[k], parsed.teeth[k]);
-          });
-        } else if (parsed && typeof parsed === 'object') {
-          // Compatibilidad con guardados anteriores (estructura plana por pieza)
-          Object.keys(parsed).forEach(k => {
-            if (perioData[k]) Object.assign(perioData[k], parsed[k]);
-          });
-        }
+        const parsed = typeof row.datos === 'string' ? JSON.parse(row.datos) : row.datos;
+        const teethData = parsed?.teeth || parsed || {};
+        Object.keys(teethData).forEach(k => {
+          if (perioData[k]) Object.assign(perioData[k], teethData[k]);
+        });
       }
 
       if (row.dientes_imagenes) {
-        try {
-          applyToothImagesPayload(JSON.parse(row.dientes_imagenes));
-        } catch (_) { }
+        const imgs = typeof row.dientes_imagenes === 'string' 
+          ? JSON.parse(row.dientes_imagenes) 
+          : row.dientes_imagenes;
+        applyToothImagesPayload(imgs);
       }
       imageEditionLocked = !!row.dientes_bloqueados;
       allTeeth.forEach(t => normalizeToothImageFields(perioData[t]));
@@ -1083,13 +1071,6 @@ async function init() {
   }
 
   initData();
-
-  if (db) {
-    try {
-      await ensurePeriodontogramaSchema();
-    } catch (e) { console.error('Error creando tabla:', e); }
-  }
-
   await cargar();
   render();
 

@@ -8,36 +8,35 @@ class Toast {
         this.ensureContainer();
     }
 
+    sanitizeMessage(message) {
+        const repair = window.repairMojibakeText;
+        if (typeof repair === 'function') {
+            return repair(message);
+        }
+        return String(message ?? '');
+    }
+
     ensureContainer() {
         if (!document.getElementById(this.containerId)) {
             const container = document.createElement('div');
             container.id = this.containerId;
-            // Fixed position, z-index high, flex column for stacking
             container.className = 'fixed top-4 right-4 z-[9999] flex flex-col gap-3 pointer-events-none';
             document.body.appendChild(container);
         }
     }
 
-    /**
-     * Show a toast notification
-     * @param {string} message - The message to display
-     * @param {string} type - 'success', 'error', 'warning', 'info'
-     * @param {number} duration - Duration in ms (default 3000)
-     */
     show(message, type = 'info', duration = 3000) {
         this.ensureContainer();
         const container = document.getElementById(this.containerId);
-
-        // Create toast element
         const toast = document.createElement('div');
+        const safeMessage = this.sanitizeMessage(message);
 
-        // Styles based on type
         const styles = {
             success: {
                 bg: 'bg-white dark:bg-gray-800',
                 border: 'border-l-4 border-green-500',
                 icon: `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`,
-                title: 'Éxito'
+                title: 'Exito'
             },
             error: {
                 bg: 'bg-white dark:bg-gray-800',
@@ -55,21 +54,20 @@ class Toast {
                 bg: 'bg-white dark:bg-gray-800',
                 border: 'border-l-4 border-[#4EABBE]',
                 icon: `<svg class="w-6 h-6 text-[#4EABBE]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
-                title: 'Información'
+                title: 'Informacion'
             }
         };
 
         const style = styles[type] || styles.info;
 
-        // Tailwind classes for premium look
         toast.className = `
             pointer-events-auto
-            flex items-center gap-3 
-            w-full max-w-sm 
-            p-4 
-            rounded-lg 
-            shadow-lg 
-            ${style.bg} 
+            flex items-center gap-3
+            w-full max-w-sm
+            p-4
+            rounded-lg
+            shadow-lg
+            ${style.bg}
             ${style.border}
             transform transition-all duration-500 ease-out
             translate-x-full opacity-0
@@ -82,7 +80,7 @@ class Toast {
             </div>
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    ${message}
+                    ${safeMessage}
                 </p>
             </div>
             <button class="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-500 focus:outline-none" onclick="this.parentElement.remove()">
@@ -94,23 +92,20 @@ class Toast {
 
         container.appendChild(toast);
 
-        // Animation In
         requestAnimationFrame(() => {
             toast.classList.remove('translate-x-full', 'opacity-0');
         });
 
-        // Auto remove
         setTimeout(() => {
             toast.classList.add('translate-x-full', 'opacity-0');
             setTimeout(() => {
                 if (toast.parentElement) {
                     toast.remove();
                 }
-            }, 500); // Wait for transition to finish
+            }, 500);
         }, duration);
     }
 }
 
-// Export singleton
 const toast = new Toast();
 export default toast;

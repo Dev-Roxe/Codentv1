@@ -101,88 +101,232 @@ window.OdontoRender = (function () {
     }
 
     function createToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMissing) {
-        const w = 80;
-        const h = 104;
-        const strokeWidth = 2.6;
+        const w = 100;
+        const h = 130;
+        const strokeWidth = isSelected ? 3 : 1.5;
 
-        const borderColor = isSelected ? BRAND.primary : (treatmentColor || "#CBD5E1");
-        const gradientId = `tooth-grad-${num}-${isUpper ? "u" : "l"}`;
-        const shineId = `tooth-shine-${num}-${isUpper ? "u" : "l"}`;
+        const borderColor = isSelected ? BRAND.primary : (treatmentColor ? treatmentColor : "rgba(15,37,50,0.15)");
         const shapeType = getToothType(num).replace("child-", "");
 
-        let path = "";
-        let detail = "";
+        let mainFill = `url(#tooth-body-${num})`;
+        if (treatmentColor && isMissing) { // If missing, tooth is mostly transparent but maybe tinted
+             mainFill = "transparent";
+        }
 
-        // Shapes logic...
+        // --- Anatomical Paths ---
+        // These paths are redesigned to look much more natural and bulbous, mimicking real teeth
+        let crownPath = "";
+        let rootsPath = "";
+        let details = "";
+
         if (shapeType === "molar") {
             if (isUpper) {
-                path = `M ${w * 0.18} ${h * 0.12} L ${w * 0.45} ${h * 0.08} L ${w * 0.55} ${h * 0.08} L ${w * 0.82} ${h * 0.12} Q ${w * 0.92} ${h * 0.18} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72} Q ${w * 0.92} ${h * 0.86} ${w * 0.82} ${h * 0.92} L ${w * 0.18} ${h * 0.92} Q ${w * 0.08} ${h * 0.86} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28} Q ${w * 0.08} ${h * 0.18} ${w * 0.18} ${h * 0.12} Z`;
-                detail = `<path d="M ${w * 0.25} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.75} ${h * 0.16} L ${w * 0.5} ${h * 0.36}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.5} ${h * 0.26} L ${w * 0.5} ${h * 0.56}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+                // Upper Molar: 3 roots (2 buccal visible), wide crown
+                rootsPath = `
+                    M ${w*0.25} ${h*0.45} 
+                    C ${w*0.2} ${h*0.3}, ${w*0.1} ${h*0.15}, ${w*0.25} ${h*0.05}
+                    C ${w*0.35} ${h*0.05}, ${w*0.38} ${h*0.2}, ${w*0.4}  ${h*0.45}
+                    M ${w*0.6}  ${h*0.45}
+                    C ${w*0.62} ${h*0.2}, ${w*0.65} ${h*0.05}, ${w*0.8}  ${h*0.05}
+                    C ${w*0.9}  ${h*0.15}, ${w*0.8} ${h*0.3},  ${w*0.75} ${h*0.45}
+                    M ${w*0.4}  ${h*0.45}
+                    C ${w*0.45} ${h*0.1}, ${w*0.55} ${h*0.1},  ${w*0.6}  ${h*0.45}
+                `;
+                crownPath = `
+                    M ${w*0.15} ${h*0.42}
+                    C ${w*0.02} ${h*0.6}, ${w*0.05} ${h*0.8}, ${w*0.18} ${h*0.88}
+                    C ${w*0.3}  ${h*0.95}, ${w*0.4} ${h*0.85}, ${w*0.5}  ${h*0.88}
+                    C ${w*0.6}  ${h*0.85}, ${w*0.7} ${h*0.95}, ${w*0.82} ${h*0.88}
+                    C ${w*0.95} ${h*0.8}, ${w*0.98} ${h*0.6}, ${w*0.85} ${h*0.42}
+                    C ${w*0.7}  ${h*0.35}, ${w*0.3} ${h*0.35}, ${w*0.15} ${h*0.42} Z
+                `;
+                details = `<path d="M ${w*0.3} ${h*0.6} Q ${w*0.4} ${h*0.75} ${w*0.5} ${h*0.88} M ${w*0.7} ${h*0.6} Q ${w*0.6} ${h*0.75} ${w*0.5} ${h*0.88} M ${w*0.5} ${h*0.4} L ${w*0.5} ${h*0.6}" fill="none" stroke="rgba(15,37,50,0.12)" stroke-width="1.5" stroke-linecap="round"/>`;
             } else {
-                path = `M ${w * 0.18} ${h * 0.08} L ${w * 0.82} ${h * 0.08} Q ${w * 0.92} ${h * 0.14} ${w * 0.92} ${h * 0.28} L ${w * 0.92} ${h * 0.72} Q ${w * 0.92} ${h * 0.82} ${w * 0.82} ${h * 0.88} L ${w * 0.55} ${h * 0.92} L ${w * 0.45} ${h * 0.92} L ${w * 0.18} ${h * 0.88} Q ${w * 0.08} ${h * 0.82} ${w * 0.08} ${h * 0.72} L ${w * 0.08} ${h * 0.28} Q ${w * 0.08} ${h * 0.14} ${w * 0.18} ${h * 0.08} Z`;
-                detail = `<path d="M ${w * 0.25} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/><path d="M ${w * 0.75} ${h * 0.84} L ${w * 0.5} ${h * 0.64}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+                // Lower Molar: 2 roots, wide rectangular crown
+                rootsPath = `
+                    M ${w*0.25} ${h*0.45} 
+                    C ${w*0.2} ${h*0.2}, ${w*0.15} ${h*0.05}, ${w*0.3} ${h*0.05}
+                    C ${w*0.4} ${h*0.05}, ${w*0.45} ${h*0.3}, ${w*0.45} ${h*0.45}
+                    M ${w*0.55} ${h*0.45}
+                    C ${w*0.55} ${h*0.3}, ${w*0.6} ${h*0.05}, ${w*0.7} ${h*0.05}
+                    C ${w*0.85} ${h*0.05}, ${w*0.8} ${h*0.2}, ${w*0.75} ${h*0.45}
+                `;
+                crownPath = `
+                    M ${w*0.15} ${h*0.42}
+                    C ${w*0.05} ${h*0.6}, ${w*0.05} ${h*0.85}, ${w*0.2} ${h*0.9}
+                    C ${w*0.35} ${h*0.96}, ${w*0.45} ${h*0.85}, ${w*0.5} ${h*0.88}
+                    C ${w*0.55} ${h*0.85}, ${w*0.65} ${h*0.96}, ${w*0.8} ${h*0.9}
+                    C ${w*0.95} ${h*0.85}, ${w*0.95} ${h*0.6}, ${w*0.85} ${h*0.42}
+                    C ${w*0.65} ${h*0.38}, ${w*0.35} ${h*0.38}, ${w*0.15} ${h*0.42} Z
+                `;
+                details = `<path d="M ${w*0.3} ${h*0.8} Q ${w*0.4} ${h*0.6} ${w*0.5} ${h*0.65} Q ${w*0.6} ${h*0.6} ${w*0.7} ${h*0.8} M ${w*0.5} ${h*0.4} L ${w*0.5} ${h*0.65}" fill="none" stroke="rgba(15,37,50,0.12)" stroke-width="1.5" stroke-linecap="round"/>`;
             }
         } else if (shapeType === "premolar") {
             if (isUpper) {
-                path = `M ${w * 0.22} ${h * 0.15} L ${w * 0.5} ${h * 0.10} L ${w * 0.78} ${h * 0.15} Q ${w * 0.88} ${h * 0.22} ${w * 0.88} ${h * 0.32} L ${w * 0.88} ${h * 0.70} Q ${w * 0.88} ${h * 0.84} ${w * 0.78} ${h * 0.90} L ${w * 0.22} ${h * 0.90} Q ${w * 0.12} ${h * 0.84} ${w * 0.12} ${h * 0.70} L ${w * 0.12} ${h * 0.32} Q ${w * 0.12} ${h * 0.22} ${w * 0.22} ${h * 0.15} Z`;
-                detail = `<path d="M ${w * 0.35} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/><path d="M ${w * 0.65} ${h * 0.20} L ${w * 0.5} ${h * 0.35}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>`;
+                // Upper Premolar: 2 roots often fused, narrower crown
+                rootsPath = `
+                    M ${w*0.35} ${h*0.45} 
+                    C ${w*0.35} ${h*0.2}, ${w*0.3} ${h*0.08}, ${w*0.45} ${h*0.05}
+                    C ${w*0.5} ${h*0.15}, ${w*0.5} ${h*0.3}, ${w*0.5} ${h*0.45}
+                    M ${w*0.5}  ${h*0.45}
+                    C ${w*0.5} ${h*0.3}, ${w*0.5} ${h*0.15}, ${w*0.55} ${h*0.05}
+                    C ${w*0.7} ${h*0.08}, ${w*0.65} ${h*0.2}, ${w*0.65} ${h*0.45}
+                `;
+                crownPath = `
+                    M ${w*0.25} ${h*0.42}
+                    C ${w*0.15} ${h*0.6}, ${w*0.18} ${h*0.8}, ${w*0.35} ${h*0.9}
+                    C ${w*0.5} ${h*0.95}, ${w*0.65} ${h*0.95}, ${w*0.65} ${h*0.9}
+                    C ${w*0.82} ${h*0.8}, ${w*0.85} ${h*0.6}, ${w*0.75} ${h*0.42}
+                    C ${w*0.6}  ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.25} ${h*0.42} Z
+                `;
+                details = `<path d="M ${w*0.4} ${h*0.6} Q ${w*0.5} ${h*0.75} ${w*0.6} ${h*0.6} M ${w*0.5} ${h*0.4} L ${w*0.5} ${h*0.68}" fill="none" stroke="rgba(15,37,50,0.1)" stroke-width="1.2" stroke-linecap="round"/>`;
             } else {
-                path = `M ${w * 0.22} ${h * 0.10} L ${w * 0.78} ${h * 0.10} Q ${w * 0.88} ${h * 0.16} ${w * 0.88} ${h * 0.30} L ${w * 0.88} ${h * 0.68} Q ${w * 0.88} ${h * 0.78} ${w * 0.78} ${h * 0.85} L ${w * 0.5} ${h * 0.90} L ${w * 0.22} ${h * 0.85} Q ${w * 0.12} ${h * 0.78} ${w * 0.12} ${h * 0.68} L ${w * 0.12} ${h * 0.30} Q ${w * 0.12} ${h * 0.16} ${w * 0.22} ${h * 0.10} Z`;
-                detail = `<path d="M ${w * 0.35} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/><path d="M ${w * 0.65} ${h * 0.80} L ${w * 0.5} ${h * 0.65}" stroke="rgba(15,37,50, 0.11)" stroke-width="1.1" fill="none"/>`;
+                // Lower Premolar: 1 root
+                rootsPath = `
+                    M ${w*0.35} ${h*0.45} 
+                    C ${w*0.35} ${h*0.2}, ${w*0.4} ${h*0.05}, ${w*0.5} ${h*0.05}
+                    C ${w*0.6} ${h*0.05}, ${w*0.65} ${h*0.2}, ${w*0.65} ${h*0.45}
+                `;
+                crownPath = `
+                    M ${w*0.28} ${h*0.42}
+                    C ${w*0.18} ${h*0.6}, ${w*0.2} ${h*0.8}, ${w*0.35} ${h*0.88}
+                    C ${w*0.5} ${h*0.92}, ${w*0.65} ${h*0.92}, ${w*0.65} ${h*0.88}
+                    C ${w*0.8} ${h*0.8}, ${w*0.82} ${h*0.6}, ${w*0.72} ${h*0.42}
+                    C ${w*0.6} ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.28} ${h*0.42} Z
+                `;
+                details = `<path d="M ${w*0.4} ${h*0.75} Q ${w*0.5} ${h*0.6} ${w*0.6} ${h*0.75} M ${w*0.5} ${h*0.4} L ${w*0.5} ${h*0.68}" fill="none" stroke="rgba(15,37,50,0.1)" stroke-width="1.2" stroke-linecap="round"/>`;
             }
         } else if (shapeType === "canine") {
+            // Canine: 1 massive root, pointy crown
+            rootsPath = `
+                M ${w*0.3} ${h*0.45} 
+                C ${w*0.3} ${h*0.2}, ${w*0.45} ${h*0.02}, ${w*0.5} ${h*0.02}
+                C ${w*0.55} ${h*0.02}, ${w*0.7} ${h*0.2}, ${w*0.7} ${h*0.45}
+            `;
             if (isUpper) {
-                path = `M ${w * 0.25} ${h * 0.15} Q ${w * 0.15} ${h * 0.25} ${w * 0.18} ${h * 0.35} L ${w * 0.18} ${h * 0.70} Q ${w * 0.15} ${h * 0.82} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90} Q ${w * 0.85} ${h * 0.82} ${w * 0.82} ${h * 0.70} L ${w * 0.82} ${h * 0.35} Q ${w * 0.85} ${h * 0.25} ${w * 0.75} ${h * 0.15} L ${w * 0.5} ${h * 0.08} Z`;
-                detail = `<path d="M ${w * 0.5} ${h * 0.14} L ${w * 0.5} ${h * 0.54}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+                crownPath = `
+                    M ${w*0.25} ${h*0.42}
+                    C ${w*0.15} ${h*0.6}, ${w*0.2} ${h*0.75}, ${w*0.35} ${h*0.85}
+                    C ${w*0.45} ${h*0.92}, ${w*0.5} ${h*0.98}, ${w*0.5} ${h*0.98}
+                    C ${w*0.5} ${h*0.98}, ${w*0.55} ${h*0.92}, ${w*0.65} ${h*0.85}
+                    C ${w*0.8} ${h*0.75}, ${w*0.85} ${h*0.6}, ${w*0.75} ${h*0.42}
+                    C ${w*0.6} ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.25} ${h*0.42} Z
+                `;
             } else {
-                path = `M ${w * 0.25} ${h * 0.10} Q ${w * 0.15} ${h * 0.18} ${w * 0.18} ${h * 0.30} L ${w * 0.18} ${h * 0.65} Q ${w * 0.15} ${h * 0.75} ${w * 0.25} ${h * 0.85} L ${w * 0.5} ${h * 0.92} L ${w * 0.75} ${h * 0.85} Q ${w * 0.85} ${h * 0.75} ${w * 0.82} ${h * 0.65} L ${w * 0.82} ${h * 0.30} Q ${w * 0.85} ${h * 0.18} ${w * 0.75} ${h * 0.10} Z`;
-                detail = `<path d="M ${w * 0.5} ${h * 0.88} L ${w * 0.5} ${h * 0.50}" stroke="rgba(15,37,50, 0.12)" stroke-width="1.2" fill="none"/>`;
+                 crownPath = `
+                    M ${w*0.28} ${h*0.42}
+                    C ${w*0.18} ${h*0.6}, ${w*0.22} ${h*0.75}, ${w*0.38} ${h*0.85}
+                    C ${w*0.45} ${h*0.9}, ${w*0.5} ${h*0.95}, ${w*0.5} ${h*0.95}
+                    C ${w*0.5} ${h*0.95}, ${w*0.55} ${h*0.9}, ${w*0.62} ${h*0.85}
+                    C ${w*0.78} ${h*0.75}, ${w*0.82} ${h*0.6}, ${w*0.72} ${h*0.42}
+                    C ${w*0.6} ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.28} ${h*0.42} Z
+                `;
             }
+            details = `<path d="M ${w*0.5} ${h*0.4} L ${w*0.5} ${h*0.8}" fill="none" stroke="rgba(15,37,50,0.1)" stroke-width="1.2" stroke-linecap="round"/>`;
         } else {
+            // Incisor: 1 root, flat blade crown
+            rootsPath = `
+                M ${w*0.35} ${h*0.45} 
+                C ${w*0.35} ${h*0.2}, ${w*0.45} ${h*0.05}, ${w*0.5} ${h*0.05}
+                C ${w*0.55} ${h*0.05}, ${w*0.65} ${h*0.2}, ${w*0.65} ${h*0.45}
+            `;
             if (isUpper) {
-                path = `M ${w * 0.25} ${h * 0.12} Q ${w * 0.20} ${h * 0.18} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72} Q ${w * 0.20} ${h * 0.84} ${w * 0.25} ${h * 0.90} L ${w * 0.75} ${h * 0.90} Q ${w * 0.80} ${h * 0.84} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28} Q ${w * 0.80} ${h * 0.18} ${w * 0.75} ${h * 0.12} Z`;
-                detail = `<path d="M ${w * 0.35} ${h * 0.30} Q ${w * 0.5} ${h * 0.35} ${w * 0.65} ${h * 0.30}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+                crownPath = `
+                    M ${w*0.25} ${h*0.42}
+                    C ${w*0.2} ${h*0.6}, ${w*0.2} ${h*0.8}, ${w*0.25} ${h*0.92}
+                    C ${w*0.4} ${h*0.95}, ${w*0.6} ${h*0.95}, ${w*0.75} ${h*0.92}
+                    C ${w*0.8} ${h*0.8}, ${w*0.8} ${h*0.6}, ${w*0.75} ${h*0.42}
+                    C ${w*0.6} ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.25} ${h*0.42} Z
+                `;
             } else {
-                path = `M ${w * 0.25} ${h * 0.10} Q ${w * 0.20} ${h * 0.16} ${w * 0.20} ${h * 0.28} L ${w * 0.20} ${h * 0.72} Q ${w * 0.20} ${h * 0.82} ${w * 0.25} ${h * 0.88} L ${w * 0.75} ${h * 0.88} Q ${w * 0.80} ${h * 0.82} ${w * 0.80} ${h * 0.72} L ${w * 0.80} ${h * 0.28} Q ${w * 0.80} ${h * 0.16} ${w * 0.75} ${h * 0.10} Z`;
-                detail = `<path d="M ${w * 0.35} ${h * 0.70} Q ${w * 0.5} ${h * 0.65} ${w * 0.65} ${h * 0.70}" stroke="rgba(15,37,50, 0.10)" stroke-width="1" fill="none"/>`;
+                crownPath = `
+                    M ${w*0.28} ${h*0.42}
+                    C ${w*0.25} ${h*0.6}, ${w*0.25} ${h*0.8}, ${w*0.3} ${h*0.9}
+                    C ${w*0.4} ${h*0.92}, ${w*0.6} ${h*0.92}, ${w*0.7} ${h*0.9}
+                    C ${w*0.75} ${h*0.8}, ${w*0.75} ${h*0.6}, ${w*0.72} ${h*0.42}
+                    C ${w*0.6} ${h*0.38}, ${w*0.4} ${h*0.38}, ${w*0.28} ${h*0.42} Z
+                `;
             }
+            details = `<path d="M ${w*0.4} ${h*0.6} L ${w*0.4} ${h*0.8} M ${w*0.6} ${h*0.6} L ${w*0.6} ${h*0.8}" fill="none" stroke="rgba(15,37,50,0.08)" stroke-width="1" stroke-linecap="round"/>`;
         }
+
+        // If lower tooth, flip it vertically
+        const transformScale = isUpper ? "" : `transform="scale(1, -1) translate(0, -${h})"`;
 
         const surfaceColor = treatmentColor || "#EF4444";
         const overlays = !isMissing && surfaces ? renderSurfaceMarks(surfaces, isUpper, surfaceColor, w, h) : "";
 
         const missingMark = isMissing ? `
-      <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
-      <line x1="${w * 0.8}" y1="${h * 0.2}" x2="${w * 0.2}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
-    ` : "";
+            <g opacity="0.85" stroke-linecap="round">
+                <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="${surfaceColor}" stroke-width="4" />
+                <line x1="${w * 0.8}" y1="${h * 0.2}" x2="${w * 0.2}" y2="${h * 0.8}" stroke="${surfaceColor}" stroke-width="4" />
+            </g>
+        ` : "";
 
-        const baseOpacity = isMissing ? 0.45 : 1;
+        // Shading maps
+        const innerShadowId = `inner-shadow-${num}`;
+        const rootFillId = `root-grad-${num}`;
 
         return `
-      <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
+      <svg viewBox="0 0 ${w} ${h}" class="w-full h-full" overflow="visible">
         <defs>
-          <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" style="stop-color:#FFFEF9;stop-opacity:1" />
-            <stop offset="55%" style="stop-color:#FFF7E9;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#F3E9DC;stop-opacity:1" />
-          </linearGradient>
-          <radialGradient id="${shineId}" cx="50%" cy="${isUpper ? "30%" : "70%"}">
-            <stop offset="0%" style="stop-color:rgba(255,255,255,0.72);stop-opacity:1" />
-            <stop offset="100%" style="stop-color:rgba(255,255,255,0);stop-opacity:0" />
+          <!-- 3D enamel gradient -->
+          <radialGradient id="tooth-body-${num}" cx="35%" cy="35%" r="70%" fx="30%" fy="30%">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="1" />
+            <stop offset="40%" stop-color="#FDFBFA" stop-opacity="1" />
+            <stop offset="85%" stop-color="#EBE3D5" stop-opacity="1" />
+            <stop offset="100%" stop-color="#D6CBB8" stop-opacity="1" />
           </radialGradient>
+          
+          <!-- Root gradient (more opaque, yellowish/bone color) -->
+          <linearGradient id="${rootFillId}" x1="0%" y1="0%" x2="100%" y2="0%">
+             <stop offset="0%" stop-color="#D4C9B3" />
+             <stop offset="20%" stop-color="#E8DECD" />
+             <stop offset="50%" stop-color="#F5F0E6" />
+             <stop offset="80%" stop-color="#E8DECD" />
+             <stop offset="100%" stop-color="#C7BAA0" />
+          </linearGradient>
+
+          <!-- Inner shadow for depth -->
+          <filter id="${innerShadowId}">
+            <feOffset dx="0" dy="2"/>
+            <feGaussianBlur stdDeviation="3" result="offset-blur"/>
+            <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+            <feFlood flood-color="black" flood-opacity="0.15" result="color"/>
+            <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+            <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+          </filter>
         </defs>
 
-        <path d="${path}"
-          fill="url(#${gradientId})"
-          stroke="${borderColor}"
-          stroke-width="${strokeWidth}"
-          stroke-dasharray="${isMissing ? "6 4" : "0"}"
-          opacity="${baseOpacity}" />
+        <g ${transformScale}>
+            <!-- Roots -->
+            <path d="${rootsPath}" 
+                fill="${isMissing ? "transparent" : `url(#${rootFillId})`}" 
+                stroke="${borderColor}" 
+                stroke-width="${strokeWidth}"
+                stroke-linejoin="round"
+                stroke-linecap="round"
+                opacity="${isMissing ? 0.3 : 1}" />
 
-        ${detail}
-        <ellipse cx="${w * 0.5}" cy="${isUpper ? h * 0.28 : h * 0.72}" rx="${w * 0.28}" ry="${h * 0.16}"
-          fill="url(#${shineId})" opacity="0.85"/>
+            <!-- Crown -->
+            <path d="${crownPath}" 
+                fill="${mainFill}" 
+                stroke="${borderColor}" 
+                stroke-width="${strokeWidth}"
+                stroke-linejoin="round"
+                filter="${isMissing ? '' : `url(#${innerShadowId})`}"
+                opacity="${isMissing ? 0.3 : 1}" />
+                
+            <!-- 3D Highlights on Crown -->
+            ${isMissing ? '' : `<path d="${crownPath}" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6" transform="translate(-1, -1) scale(0.98)" />`}
 
+            <!-- Anatomical Details -->
+            <g opacity="${isMissing ? 0.3 : 1}">
+                ${details}
+            </g>
+        </g>
+
+        <!-- Treatments & Marks (these shouldn't flip if the tooth flips, or they'll be upside down mentally, though we used isUpper historically to position them) -->
         ${overlays}
         ${missingMark}
       </svg>

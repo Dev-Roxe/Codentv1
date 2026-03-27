@@ -796,8 +796,7 @@ async function loadEspecialistas() {
   if (!list) return;
 
   try {
-    const sql = 'SELECT * FROM especialistas ORDER BY nombre ASC';
-    const rows = await dbAll(sql, []);
+    const rows = await window.api.specialists.list();
     allEspecialistas = rows;
 
     // Actualizar estadísticas
@@ -910,7 +909,7 @@ function closeEspecialistaModal() {
 // Editar especialista
 async function editEspecialista(id) {
   try {
-    const especialista = await dbGet('SELECT * FROM especialistas WHERE id = ?', [id]);
+    const especialista = await window.api.specialists.getById(id);
     if (!especialista) {
       showToast('Especialista no encontrado', 'error');
       return;
@@ -955,21 +954,8 @@ async function saveEspecialista(e) {
   }
 
   try {
-    if (data.id) {
-      // Update
-      await dbRun(
-        `UPDATE especialistas SET nombre=?, especialidad=?, telefono=?, email=?, activo=? WHERE id=?`,
-        [data.nombre, data.especialidad, data.telefono, data.email, data.activo, data.id]
-      );
-      showToast('Especialista actualizado correctamente', 'success');
-    } else {
-      // Insert
-      await dbRun(
-        `INSERT INTO especialistas (nombre, especialidad, telefono, email, activo) VALUES (?, ?, ?, ?, ?)`,
-        [data.nombre, data.especialidad, data.telefono, data.email, data.activo]
-      );
-      showToast('Especialista creado correctamente', 'success');
-    }
+    await window.api.specialists.save(data);
+    showToast(data.id ? 'Especialista actualizado correctamente' : 'Especialista creado correctamente', 'success');
 
     closeEspecialistaModal();
     loadEspecialistas();
@@ -983,7 +969,7 @@ async function deleteEspecialista(id) {
   if (!confirm('¿Estás seguro de que deseas eliminar este especialista?')) return;
 
   try {
-    await dbRun('DELETE FROM especialistas WHERE id = ?', [id]);
+    await window.api.specialists.remove(id);
     showToast('Especialista eliminado', 'success');
     loadEspecialistas();
   } catch (e) {

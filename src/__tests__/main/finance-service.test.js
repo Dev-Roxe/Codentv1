@@ -5,6 +5,7 @@ const {
     buildInstallmentSchedule,
     applyAmountToInstallments,
     reverseAmountFromInstallments,
+    buildPlanLifecycle,
 } = require('../../main/finance-service');
 
 describe('Finance Service Helpers', () => {
@@ -88,5 +89,69 @@ describe('Finance Service Helpers', () => {
         expect(result.allocations[0]).toEqual({ cuotaId: 2, monto: -120 });
         expect(result.installments.find(item => item.id === 2).monto_pagado).toBe(30);
         expect(result.installments.find(item => item.id === 2).estado).toBe('parcial');
+    });
+    test('marca terminado con saldo cuando el tratamiento esta al 100 por ciento clinico pero queda saldo pendiente', () => {
+        const lifecycle = buildPlanLifecycle(
+            {
+                estado: 'en_progreso',
+                progreso: 100,
+                total_final: 1200,
+            },
+            [
+                { id: 1, numero: 1, fecha_vencimiento: '2099-03-10', monto_programado: 600, monto_pagado: 600, estado: 'pagada' },
+                { id: 2, numero: 2, fecha_vencimiento: '2099-04-10', monto_programado: 600, monto_pagado: 0, estado: 'pendiente' },
+            ],
+            600
+        );
+
+        expect(lifecycle.estado_clinico).toBe('completado');
+        expect(lifecycle.estado_financiero).toBe('parcial');
+        expect(lifecycle.estado_general).toBe('terminado_con_saldo');
+        expect(lifecycle.puede_completarse).toBe(false);
+        expect(lifecycle.puede_finalizar_clinicamente).toBe(false);
+        expect(lifecycle.terminado_con_saldo).toBe(true);
+        expect(lifecycle.bloqueo_completado_codigo).toBe('saldo_pendiente');
+    });
+
+    test('habilita completar solo cuando el avance clinico y el pago estan al 100 por ciento', () => {
+        const lifecycle = buildPlanLifecycle(
+            {
+                estado: 'en_progreso',
+                progreso: 100,
+                total_final: 1200,
+            },
+            [
+                { id: 1, numero: 1, fecha_vencimiento: '2099-03-10', monto_programado: 600, monto_pagado: 600, estado: 'pagada' },
+                { id: 2, numero: 2, fecha_vencimiento: '2099-04-10', monto_programado: 600, monto_pagado: 600, estado: 'pagada' },
+            ],
+            1200
+        );
+
+        expect(lifecycle.progreso_clinico).toBe(100);
+        expect(lifecycle.progreso_financiero).toBe(100);
+        expect(lifecycle.estado_financiero).toBe('pagado');
+        expect(lifecycle.puede_completarse).toBe(true);
+        expect(lifecycle.listo_para_completar).toBe(true);
+    });
+
+    test('cancela el saldo operativo cuando el plan ya esta cancelado', () => {
+        const lifecycle = buildPlanLifecycle(
+            {
+                estado: 'cancelado',
+                progreso: 45,
+                total_final: 1500,
+            },
+            [
+                { id: 1, numero: 1, fecha_vencimiento: '2026-03-10', monto_programado: 500, monto_pagado: 300, estado: 'parcial', plan_estado: 'cancelado' },
+                { id: 2, numero: 2, fecha_vencimiento: '2026-04-10', monto_programado: 1000, monto_pagado: 0, estado: 'pendiente', plan_estado: 'cancelado' },
+            ],
+            300
+        );
+
+        expect(lifecycle.estado_general).toBe('cancelado');
+        expect(lifecycle.estado_financiero).toBe('cancelado');
+        expect(lifecycle.saldo_pendiente).toBe(0);
+        expect(lifecycle.cuotas[0].estado_visual).toBe('cancelada');
+        expect(lifecycle.cuotas[0].saldo_pendiente).toBe(0);
     });
 });

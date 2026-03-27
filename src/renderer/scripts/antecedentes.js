@@ -1,5 +1,6 @@
 // antecedentes.js
 // Lógica de la pestaña de antecedentes clínicos cargada en un iframe.
+import { generateMedicalFormHTML, attachMedicalFormListeners, extractMedicalFormData, MEDICAL_FIELDS } from './medical-form-ui.js';
 
 let db = (window.api && window.api.db) ? window.api.db : null;
 if (!db && window.parent && window.parent !== window && window.parent.api && window.parent.api.db) {
@@ -65,6 +66,61 @@ function getQueryParam(name) {
 
 let currentPaciente = null;
 let selectedPadecimientos = [];
+let lastFocusState = null;
+
+function showFeedback(message, type = 'info') {
+  if (typeof window.showToast === 'function') {
+    window.showToast(message, type);
+    return;
+  }
+  if (window.parent && typeof window.parent.showToast === 'function') {
+    window.parent.showToast(message, type);
+    return;
+  }
+  console[type === 'error' ? 'error' : 'log'](message);
+}
+
+function captureFocusState(form) {
+  const active = document.activeElement;
+  if (!active || !form?.contains(active) || !active.name) return null;
+
+  return {
+    name: active.name,
+    selectionStart: typeof active.selectionStart === 'number' ? active.selectionStart : null,
+    selectionEnd: typeof active.selectionEnd === 'number' ? active.selectionEnd : null
+  };
+}
+
+function trackFormFocus(form) {
+  if (!form || form.dataset.focusTracking === 'true') return;
+  form.dataset.focusTracking = 'true';
+
+  form.addEventListener('focusin', (event) => {
+    const field = event.target;
+    if (!field?.name || field.disabled) return;
+    lastFocusState = {
+      name: field.name,
+      selectionStart: typeof field.selectionStart === 'number' ? field.selectionStart : null,
+      selectionEnd: typeof field.selectionEnd === 'number' ? field.selectionEnd : null
+    };
+  });
+}
+
+function restoreFocusState(form, focusState) {
+  if (!form || !focusState?.name) return;
+  const field = form.elements?.namedItem?.(focusState.name) || form[focusState.name];
+  if (!field || typeof field.focus !== 'function') return;
+
+  requestAnimationFrame(() => {
+    window.ensureAppFocus?.();
+    field.focus({ preventScroll: true });
+    if (typeof field.setSelectionRange === 'function'
+      && focusState.selectionStart !== null
+      && focusState.selectionEnd !== null) {
+      field.setSelectionRange(focusState.selectionStart, focusState.selectionEnd);
+    }
+  });
+}
 
 function getPacienteId() {
   return getQueryParam('id') || getQueryParam('paciente_id');
@@ -104,18 +160,43 @@ async function init() {
 async function setupAntecedentes() {
   // Cargar datos existentes
   const form = document.getElementById('form-antecedentes-ficha');
+  trackFormFocus(form);
   try {
     const row = await dbGet('SELECT * FROM antecedentes_clinicos WHERE paciente_id = ?', [currentPaciente.id]);
-    if (row) {
-      if (form) {
-        form.alergias.value = row.alergias || '';
-        form.enfermedades.value = row.enfermedades || '';
-        form.medicamentos.value = row.medicamentos || '';
-        form.cirugias.value = row.cirugias || '';
-        form.antecedentes_familiares.value = row.antecedentes_familiares || '';
-        form.tipo_sangre.value = row.tipo_sangre || '';
-        form.observaciones.value = row.observaciones || '';
+    
+    let dbData = row || {};
+    if (dbData.detalles_medicos) {
+      try {
+        const parsed = JSON.parse(dbData.detalles_medicos);
+        Object.assign(dbData, parsed);
+      } catch (e) {
+        console.warn('Invalid JSON in detalles_medicos', e);
       }
+    }
+    
+    // Map legacy string fields back to boolean if they have data
+    MEDICAL_FIELDS.forEach(field => {
+      if (dbData[field.id] && !dbData[`detalles_${field.id}`]) {
+        dbData[`detalles_${field.id}`] = typeof dbData[field.id] === 'string' && dbData[field.id] !== 'Sí' ? dbData[field.id] : '';
+        dbData[field.id] = true;
+      }
+    });
+
+    if (form) {
+      form.innerHTML = generateMedicalFormHTML(dbData) + `
+        <div class="flex justify-end mt-4">
+          <button type="button" id="save-antecedentes-ficha"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#4EABBE] hover:bg-[#1D5D69] text-white font-semibold shadow-lg shadow-[#4EABBE]/30 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            Guardar Antecedentes
+          </button>
+        </div>`;
+      attachMedicalFormListeners(form);
+    }
+
+    if (row && row.padecimientos) {
       try {
         const parsed = row.padecimientos ? JSON.parse(row.padecimientos) : [];
         selectedPadecimientos = normalizePadecimientos(parsed);
@@ -143,30 +224,39 @@ async function setupAntecedentes() {
     saveBtn.addEventListener('click', async () => {
       const formEl = document.getElementById('form-antecedentes-ficha');
       if (!formEl) return;
-      const data = {
-        alergias: formEl.alergias.value || '',
-        enfermedades: formEl.enfermedades.value || '',
-        medicamentos: formEl.medicamentos.value || '',
-        cirugias: formEl.cirugias.value || '',
-        antecedentes_familiares: formEl.antecedentes_familiares.value || '',
-        tipo_sangre: formEl.tipo_sangre.value || '',
-        observaciones: formEl.observaciones.value || '',
-        padecimientos: JSON.stringify(selectedPadecimientos)
-      };
+      const focusState = captureFocusState(formEl) || lastFocusState;
+      
+      const formPayload = extractMedicalFormData(formEl);
+      formPayload.paciente_id = currentPaciente.id;
+
       try {
-        const exists = await dbGet('SELECT id FROM antecedentes_clinicos WHERE paciente_id = ?', [currentPaciente.id]);
-        if (exists) {
-          await dbRun('UPDATE antecedentes_clinicos SET alergias = ?, enfermedades = ?, medicamentos = ?, cirugias = ?, antecedentes_familiares = ?, tipo_sangre = ?, observaciones = ?, padecimientos = ? WHERE paciente_id = ?',
-            [data.alergias, data.enfermedades, data.medicamentos, data.cirugias, data.antecedentes_familiares, data.tipo_sangre, data.observaciones, data.padecimientos, currentPaciente.id]);
+        const clinicalApi = (window.api && window.api.clinical) || (window.parent && window.parent.api && window.parent.api.clinical);
+
+        if (clinicalApi) {
+          formPayload.padecimientos = selectedPadecimientos; 
+          await clinicalApi.saveAntecedentes(formPayload);
         } else {
-          await dbRun('INSERT INTO antecedentes_clinicos (paciente_id, alergias, enfermedades, medicamentos, cirugias, antecedentes_familiares, tipo_sangre, observaciones, padecimientos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [currentPaciente.id, data.alergias, data.enfermedades, data.medicamentos, data.cirugias, data.antecedentes_familiares, data.tipo_sangre, data.observaciones, data.padecimientos]);
+            // Fallback direct sql
+            formPayload.padecimientos = JSON.stringify(selectedPadecimientos);
+            formPayload.detalles_medicos = JSON.stringify(formPayload.detalles_medicos || {});
+            
+            const exists = await dbGet('SELECT id FROM antecedentes_clinicos WHERE paciente_id = ?', [currentPaciente.id]);
+            if (exists) {
+              await dbRun('UPDATE antecedentes_clinicos SET alergias = ?, enfermedades = ?, medicamentos = ?, cirugias = ?, antecedentes_familiares = ?, tipo_sangre = ?, observaciones = ?, padecimientos = ?, detalles_medicos = ? WHERE paciente_id = ?',
+                [formPayload.alergias, formPayload.enfermedades, formPayload.medicamentos, formPayload.cirugias, formPayload.antecedentes_familiares, formPayload.tipo_sangre, formPayload.observaciones, formPayload.padecimientos, formPayload.detalles_medicos, currentPaciente.id]);
+            } else {
+              await dbRun('INSERT INTO antecedentes_clinicos (paciente_id, alergias, enfermedades, medicamentos, cirugias, antecedentes_familiares, tipo_sangre, observaciones, padecimientos, detalles_medicos) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [currentPaciente.id, formPayload.alergias, formPayload.enfermedades, formPayload.medicamentos, formPayload.cirugias, formPayload.antecedentes_familiares, formPayload.tipo_sangre, formPayload.observaciones, formPayload.padecimientos, formPayload.detalles_medicos]);
+            }
         }
-        alert('Antecedentes guardados');
+        
+        showFeedback('Antecedentes guardados', 'success');
+        restoreFocusState(formEl, focusState);
         await loadTimeline();
       } catch (e) {
         console.error(e);
-        alert('Error guardando antecedentes: ' + (e && e.message));
+        showFeedback('Error guardando antecedentes: ' + (e && e.message), 'error');
+        restoreFocusState(formEl, focusState);
       }
     });
   }

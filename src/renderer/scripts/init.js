@@ -1,6 +1,185 @@
 // Importar componentes
 import '../components/navbar-component.js';
+import '../components/chatbot.js';
+import { enhanceDateInputs, refreshDateInputs } from './date-inputs.js';
 import toast from './toast.js';
+
+const WINDOWS_1252_BYTES = {
+    '\u20AC': 0x80,
+    '\u201A': 0x82,
+    '\u0192': 0x83,
+    '\u201E': 0x84,
+    '\u2026': 0x85,
+    '\u2020': 0x86,
+    '\u2021': 0x87,
+    '\u02C6': 0x88,
+    '\u2030': 0x89,
+    '\u0160': 0x8A,
+    '\u2039': 0x8B,
+    '\u0152': 0x8C,
+    '\u017D': 0x8E,
+    '\u2018': 0x91,
+    '\u2019': 0x92,
+    '\u201C': 0x93,
+    '\u201D': 0x94,
+    '\u2022': 0x95,
+    '\u2013': 0x96,
+    '\u2014': 0x97,
+    '\u02DC': 0x98,
+    '\u2122': 0x99,
+    '\u0161': 0x9A,
+    '\u203A': 0x9B,
+    '\u0153': 0x9C,
+    '\u017E': 0x9E,
+    '\u0178': 0x9F
+};
+
+const MOJIBAKE_PATTERN = /[ÃÂâðï]/;
+const MOJIBAKE_ATTRS = ['placeholder', 'title', 'aria-label', 'value'];
+const utf8Decoder = new TextDecoder('utf-8', { fatal: false });
+
+function toWindows1252Bytes(text) {
+    return Uint8Array.from(String(text ?? ''), (char) => {
+        const code = char.charCodeAt(0);
+        return code <= 0xFF ? code : (WINDOWS_1252_BYTES[char] ?? 0x3F);
+    });
+}
+
+function repairMojibakeText(value) {
+    let text = String(value ?? '');
+
+    for (let index = 0; index < 2; index += 1) {
+        if (!MOJIBAKE_PATTERN.test(text)) break;
+
+        const repaired = utf8Decoder.decode(toWindows1252Bytes(text));
+        if (!repaired || repaired === text) break;
+        text = repaired;
+    }
+
+    return text;
+}
+
+function repairTextNode(node) {
+    if (!node || !MOJIBAKE_PATTERN.test(node.data || '')) return;
+    node.data = repairMojibakeText(node.data);
+}
+
+function repairElementAttributes(element) {
+    if (!element) return;
+
+    MOJIBAKE_ATTRS.forEach((attr) => {
+        if (!element.hasAttribute?.(attr)) return;
+        const currentValue = element.getAttribute(attr);
+        if (!MOJIBAKE_PATTERN.test(currentValue || '')) return;
+        element.setAttribute(attr, repairMojibakeText(currentValue));
+    });
+}
+
+function repairMojibakeInDom(root = document.body) {
+    if (!root) return;
+
+    document.title = repairMojibakeText(document.title);
+
+    if (root.nodeType === Node.TEXT_NODE) {
+        repairTextNode(root);
+        return;
+    }
+
+    if (root.nodeType === Node.ELEMENT_NODE) {
+        repairElementAttributes(root);
+    }
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let currentNode = walker.nextNode();
+    while (currentNode) {
+        repairTextNode(currentNode);
+        currentNode = walker.nextNode();
+    }
+
+    if (root.querySelectorAll) {
+        root.querySelectorAll('*').forEach(repairElementAttributes);
+    }
+}
+
+function observeMojibake() {
+    if (!document.body) return;
+
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'characterData') {
+                repairTextNode(mutation.target);
+                return;
+            }
+
+            if (mutation.type === 'attributes' && mutation.target) {
+                repairElementAttributes(mutation.target);
+                return;
+            }
+
+            mutation.addedNodes.forEach((node) => {
+                repairMojibakeInDom(node);
+            });
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: MOJIBAKE_ATTRS
+    });
+}
+
+function ensureAppFocus() {
+    try {
+        window.parent?.focus?.();
+    } catch (error) {
+        // Ignore cross-window focus issues.
+    }
+
+    try {
+        window.focus();
+    } catch (error) {
+        // Ignore browser focus issues.
+    }
+}
+
+function patchNativeDialogs() {
+    const nativeAlert = window.alert?.bind(window);
+    const nativeConfirm = window.confirm?.bind(window);
+    const nativePrompt = window.prompt?.bind(window);
+
+    if (nativeAlert) {
+        window.alert = (message) => nativeAlert(repairMojibakeText(message));
+    }
+
+    if (nativeConfirm) {
+        window.confirm = (message) => nativeConfirm(repairMojibakeText(message));
+    }
+
+    if (nativePrompt) {
+        window.prompt = (message, defaultValue = '') => nativePrompt(
+            repairMojibakeText(message),
+            repairMojibakeText(defaultValue)
+        );
+    }
+}
+
+window.showToast = (message, type = 'info', duration = 3000) => {
+    toast.show(repairMojibakeText(message), type, duration);
+};
+window.enhanceDateInputs = enhanceDateInputs;
+window.refreshDateInputs = refreshDateInputs;
+window.repairMojibakeText = repairMojibakeText;
+window.repairMojibakeInDom = repairMojibakeInDom;
+window.ensureAppFocus = ensureAppFocus;
+
+patchNativeDialogs();
+
+document.addEventListener('pointerdown', () => {
+    ensureAppFocus();
+}, true);
 
 const safeParseJSON = (value, fallback = {}) => {
     if (!value) return fallback;
@@ -47,6 +226,11 @@ const applyThemePreference = (theme) => {
 // Inicializar dark mode desde storage (theme o app_settings)
 const initializeDarkMode = () => {
     applyThemePreference(getStoredTheme());
+};
+
+const initializeUiRecovery = () => {
+    repairMojibakeInDom(document.documentElement);
+    observeMojibake();
 };
 
 const syncThemeFromStorage = () => {
@@ -235,9 +419,20 @@ const getCurrentUser = async () => {
         cachedUserEmail = row?.email || session?.email || null;
         cachedUserName = nombre || session?.nombre || null;
 
-        // Update session with email if found
+        // Update session with email and foto_perfil if found
         if (row?.email && !session.email) {
             session.email = row.email;
+        }
+        // Backfill foto_perfil in session from full profile API (so navbar can show it)
+        if (!session.foto_perfil && userId && window.api?.getUserProfile) {
+            try {
+                const profile = await window.api.getUserProfile({ id: userId });
+                if (profile?.foto_perfil) {
+                    session.foto_perfil = profile.foto_perfil;
+                }
+            } catch (e) { /* non-critical */ }
+        }
+        if (row?.email || session.foto_perfil) {
             try {
                 localStorage.setItem('sesionActual', JSON.stringify(session));
             } catch (e) { }
@@ -452,11 +647,22 @@ const setupAutoLock = (autoLockValue) => {
 
 // Código de inicialización global
 document.addEventListener('DOMContentLoaded', () => {
+    initializeUiRecovery();
+
     // Inicializar dark mode
     initializeDarkMode();
     const settings = initializePreferences();
     setupAutoLock(settings.autoLock);
     startAppointmentReminders();
+    // enhanceDateInputs(document);
+
+    // Inyectar el Chatbot de Soporte solo si no estamos dentro de un iframe
+    if (window.self === window.top) {
+        if (!document.querySelector('support-chatbot')) {
+            const bot = document.createElement('support-chatbot');
+            document.body.appendChild(bot);
+        }
+    }
 
     // Mantener tema sincronizado con cambios de configuración
     prefersDarkMedia.addEventListener('change', () => {
@@ -469,10 +675,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e?.detail?.theme) {
             applyThemePreference(e.detail.theme);
         }
+        // refreshDateInputs(document);
     });
     window.addEventListener('storage', (e) => {
         if (e.key === THEME_STORAGE_KEY || e.key === SETTINGS_STORAGE_KEY) {
             syncThemeFromStorage();
+            // refreshDateInputs(document);
         }
     });
 
