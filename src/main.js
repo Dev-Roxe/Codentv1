@@ -1194,6 +1194,30 @@ ipcMain.handle('clinic-save-config', async (event, payload = {}) => {
   return clinicConfigService.saveClinicConfig(db, payload);
 });
 
+ipcMain.removeHandler('clinic-get-settings');
+ipcMain.handle('clinic-get-settings', async (event) => {
+  assertAuthorizedAppSession(event);
+  return clinicConfigService.getAppSettings(db);
+});
+
+ipcMain.removeHandler('clinic-save-settings');
+ipcMain.handle('clinic-save-settings', async (event, payload = {}) => {
+  assertAuthorizedAppSession(event);
+  return clinicConfigService.saveAppSettings(db, payload);
+});
+
+ipcMain.removeHandler('clinic-get-system-config');
+ipcMain.handle('clinic-get-system-config', async (event) => {
+  assertAuthorizedAppSession(event);
+  return clinicConfigService.getSystemConfig(db);
+});
+
+ipcMain.removeHandler('clinic-save-system-config');
+ipcMain.handle('clinic-save-system-config', async (event, payload = {}) => {
+  assertAuthorizedAppSession(event);
+  return clinicConfigService.saveSystemConfig(db, payload);
+});
+
 // -------------------------------------------------------------
 // APP LIFECYCLE
 // -------------------------------------------------------------
@@ -1988,6 +2012,35 @@ ipcMain.removeHandler('cash-record-movement');
 ipcMain.handle('cash-record-movement', async (event, payload = {}) => {
   assertAuthorizedAppSession(event);
   return cashService.recordMovement(db, payload || {});
+});
+
+ipcMain.removeHandler('print-preview-current-page');
+ipcMain.handle('print-preview-current-page', async (event, options = {}) => {
+  assertAuthorizedAppSession(event);
+  assertTrustedRenderer(event);
+
+  const sender = event.sender;
+  const fileName = String(options.fileName || 'vista-previa.pdf')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '-')
+    .slice(0, 120) || 'vista-previa.pdf';
+  const previewDir = path.join(app.getPath('temp'), 'sonalia-print-preview');
+  const previewPath = path.join(previewDir, fileName.toLowerCase().endsWith('.pdf') ? fileName : `${fileName}.pdf`);
+
+  fs.mkdirSync(previewDir, { recursive: true });
+  const pdfBuffer = await sender.printToPDF({
+    printBackground: true,
+    landscape: false,
+    pageSize: 'A4',
+    margins: { marginType: 'none' },
+  });
+  fs.writeFileSync(previewPath, pdfBuffer);
+
+  const openError = await shell.openPath(previewPath);
+  if (openError) {
+    throw new Error(openError);
+  }
+
+  return { ok: true, path: previewPath };
 });
 
 ipcMain.removeHandler('odontogram-save-diagnosis');

@@ -37,6 +37,10 @@ db.serialize(() => {
         password TEXT NOT NULL,
         rol TEXT NOT NULL,
         foto_perfil TEXT,
+        accepted_terms INTEGER DEFAULT 0,
+        registration_completed INTEGER DEFAULT 1,
+        profile_completed INTEGER DEFAULT 1,
+        last_login_at DATETIME,
         fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
@@ -53,6 +57,10 @@ db.serialize(() => {
         if (!cols.includes('fecha_nacimiento')) toAdd.push("fecha_nacimiento DATE");
         if (!cols.includes('direccion')) toAdd.push("direccion TEXT");
         if (!cols.includes('foto_perfil')) toAdd.push("foto_perfil TEXT");
+        if (!cols.includes('accepted_terms')) toAdd.push("accepted_terms INTEGER DEFAULT 1");
+        if (!cols.includes('registration_completed')) toAdd.push("registration_completed INTEGER DEFAULT 1");
+        if (!cols.includes('profile_completed')) toAdd.push("profile_completed INTEGER DEFAULT 1");
+        if (!cols.includes('last_login_at')) toAdd.push("last_login_at DATETIME");
         // OAuth columns (UNIQUE constraint cannot be added via ALTER TABLE in SQLite)
         if (!cols.includes('google_id')) toAdd.push("google_id TEXT");
         if (!cols.includes('auth_provider')) toAdd.push("auth_provider TEXT DEFAULT 'local'");

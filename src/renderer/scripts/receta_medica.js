@@ -556,34 +556,56 @@ async function loadSidebarMedicamentos() {
 async function loadClinicIdentity() {
     try {
         const rows = await dbAll("SELECT clave, valor FROM admin_config WHERE clave LIKE 'clinica_%'");
-        if (!rows || rows.length === 0) return;
         const configMap = {};
-        rows.forEach(r => { configMap[r.clave] = r.valor; });
+        (rows || []).forEach(r => { configMap[r.clave] = r.valor; });
 
-        const setEl = (id, key, defaultVal) => {
+        const setEl = (id, key, fallback = '') => {
             const el = document.getElementById(id);
-            if (el) el.textContent = configMap[key] || defaultVal;
+            if (!el) return;
+            const value = String(configMap[key] || '').trim();
+            el.textContent = value || fallback;
+        };
+        const setVisibleLine = (lineId, textId, key) => {
+            const line = document.getElementById(lineId);
+            const textEl = document.getElementById(textId);
+            const value = String(configMap[key] || '').trim();
+            if (textEl) textEl.textContent = value;
+            if (line) line.classList.toggle('hidden', !value);
         };
 
-        setEl('header-clinica-nombre', 'clinica_nombre', 'Corporativo Dental Codent');
-        setEl('footer-clinica-nombre', 'clinica_nombre', 'Corporativo Dental Codent');
+        setEl('header-clinica-nombre', 'clinica_nombre');
+        setEl('header-titular-nombre', 'clinica_titular');
+        setEl('footer-titular-nombre', 'clinica_titular');
 
-        setEl('header-titular-nombre', 'clinica_titular', 'Dra. EVA MARITZA SOSA TAPIA');
-        setEl('footer-titular-nombre', 'clinica_titular', 'Dra. EVA MARITZA SOSA TAPIA');
+        setEl('header-titular-especialidad', 'clinica_especialidad');
+        setEl('footer-titular-especialidad', 'clinica_especialidad');
 
-        setEl('header-titular-especialidad', 'clinica_especialidad', 'Esp. General');
-        setEl('footer-titular-especialidad', 'clinica_especialidad', 'General');
+        setEl('header-titular-cedula', 'clinica_cedula');
+        setEl('footer-titular-cedula', 'clinica_cedula');
 
-        setEl('header-titular-cedula', 'clinica_cedula', '6309167');
-        setEl('footer-titular-cedula', 'clinica_cedula', '6309167');
+        setVisibleLine('header-titular-rfc-line', 'header-titular-rfc', 'clinica_rfc');
+        setVisibleLine('header-clinica-telefono-line', 'header-clinica-telefono', 'clinica_telefono');
+        setEl('header-clinica-direccion', 'clinica_direccion');
 
-        setEl('header-titular-rfc', 'clinica_rfc', 'SOTE53');
-
-        setEl('footer-clinica-direccion', 'clinica_direccion', '3 entre avenida 5 y 7, Córdoba, Veracruz');
-        setEl('footer-clinica-telefono', 'clinica_telefono', '+52 271 102 356');
     } catch (error) {
         console.error('Error cargando identidad clinica:', error);
     }
+}
+
+async function previewRecetaBeforePrint() {
+    try {
+        if (window.api?.print?.previewCurrentPage) {
+            await window.api.print.previewCurrentPage({
+                fileName: `receta-${recetaData.folio || Date.now()}.pdf`
+            });
+            return;
+        }
+    } catch (error) {
+        console.error('Error generando vista previa de receta:', error);
+        alert('No se pudo abrir la vista previa. Se abrira el dialogo de impresion.');
+    }
+
+    window.print();
 }
 
 // Inicialización
@@ -597,7 +619,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadClinicIdentity();
 
     // Agregar botones de acción si no existen
-    const printButton = document.querySelector('button[onclick="window.print()"]');
+    const printButton = document.getElementById('printPreviewRecetaBtn') || document.querySelector('button[onclick="window.print()"]');
+    if (printButton) {
+        printButton.removeAttribute('onclick');
+        printButton.addEventListener('click', previewRecetaBeforePrint);
+    }
     if (printButton && !document.getElementById('saveRecetaBtn')) {
         const saveBtn = document.createElement('button');
         saveBtn.id = 'saveRecetaBtn';

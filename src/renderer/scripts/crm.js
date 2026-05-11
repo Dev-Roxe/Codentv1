@@ -96,10 +96,41 @@ function showModal(modal, show) {
   if (show) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    document.body.classList.add('overflow-hidden');
   } else {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    // Solo quitar el bloqueo de scroll si no hay otros modales visibles
+    // Usamos un selector más específico para evitar que otros elementos 'fixed' (como el toast-container) bloqueen el scroll
+    const visibleModals = document.querySelectorAll('#recipientsModal:not(.hidden), #templateEditorModal:not(.hidden), #emailPreviewModal:not(.hidden), #surveyTemplateEditorModal:not(.hidden)');
+    if (visibleModals.length === 0) {
+      document.body.classList.remove('overflow-hidden');
+    }
   }
+}
+
+function closeAllModals() {
+  const modals = [
+    $('recipientsModal'),
+    $('templateEditorModal'),
+    $('emailPreviewModal'),
+    $('surveyTemplateEditorModal')
+  ];
+  modals.forEach(m => {
+    if (m && !m.classList.contains('hidden')) {
+      showModal(m, false);
+      if (m.id === 'templateEditorModal') State.editingTemplateId = null;
+      if (m.id === 'surveyTemplateEditorModal') State.editingSurveyTemplateId = null;
+    }
+  });
+}
+
+function setupModalKeybinds() {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeAllModals();
+    }
+  });
 }
 
 function escapeHtml(value) {
@@ -2179,6 +2210,7 @@ async function init() {
   setupSurveyActions();
   setupSurveyTemplateActions();
   setupProgressListener();
+  setupModalKeybinds();
 
   await checkGmailStatus();
   await loadTemplates();

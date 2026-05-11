@@ -216,6 +216,7 @@
       background: linear-gradient(135deg, rgba(78, 171, 190, 0.28), transparent 34%, rgba(29, 93, 105, 0.1));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       mask-composite: exclude;
       pointer-events: none;
     }
@@ -640,11 +641,11 @@
                   <button id="sendBulkEmailBtn"
                     class="crm-cta-primary w-full py-3 text-white font-semibold text-sm opacity-60 cursor-not-allowed"
                     disabled>
-                    ðŸ“§ Enviar a todos
+                    📧 Enviar a todos
                   </button>
                   <button id="previewEmailBtn"
                     class="crm-cta-secondary w-full py-2 text-[#0F2532] dark:text-white font-medium text-sm">
-                    ðŸ‘ï¸ Vista previa completa
+                    👁️ Vista previa completa
                   </button>
                 </div>
 
@@ -741,7 +742,7 @@
                 <button id="sendSurveyEmailsBtn"
                   class="crm-cta-primary w-full py-3 text-white font-semibold transition opacity-60 cursor-not-allowed"
                   disabled>
-                  ðŸ“Š Enviar encuesta
+                  📊 Enviar encuesta
                 </button>
 
                 <div id="surveyStatus" class="hidden">
@@ -770,8 +771,8 @@
       <!-- MODALS -->
       <!-- Recipients Modal -->
       <div id="recipientsModal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="crm-modal-card w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto p-4 flex justify-center items-start sm:items-center">
+        <div class="crm-modal-card w-full max-w-2xl my-auto flex flex-col">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <div class="flex items-center justify-between mb-4">
               <div>
@@ -812,8 +813,8 @@
 
       <!-- Template Editor Modal -->
       <div id="templateEditorModal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="crm-modal-card w-full max-w-lg mx-4">
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto p-4 flex justify-center items-start sm:items-center">
+        <div class="crm-modal-card w-full max-w-lg my-auto">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <h3 id="templateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla</h3>
             <p id="templateModalSubtitle" class="text-sm text-[#0F2532]/60 dark:text-gray-400 mt-1">Crea una plantilla
@@ -878,8 +879,8 @@
 
       <!-- Email Full Preview Modal -->
       <div id="emailPreviewModal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="crm-modal-card w-full max-w-xl mx-4">
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto p-4 flex justify-center items-start sm:items-center">
+        <div class="crm-modal-card w-full max-w-xl my-auto">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700 flex items-center justify-between">
             <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Vista previa del email</h3>
             <button onclick="document.getElementById('emailPreviewModal').classList.add('hidden')"
@@ -903,8 +904,8 @@
 
       <!-- Survey Template Editor Modal -->
       <div id="surveyTemplateEditorModal"
-        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50">
-        <div class="crm-modal-card w-full max-w-lg mx-4">
+        class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-y-auto p-4 flex justify-center items-start sm:items-center">
+        <div class="crm-modal-card w-full max-w-lg my-auto">
           <div class="p-6 border-b border-[#E6E6E6] dark:border-gray-700">
             <h3 id="surveyTemplateModalTitle" class="text-xl font-bold text-[#1D5D69] dark:text-white">Nueva plantilla
               de encuesta</h3>

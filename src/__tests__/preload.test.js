@@ -60,4 +60,37 @@ describe('preload legacy db api', () => {
     expect(getCallback).toHaveBeenCalledWith(null, patientRow);
     expect(runCallback).toHaveBeenCalledWith(null, runResult);
   });
+
+  test('exposes clinicConfig IPC helpers for settings and clinic identity', async () => {
+    const api = loadExposedApi();
+    const systemConfig = {
+      settings: { theme: 'dark', firstDayWeek: '0' },
+      clinicIdentity: { clinica_nombre: 'Clinica Central' },
+    };
+
+    invoke
+      .mockResolvedValueOnce({ theme: 'light' })
+      .mockResolvedValueOnce({ theme: 'dark' })
+      .mockResolvedValueOnce({ clinica_nombre: 'Clinica Norte' })
+      .mockResolvedValueOnce({ ok: true, clinicIdentity: { clinica_nombre: 'Clinica Sur' } })
+      .mockResolvedValueOnce(systemConfig)
+      .mockResolvedValueOnce(systemConfig);
+
+    await expect(api.clinicConfig.getSettings()).resolves.toEqual({ theme: 'light' });
+    await expect(api.clinicConfig.saveSettings({ theme: 'dark' })).resolves.toEqual({ theme: 'dark' });
+    await expect(api.clinicConfig.getConfig()).resolves.toEqual({ clinica_nombre: 'Clinica Norte' });
+    await expect(api.clinicConfig.saveConfig({ clinica_nombre: 'Clinica Sur' })).resolves.toEqual({
+      ok: true,
+      clinicIdentity: { clinica_nombre: 'Clinica Sur' },
+    });
+    await expect(api.clinicConfig.getSystemConfig()).resolves.toEqual(systemConfig);
+    await expect(api.clinicConfig.saveSystemConfig(systemConfig)).resolves.toEqual(systemConfig);
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'clinic-get-settings');
+    expect(invoke).toHaveBeenNthCalledWith(2, 'clinic-save-settings', { theme: 'dark' });
+    expect(invoke).toHaveBeenNthCalledWith(3, 'clinic-get-config');
+    expect(invoke).toHaveBeenNthCalledWith(4, 'clinic-save-config', { clinica_nombre: 'Clinica Sur' });
+    expect(invoke).toHaveBeenNthCalledWith(5, 'clinic-get-system-config');
+    expect(invoke).toHaveBeenNthCalledWith(6, 'clinic-save-system-config', systemConfig);
+  });
 });

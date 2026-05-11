@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; media-src 'self' data: blob: file:; connect-src 'self' file:; frame-src 'self' file:; object-src 'none'; base-uri 'self'; form-action 'self';" />
-    <title>Receta Médica - Corporativo Dental Codent</title>
+    <title>Receta Médica</title>
     <link href="../styles/output.css" rel="stylesheet">
     <script src="../scripts/init.js" type="module"></script>
 </head>
@@ -48,11 +48,13 @@
                             <img src="../assets/logo-sonalia.png" alt="Sonalia" class="mb-2" style="height: 105px; width: auto; max-width: 100%; object-fit: contain;">
                         </div>
                         <div class="w-1/2 text-right">
-                            <h1 id="header-titular-nombre" class="text-[13px] font-bold uppercase text-[#1B325F] tracking-wide mb-1">Dra. EVA MARITZA SOSA TAPIA</h1>
-                            <p class="text-[10px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5"><span id="header-titular-especialidad">Medicina General</span></p>
-                            <p class="text-[10px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5">CED. PROF. <span id="header-titular-cedula">6309167</span></p>
-                            <p class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5 max-w-[80%] ml-auto" id="footer-clinica-direccion">3 entre avenida 5 y 7, Córdoba, Veracruz.</p>
-                            <p class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider" id="header-clinica-nombre">Corporativo Dental Codent</p>
+                            <h1 id="header-titular-nombre" class="text-[13px] font-bold uppercase text-[#1B325F] tracking-wide mb-1"></h1>
+                            <p class="text-[10px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5"><span id="header-titular-especialidad"></span></p>
+                            <p class="text-[10px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5">CED. PROF. <span id="header-titular-cedula"></span></p>
+                            <p id="header-titular-rfc-line" class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5 hidden">RFC: <span id="header-titular-rfc"></span></p>
+                            <p class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5 max-w-[80%] ml-auto" id="header-clinica-direccion"></p>
+                            <p id="header-clinica-telefono-line" class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider mb-0.5 hidden">TEL. <span id="header-clinica-telefono"></span></p>
+                            <p class="text-[9px] font-bold uppercase text-[#1B325F] tracking-wider" id="header-clinica-nombre"></p>
                         </div>
                     </div>
                 </div>
@@ -98,7 +100,7 @@
                     <div class="flex justify-center flex-col items-center">
                         <div class="text-center w-64 border-t-[2px] border-[#1B325F] pt-2">
                             <p class="text-[10px] font-bold text-[#1B325F] uppercase tracking-wide">FIRMA</p>
-                            <p id="footer-titular-nombre" class="text-[11px] font-bold text-[#1B325F] uppercase tracking-wide mt-1">Dra. EVA MARITZA SOSA TAPIA</p>
+                            <p id="footer-titular-nombre" class="text-[11px] font-bold text-[#1B325F] uppercase tracking-wide mt-1"></p>
                         </div>
                     </div>
                 </div>
@@ -106,11 +108,11 @@
 
             <!-- Print Button -->
             <div class="bg-gray-100 dark:bg-gray-800 p-4 text-center print:hidden border-t border-gray-200 dark:border-gray-700 flex justify-center flex-wrap gap-4">
-                <button onclick="window.print()" class="bg-[#1B325F] text-white px-8 py-3 rounded-full font-bold hover:bg-blue-800 transition-colors shadow-md">
+                <button id="printPreviewRecetaBtn" type="button" class="bg-[#1B325F] text-white px-8 py-3 rounded-full font-bold hover:bg-blue-800 transition-colors shadow-md">
                     <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
                     </svg>
-                    Imprimir Receta
+                    Vista previa / Imprimir
                 </button>
             </div>
 

@@ -3,31 +3,23 @@
 import toast from './toast.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[configuracion] Página cargada');
-
-    // ==========================================
-    // REFERENCIAS DOM
-    // ==========================================
+    console.log('[configuracion] Pagina cargada');
 
     const elements = {
-        // Botones principales
         saveAllBtn: document.getElementById('save-all-btn'),
         resetSettingsBtn: document.getElementById('reset-settings-btn'),
         changePasswordBtn: document.getElementById('change-password-btn'),
         viewSessionsBtn: document.getElementById('view-sessions-btn'),
 
-        // Apariencia
         themeRadios: document.querySelectorAll('input[name="theme"]'),
         fontSizeSelect: document.getElementById('font-size'),
         compactModeCheckbox: document.getElementById('compact-mode'),
 
-        // Notificaciones
         notifCitasCheckbox: document.getElementById('notif-citas'),
         notifEmailCheckbox: document.getElementById('notif-email'),
         notifSoundCheckbox: document.getElementById('notif-sound'),
         reminderTimeSelect: document.getElementById('reminder-time'),
 
-        // Agenda
         workStartInput: document.getElementById('work-start'),
         workEndInput: document.getElementById('work-end'),
         lunchStartInput: document.getElementById('lunch-start'),
@@ -38,11 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
         autoConfirmCheckbox: document.getElementById('auto-confirm'),
         weeklyViewCheckbox: document.getElementById('weekly-view'),
 
-        // Sistema
         autoSaveCheckbox: document.getElementById('auto-save'),
         dateFormatSelect: document.getElementById('date-format'),
 
-        // Seguridad
         twoFactorCheckbox: document.getElementById('two-factor'),
         autoLockSelect: document.getElementById('auto-lock'),
 
@@ -50,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
         timeFormatSelect: document.getElementById('time-format'),
         firstDayWeekSelect: document.getElementById('first-day-week'),
 
-        // Identidad Clínica
         clinicaNombreInput: document.getElementById('clinica-nombre'),
         clinicaTitularNombreInput: document.getElementById('clinica-titular-nombre'),
         clinicaTitularEspecialidadInput: document.getElementById('clinica-titular-especialidad'),
@@ -60,256 +49,90 @@ document.addEventListener('DOMContentLoaded', () => {
         clinicaDireccionInput: document.getElementById('clinica-direccion')
     };
 
-    // ==========================================
-    // CONFIGURACIÓN POR DEFECTO
-    // ==========================================
-
     const defaultSettings = {
-        // Apariencia
         theme: 'auto',
         fontSize: 'medium',
         compactMode: false,
-
-        // Notificaciones
         notifCitas: true,
         notifEmail: true,
         notifSound: true,
         reminderTime: '15',
-
-        // Agenda
         workStart: '08:00',
         workEnd: '18:00',
         lunchStart: '14:00',
         lunchEnd: '15:00',
         defaultDuration: '30',
-        workDays: [1, 2, 3, 4, 5], // Lunes a Viernes por defecto
+        workDays: [1, 2, 3, 4, 5],
         appointmentInterval: '10',
         autoConfirm: false,
         weeklyView: false,
-
-        // Sistema
         autoSave: true,
         dateFormat: 'dd/mm/yyyy',
-
-        // Seguridad
         twoFactor: false,
         autoLock: '15',
-
-        // Región
         currency: 'MXN',
         timeFormat: '24h',
         firstDayWeek: '1'
     };
+
+    const CLINIC_IDENTITY_STORAGE_KEY = 'clinic_identity_cache';
+    const LEGACY_SETTING_KEYS = [
+        'work-start',
+        'work-end',
+        'lunch-start',
+        'lunch-end',
+        'default-duration',
+        'appointment-interval',
+        'time-format',
+        'currency',
+        'first-day-week',
+        'auto-lock'
+    ];
+
+    let currentSettings = { ...defaultSettings, workDays: [...defaultSettings.workDays] };
+    let currentClinicIdentity = {};
 
     const safeParseJSON = (value, fallback = null) => {
         if (!value) return fallback;
         try {
             return JSON.parse(value);
         } catch (err) {
-            console.warn('[configuracion] JSON inválido en app_settings:', err);
+            console.warn('[configuracion] JSON invalido:', err);
             return fallback;
         }
     };
 
-    // ==========================================
-    // CARGAR CONFIGURACIÓN
-    // ==========================================
+    const cloneDefaultSettings = () => ({
+        ...defaultSettings,
+        workDays: [...defaultSettings.workDays]
+    });
 
-    const loadSettings = () => {
-        console.log('[configuracion] Cargando configuración...');
-
-        const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {});
-        const settings = { ...defaultSettings, ...(savedSettings || {}) };
-        if (!Array.isArray(settings.workDays)) {
-            settings.workDays = defaultSettings.workDays;
-        } else {
-            settings.workDays = settings.workDays.map((d) => parseInt(d, 10)).filter(Number.isFinite);
+    const normalizeWorkDays = (value) => {
+        if (!Array.isArray(value)) {
+            return [...defaultSettings.workDays];
         }
 
-        // Apariencia
-        const themeValue = settings.theme || defaultSettings.theme;
-        elements.themeRadios.forEach(radio => {
-            radio.checked = radio.value === themeValue;
-        });
-
-        if (elements.fontSizeSelect) elements.fontSizeSelect.value = settings.fontSize || defaultSettings.fontSize;
-        if (elements.compactModeCheckbox) elements.compactModeCheckbox.checked = settings.compactMode ?? defaultSettings.compactMode;
-
-        // Notificaciones
-        if (elements.notifCitasCheckbox) elements.notifCitasCheckbox.checked = settings.notifCitas ?? defaultSettings.notifCitas;
-        if (elements.notifEmailCheckbox) elements.notifEmailCheckbox.checked = settings.notifEmail ?? defaultSettings.notifEmail;
-        if (elements.notifSoundCheckbox) elements.notifSoundCheckbox.checked = settings.notifSound ?? defaultSettings.notifSound;
-        if (elements.reminderTimeSelect) elements.reminderTimeSelect.value = settings.reminderTime || defaultSettings.reminderTime;
-
-        // Agenda
-        if (elements.workStartInput) elements.workStartInput.value = settings.workStart || defaultSettings.workStart;
-        if (elements.workEndInput) elements.workEndInput.value = settings.workEnd || defaultSettings.workEnd;
-        if (elements.lunchStartInput) elements.lunchStartInput.value = settings.lunchStart || defaultSettings.lunchStart;
-        if (elements.lunchEndInput) elements.lunchEndInput.value = settings.lunchEnd || defaultSettings.lunchEnd;
-        if (elements.defaultDurationSelect) elements.defaultDurationSelect.value = settings.defaultDuration || defaultSettings.defaultDuration;
-
-        // Días laborales
-        const workDays = settings.workDays || defaultSettings.workDays;
-        elements.workDaysCheckboxes.forEach(checkbox => {
-            checkbox.checked = workDays.includes(parseInt(checkbox.value, 10));
-        });
-
-        if (elements.appointmentIntervalSelect) elements.appointmentIntervalSelect.value = settings.appointmentInterval || defaultSettings.appointmentInterval;
-        if (elements.autoConfirmCheckbox) elements.autoConfirmCheckbox.checked = settings.autoConfirm ?? defaultSettings.autoConfirm;
-        if (elements.weeklyViewCheckbox) elements.weeklyViewCheckbox.checked = settings.weeklyView ?? defaultSettings.weeklyView;
-
-        // Sistema
-        if (elements.autoSaveCheckbox) elements.autoSaveCheckbox.checked = settings.autoSave ?? defaultSettings.autoSave;
-        if (elements.dateFormatSelect) elements.dateFormatSelect.value = settings.dateFormat || defaultSettings.dateFormat;
-
-        // Seguridad
-        if (elements.twoFactorCheckbox) elements.twoFactorCheckbox.checked = settings.twoFactor ?? defaultSettings.twoFactor;
-        if (elements.autoLockSelect) elements.autoLockSelect.value = settings.autoLock || defaultSettings.autoLock;
-
-        // Región
-        if (elements.currencySelect) elements.currencySelect.value = settings.currency || defaultSettings.currency;
-        if (elements.timeFormatSelect) elements.timeFormatSelect.value = settings.timeFormat || defaultSettings.timeFormat;
-        if (elements.firstDayWeekSelect) elements.firstDayWeekSelect.value = String(settings.firstDayWeek ?? defaultSettings.firstDayWeek);
-
-        applyFontSize(settings.fontSize || defaultSettings.fontSize);
-        applyCompactMode(settings.compactMode ?? defaultSettings.compactMode);
-        applyDateFormat(settings.dateFormat || defaultSettings.dateFormat);
-
-        console.log('[configuracion] Configuración cargada:', settings);
+        return [...new Set(
+            value
+                .map((day) => parseInt(day, 10))
+                .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+        )];
     };
 
-    const loadClinicIdentity = async () => {
-        console.log('[configuracion] Cargando identidad clínica desde BD...');
-        const api = window.api?.clinicConfig;
-        if (!api) {
-            console.warn('[configuracion] API clinicConfig no disponible');
-            return;
-        }
-        try {
-            const configMap = await api.getConfig();
-            console.log('[configuracion] Datos de identidad cargados:', configMap);
-
-            if (elements.clinicaNombreInput) elements.clinicaNombreInput.value = configMap['clinica_nombre'] || '';
-            if (elements.clinicaTitularNombreInput) elements.clinicaTitularNombreInput.value = configMap['clinica_titular'] || '';
-            if (elements.clinicaTitularEspecialidadInput) elements.clinicaTitularEspecialidadInput.value = configMap['clinica_especialidad'] || '';
-            if (elements.clinicaTitularCedulaInput) elements.clinicaTitularCedulaInput.value = configMap['clinica_cedula'] || '';
-            if (elements.clinicaTitularRfcInput) elements.clinicaTitularRfcInput.value = configMap['clinica_rfc'] || '';
-            if (elements.clinicaTelefonoInput) elements.clinicaTelefonoInput.value = configMap['clinica_telefono'] || '';
-            if (elements.clinicaDireccionInput) elements.clinicaDireccionInput.value = configMap['clinica_direccion'] || '';
-        } catch (error) {
-            console.error('[configuracion] Error cargando identidad clinica:', error);
-        }
-    };
-
-    // ==========================================
-    // GUARDAR CONFIGURACIÓN
-    // ==========================================
-
-    const saveSettings = () => {
-        console.log('[configuracion] Guardando configuración...');
-
-        let selectedTheme = defaultSettings.theme;
-        elements.themeRadios.forEach(radio => {
-            if (radio.checked) selectedTheme = radio.value;
-        });
-
-        const settings = {
-            // Apariencia
-            theme: selectedTheme,
-            fontSize: elements.fontSizeSelect?.value || defaultSettings.fontSize,
-            compactMode: elements.compactModeCheckbox?.checked || false,
-
-            // Notificaciones
-            notifCitas: elements.notifCitasCheckbox?.checked ?? defaultSettings.notifCitas,
-            notifEmail: elements.notifEmailCheckbox?.checked ?? defaultSettings.notifEmail,
-            notifSound: elements.notifSoundCheckbox?.checked ?? defaultSettings.notifSound,
-            reminderTime: elements.reminderTimeSelect?.value || defaultSettings.reminderTime,
-
-            // Agenda
-            workStart: elements.workStartInput?.value || defaultSettings.workStart,
-            workEnd: elements.workEndInput?.value || defaultSettings.workEnd,
-            lunchStart: elements.lunchStartInput?.value || defaultSettings.lunchStart,
-            lunchEnd: elements.lunchEndInput?.value || defaultSettings.lunchEnd,
-            defaultDuration: elements.defaultDurationSelect?.value || defaultSettings.defaultDuration,
-            workDays: Array.from(elements.workDaysCheckboxes)
-                .filter(cb => cb.checked)
-                .map(cb => parseInt(cb.value)),
-            appointmentInterval: elements.appointmentIntervalSelect?.value || defaultSettings.appointmentInterval,
-            autoConfirm: elements.autoConfirmCheckbox?.checked || false,
-            weeklyView: elements.weeklyViewCheckbox?.checked || false,
-
-            // Sistema
-            autoSave: elements.autoSaveCheckbox?.checked ?? defaultSettings.autoSave,
-            dateFormat: elements.dateFormatSelect?.value || defaultSettings.dateFormat,
-
-            // Seguridad
-            twoFactor: elements.twoFactorCheckbox?.checked ?? defaultSettings.twoFactor,
-            autoLock: elements.autoLockSelect?.value || defaultSettings.autoLock,
-
-            // Región
-            currency: elements.currencySelect?.value || defaultSettings.currency,
-            timeFormat: elements.timeFormatSelect?.value || defaultSettings.timeFormat,
-            firstDayWeek: elements.firstDayWeekSelect?.value || defaultSettings.firstDayWeek
+    const mergeSettings = (storedSettings = {}) => {
+        const merged = {
+            ...cloneDefaultSettings(),
+            ...(storedSettings || {})
         };
-
-        localStorage.setItem('app_settings', JSON.stringify(settings));
-
-        // También guardar en formato individual para compatibilidad con agenda
-        localStorage.setItem('work-start', settings.workStart);
-        localStorage.setItem('work-end', settings.workEnd);
-        localStorage.setItem('lunch-start', settings.lunchStart);
-        localStorage.setItem('lunch-end', settings.lunchEnd);
-        localStorage.setItem('default-duration', settings.defaultDuration);
-        localStorage.setItem('appointment-interval', settings.appointmentInterval);
-        localStorage.setItem('time-format', settings.timeFormat);
-        localStorage.setItem('currency', settings.currency);
-        localStorage.setItem('first-day-week', String(settings.firstDayWeek));
-        localStorage.setItem('auto-lock', settings.autoLock);
-
-        applyTheme(settings.theme);
-        applyFontSize(settings.fontSize);
-        applyCompactMode(settings.compactMode);
-        applyDateFormat(settings.dateFormat);
-
-        // Disparar evento personalizado para que la agenda se actualice
-        window.dispatchEvent(new CustomEvent('configurationChanged', {
-            detail: settings
-        }));
-
-        saveClinicIdentity(); // Guardar a la BD
-
-        console.log('[configuracion] Configuración guardada:', settings);
-        toast.show('Configuracion guardada correctamente', 'success');
+        merged.workDays = normalizeWorkDays(
+            Array.isArray(storedSettings?.workDays)
+                ? storedSettings.workDays
+                : merged.workDays
+        );
+        return merged;
     };
 
-    const saveClinicIdentity = async () => {
-        const api = window.api?.clinicConfig;
-        if (!api) {
-            console.warn('[configuracion] API clinicConfig no disponible para guardar');
-            return;
-        }
-        try {
-            const payload = {
-                clinica_nombre: elements.clinicaNombreInput?.value?.trim() || '',
-                clinica_titular: elements.clinicaTitularNombreInput?.value?.trim() || '',
-                clinica_especialidad: elements.clinicaTitularEspecialidadInput?.value?.trim() || '',
-                clinica_cedula: elements.clinicaTitularCedulaInput?.value?.trim() || '',
-                clinica_rfc: elements.clinicaTitularRfcInput?.value?.trim() || '',
-                clinica_telefono: elements.clinicaTelefonoInput?.value?.trim() || '',
-                clinica_direccion: elements.clinicaDireccionInput?.value?.trim() || '',
-            };
-
-            console.log('[configuracion] Guardando identidad clínica:', payload);
-            await api.saveConfig(payload);
-        } catch (error) {
-            console.error('[configuracion] Error guardando identidad de clinica:', error);
-            throw error; // Propagar para que saveSettings pueda manejar el error si es necesario
-        }
-    };
-
-    // ==========================================
-    // APLICAR TEMA
-    // ==========================================
+    const hasStoredSettings = (settings = {}) => Object.keys(settings || {}).length > 0;
 
     const applyTheme = (theme) => {
         const root = document.documentElement;
@@ -321,17 +144,11 @@ document.addEventListener('DOMContentLoaded', () => {
             root.classList.remove('dark');
             localStorage.setItem('theme', 'light');
         } else {
-            // Auto: usar preferencia del sistema
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-                root.classList.add('dark');
-            } else {
-                root.classList.remove('dark');
-            }
+            root.classList.toggle('dark', prefersDark);
             localStorage.setItem('theme', 'auto');
         }
 
-        // Dispatch custom event for iframe theme updates
         window.dispatchEvent(new Event('themeChanged'));
     };
 
@@ -357,58 +174,344 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ==========================================
-    // RESTAURAR CONFIGURACIÓN
-    // ==========================================
+    const applyClinicIdentityToInputs = (configMap = {}) => {
+        if (elements.clinicaNombreInput) elements.clinicaNombreInput.value = configMap.clinica_nombre || '';
+        if (elements.clinicaTitularNombreInput) elements.clinicaTitularNombreInput.value = configMap.clinica_titular || '';
+        if (elements.clinicaTitularEspecialidadInput) elements.clinicaTitularEspecialidadInput.value = configMap.clinica_especialidad || '';
+        if (elements.clinicaTitularCedulaInput) elements.clinicaTitularCedulaInput.value = configMap.clinica_cedula || '';
+        if (elements.clinicaTitularRfcInput) elements.clinicaTitularRfcInput.value = configMap.clinica_rfc || '';
+        if (elements.clinicaTelefonoInput) elements.clinicaTelefonoInput.value = configMap.clinica_telefono || '';
+        if (elements.clinicaDireccionInput) elements.clinicaDireccionInput.value = configMap.clinica_direccion || '';
+    };
 
-    const resetSettings = () => {
-        if (!confirm('¿Estás seguro de que deseas restaurar la configuración por defecto? Esta acción no se puede deshacer.')) {
+    const readClinicIdentityCache = () => safeParseJSON(localStorage.getItem(CLINIC_IDENTITY_STORAGE_KEY), {}) || {};
+
+    const writeClinicIdentityCache = (configMap = {}) => {
+        localStorage.setItem(CLINIC_IDENTITY_STORAGE_KEY, JSON.stringify(configMap || {}));
+    };
+
+    const hasAnyClinicIdentityValue = (configMap = {}) => {
+        return Object.values(configMap || {}).some((value) => String(value || '').trim().length > 0);
+    };
+
+    const hasLegacySettingsToMigrate = () => {
+        if (localStorage.getItem('app_settings') !== null) return true;
+        return LEGACY_SETTING_KEYS.some((key) => localStorage.getItem(key) !== null);
+    };
+
+    const readLegacySettingsFromStorage = () => {
+        const savedSettings = safeParseJSON(localStorage.getItem('app_settings'), {}) || {};
+        return mergeSettings({
+            ...savedSettings,
+            workStart: localStorage.getItem('work-start') ?? savedSettings.workStart,
+            workEnd: localStorage.getItem('work-end') ?? savedSettings.workEnd,
+            lunchStart: localStorage.getItem('lunch-start') ?? savedSettings.lunchStart,
+            lunchEnd: localStorage.getItem('lunch-end') ?? savedSettings.lunchEnd,
+            defaultDuration: localStorage.getItem('default-duration') ?? savedSettings.defaultDuration,
+            appointmentInterval: localStorage.getItem('appointment-interval') ?? savedSettings.appointmentInterval,
+            timeFormat: localStorage.getItem('time-format') ?? savedSettings.timeFormat,
+            currency: localStorage.getItem('currency') ?? savedSettings.currency,
+            firstDayWeek: localStorage.getItem('first-day-week') ?? savedSettings.firstDayWeek,
+            autoLock: localStorage.getItem('auto-lock') ?? savedSettings.autoLock
+        });
+    };
+
+    const syncSettingsMirror = (settings) => {
+        const mergedSettings = mergeSettings(settings);
+        currentSettings = mergedSettings;
+
+        localStorage.setItem('app_settings', JSON.stringify(mergedSettings));
+        localStorage.setItem('work-start', mergedSettings.workStart);
+        localStorage.setItem('work-end', mergedSettings.workEnd);
+        localStorage.setItem('lunch-start', mergedSettings.lunchStart);
+        localStorage.setItem('lunch-end', mergedSettings.lunchEnd);
+        localStorage.setItem('default-duration', mergedSettings.defaultDuration);
+        localStorage.setItem('appointment-interval', mergedSettings.appointmentInterval);
+        localStorage.setItem('time-format', mergedSettings.timeFormat);
+        localStorage.setItem('currency', mergedSettings.currency);
+        localStorage.setItem('first-day-week', String(mergedSettings.firstDayWeek));
+        localStorage.setItem('auto-lock', mergedSettings.autoLock);
+        localStorage.setItem('theme', mergedSettings.theme);
+
+        return mergedSettings;
+    };
+
+    const applySettingsToInputs = (settings = {}) => {
+        const mergedSettings = mergeSettings(settings);
+        const themeValue = mergedSettings.theme ?? defaultSettings.theme;
+
+        elements.themeRadios.forEach((radio) => {
+            radio.checked = radio.value === themeValue;
+        });
+
+        if (elements.fontSizeSelect) elements.fontSizeSelect.value = mergedSettings.fontSize ?? defaultSettings.fontSize;
+        if (elements.compactModeCheckbox) elements.compactModeCheckbox.checked = mergedSettings.compactMode ?? defaultSettings.compactMode;
+        if (elements.notifCitasCheckbox) elements.notifCitasCheckbox.checked = mergedSettings.notifCitas ?? defaultSettings.notifCitas;
+        if (elements.notifEmailCheckbox) elements.notifEmailCheckbox.checked = mergedSettings.notifEmail ?? defaultSettings.notifEmail;
+        if (elements.notifSoundCheckbox) elements.notifSoundCheckbox.checked = mergedSettings.notifSound ?? defaultSettings.notifSound;
+        if (elements.reminderTimeSelect) elements.reminderTimeSelect.value = mergedSettings.reminderTime ?? defaultSettings.reminderTime;
+        if (elements.workStartInput) elements.workStartInput.value = mergedSettings.workStart ?? defaultSettings.workStart;
+        if (elements.workEndInput) elements.workEndInput.value = mergedSettings.workEnd ?? defaultSettings.workEnd;
+        if (elements.lunchStartInput) elements.lunchStartInput.value = mergedSettings.lunchStart ?? defaultSettings.lunchStart;
+        if (elements.lunchEndInput) elements.lunchEndInput.value = mergedSettings.lunchEnd ?? defaultSettings.lunchEnd;
+        if (elements.defaultDurationSelect) elements.defaultDurationSelect.value = mergedSettings.defaultDuration ?? defaultSettings.defaultDuration;
+
+        elements.workDaysCheckboxes.forEach((checkbox) => {
+            checkbox.checked = mergedSettings.workDays.includes(parseInt(checkbox.value, 10));
+        });
+
+        if (elements.appointmentIntervalSelect) elements.appointmentIntervalSelect.value = mergedSettings.appointmentInterval ?? defaultSettings.appointmentInterval;
+        if (elements.autoConfirmCheckbox) elements.autoConfirmCheckbox.checked = mergedSettings.autoConfirm ?? defaultSettings.autoConfirm;
+        if (elements.weeklyViewCheckbox) elements.weeklyViewCheckbox.checked = mergedSettings.weeklyView ?? defaultSettings.weeklyView;
+        if (elements.autoSaveCheckbox) elements.autoSaveCheckbox.checked = mergedSettings.autoSave ?? defaultSettings.autoSave;
+        if (elements.dateFormatSelect) elements.dateFormatSelect.value = mergedSettings.dateFormat ?? defaultSettings.dateFormat;
+        if (elements.twoFactorCheckbox) elements.twoFactorCheckbox.checked = mergedSettings.twoFactor ?? defaultSettings.twoFactor;
+        if (elements.autoLockSelect) elements.autoLockSelect.value = mergedSettings.autoLock ?? defaultSettings.autoLock;
+        if (elements.currencySelect) elements.currencySelect.value = mergedSettings.currency ?? defaultSettings.currency;
+        if (elements.timeFormatSelect) elements.timeFormatSelect.value = mergedSettings.timeFormat ?? defaultSettings.timeFormat;
+        if (elements.firstDayWeekSelect) elements.firstDayWeekSelect.value = String(mergedSettings.firstDayWeek ?? defaultSettings.firstDayWeek);
+
+        applyTheme(mergedSettings.theme ?? defaultSettings.theme);
+        applyFontSize(mergedSettings.fontSize ?? defaultSettings.fontSize);
+        applyCompactMode(mergedSettings.compactMode ?? defaultSettings.compactMode);
+        applyDateFormat(mergedSettings.dateFormat ?? defaultSettings.dateFormat);
+    };
+
+    const collectSettingsFromInputs = () => {
+        let selectedTheme = defaultSettings.theme;
+        elements.themeRadios.forEach((radio) => {
+            if (radio.checked) selectedTheme = radio.value;
+        });
+
+        return {
+            theme: selectedTheme,
+            fontSize: elements.fontSizeSelect?.value ?? defaultSettings.fontSize,
+            compactMode: !!elements.compactModeCheckbox?.checked,
+            notifCitas: elements.notifCitasCheckbox?.checked ?? defaultSettings.notifCitas,
+            notifEmail: elements.notifEmailCheckbox?.checked ?? defaultSettings.notifEmail,
+            notifSound: elements.notifSoundCheckbox?.checked ?? defaultSettings.notifSound,
+            reminderTime: elements.reminderTimeSelect?.value ?? defaultSettings.reminderTime,
+            workStart: elements.workStartInput?.value ?? defaultSettings.workStart,
+            workEnd: elements.workEndInput?.value ?? defaultSettings.workEnd,
+            lunchStart: elements.lunchStartInput?.value ?? defaultSettings.lunchStart,
+            lunchEnd: elements.lunchEndInput?.value ?? defaultSettings.lunchEnd,
+            defaultDuration: elements.defaultDurationSelect?.value ?? defaultSettings.defaultDuration,
+            workDays: Array.from(elements.workDaysCheckboxes)
+                .filter((checkbox) => checkbox.checked)
+                .map((checkbox) => parseInt(checkbox.value, 10)),
+            appointmentInterval: elements.appointmentIntervalSelect?.value ?? defaultSettings.appointmentInterval,
+            autoConfirm: !!elements.autoConfirmCheckbox?.checked,
+            weeklyView: !!elements.weeklyViewCheckbox?.checked,
+            autoSave: elements.autoSaveCheckbox?.checked ?? defaultSettings.autoSave,
+            dateFormat: elements.dateFormatSelect?.value ?? defaultSettings.dateFormat,
+            twoFactor: elements.twoFactorCheckbox?.checked ?? defaultSettings.twoFactor,
+            autoLock: elements.autoLockSelect?.value ?? defaultSettings.autoLock,
+            currency: elements.currencySelect?.value ?? defaultSettings.currency,
+            timeFormat: elements.timeFormatSelect?.value ?? defaultSettings.timeFormat,
+            firstDayWeek: elements.firstDayWeekSelect?.value ?? defaultSettings.firstDayWeek
+        };
+    };
+
+    const collectClinicIdentityFromInputs = () => ({
+        clinica_nombre: elements.clinicaNombreInput?.value?.trim() || '',
+        clinica_titular: elements.clinicaTitularNombreInput?.value?.trim() || '',
+        clinica_especialidad: elements.clinicaTitularEspecialidadInput?.value?.trim() || '',
+        clinica_cedula: elements.clinicaTitularCedulaInput?.value?.trim() || '',
+        clinica_rfc: elements.clinicaTitularRfcInput?.value?.trim() || '',
+        clinica_telefono: elements.clinicaTelefonoInput?.value?.trim() || '',
+        clinica_direccion: elements.clinicaDireccionInput?.value?.trim() || '',
+    });
+
+    const loadClinicIdentityFromLegacyDb = async () => {
+        const dbApi = window.api?.db;
+        if (!dbApi?.all) return {};
+
+        const rows = await dbApi.all(
+            "SELECT clave, valor FROM admin_config WHERE clave LIKE 'clinica_%' ORDER BY clave"
+        );
+
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return {};
+        }
+
+        return rows.reduce((acc, row) => {
+            if (row?.clave) acc[row.clave] = row.valor ?? '';
+            return acc;
+        }, {});
+    };
+
+    const loadPersistedConfiguration = async ({ migrateLegacySettings = false } = {}) => {
+        console.log('[configuracion] Cargando configuracion persistida...');
+
+        const cachedIdentity = readClinicIdentityCache();
+        if (hasAnyClinicIdentityValue(cachedIdentity)) {
+            applyClinicIdentityToInputs(cachedIdentity);
+        }
+
+        const api = window.api?.clinicConfig;
+        let systemConfig = { settings: {}, clinicIdentity: {} };
+
+        try {
+            if (api?.getSystemConfig) {
+                systemConfig = await api.getSystemConfig();
+                console.log('[configuracion] Datos leidos desde BD:', systemConfig);
+            } else if (api?.getSettings || api?.getConfig) {
+                const [settings, clinicIdentity] = await Promise.all([
+                    api.getSettings ? api.getSettings() : Promise.resolve({}),
+                    api.getConfig ? api.getConfig() : Promise.resolve({}),
+                ]);
+                systemConfig = { settings: settings || {}, clinicIdentity: clinicIdentity || {} };
+            } else {
+                console.warn('[configuracion] API clinicConfig no disponible; usando almacenamiento local como fallback');
+                systemConfig.settings = safeParseJSON(localStorage.getItem('app_settings'), {}) || {};
+                systemConfig.clinicIdentity = cachedIdentity;
+            }
+
+            if (!hasStoredSettings(systemConfig.settings) && migrateLegacySettings && hasLegacySettingsToMigrate() && api?.saveSettings) {
+                const legacySettings = readLegacySettingsFromStorage();
+                console.log('[configuracion] Migrando configuracion legacy a BD:', legacySettings);
+                systemConfig.settings = await api.saveSettings(legacySettings);
+                console.log('[configuracion] Resultado de migracion de settings:', systemConfig.settings);
+            }
+
+            if (!hasAnyClinicIdentityValue(systemConfig.clinicIdentity) && migrateLegacySettings) {
+                const legacyIdentity = await loadClinicIdentityFromLegacyDb();
+                if (hasAnyClinicIdentityValue(legacyIdentity)) {
+                    systemConfig.clinicIdentity = legacyIdentity;
+                }
+            }
+        } catch (error) {
+            console.error('[configuracion] Error cargando configuracion persistida:', error);
+            systemConfig = {
+                settings: safeParseJSON(localStorage.getItem('app_settings'), {}) || {},
+                clinicIdentity: cachedIdentity
+            };
+        }
+
+        const mergedSettings = syncSettingsMirror(systemConfig.settings || {});
+        applySettingsToInputs(mergedSettings);
+
+        currentClinicIdentity = systemConfig.clinicIdentity || {};
+        applyClinicIdentityToInputs(currentClinicIdentity);
+        writeClinicIdentityCache(currentClinicIdentity);
+
+        console.log('[configuracion] Configuracion aplicada:', {
+            settings: mergedSettings,
+            clinicIdentity: currentClinicIdentity
+        });
+
+        return {
+            settings: mergedSettings,
+            clinicIdentity: currentClinicIdentity
+        };
+    };
+
+    const saveSettings = async () => {
+        const settingsPayload = collectSettingsFromInputs();
+        const clinicIdentityPayload = collectClinicIdentityFromInputs();
+
+        console.log('[configuracion] Datos del formulario listos para guardar:', {
+            settings: settingsPayload,
+            clinicIdentity: clinicIdentityPayload
+        });
+
+        const api = window.api?.clinicConfig;
+        if (!api?.saveSystemConfig && !api?.saveSettings) {
+            toast.show('API de configuracion no disponible', 'error');
             return;
         }
 
-        console.log('[configuracion] Restaurando configuración por defecto...');
+        try {
+            if (elements.saveAllBtn) {
+                elements.saveAllBtn.disabled = true;
+            }
 
-        localStorage.setItem('app_settings', JSON.stringify(defaultSettings));
-        localStorage.setItem('work-start', defaultSettings.workStart);
-        localStorage.setItem('work-end', defaultSettings.workEnd);
-        localStorage.setItem('default-duration', defaultSettings.defaultDuration);
-        localStorage.setItem('appointment-interval', defaultSettings.appointmentInterval);
-        localStorage.setItem('time-format', defaultSettings.timeFormat);
-        localStorage.setItem('currency', defaultSettings.currency);
-        localStorage.setItem('first-day-week', String(defaultSettings.firstDayWeek));
-        localStorage.setItem('auto-lock', defaultSettings.autoLock);
-        loadSettings();
-        applyTheme(defaultSettings.theme);
-        applyFontSize(defaultSettings.fontSize);
-        applyCompactMode(defaultSettings.compactMode);
-        applyDateFormat(defaultSettings.dateFormat);
+            let persisted;
+            if (api.saveSystemConfig) {
+                persisted = await api.saveSystemConfig({
+                    settings: settingsPayload,
+                    clinicIdentity: clinicIdentityPayload
+                });
+            } else {
+                const [settings, clinicIdentityResult] = await Promise.all([
+                    api.saveSettings(settingsPayload),
+                    api.saveConfig ? api.saveConfig(clinicIdentityPayload) : Promise.resolve({ clinicIdentity: clinicIdentityPayload })
+                ]);
+                persisted = {
+                    settings,
+                    clinicIdentity: clinicIdentityResult?.clinicIdentity || clinicIdentityPayload
+                };
+            }
 
-        window.dispatchEvent(new CustomEvent('configurationChanged', {
-            detail: defaultSettings
-        }));
+            console.log('[configuracion] Payload persistido en BD:', persisted);
 
-        toast.show('Configuracion restaurada a valores por defecto', 'success');
+            const mergedSettings = syncSettingsMirror(persisted?.settings || settingsPayload);
+            currentClinicIdentity = persisted?.clinicIdentity || clinicIdentityPayload;
+            applySettingsToInputs(mergedSettings);
+            applyClinicIdentityToInputs(currentClinicIdentity);
+            writeClinicIdentityCache(currentClinicIdentity);
+
+            window.dispatchEvent(new CustomEvent('configurationChanged', {
+                detail: mergedSettings
+            }));
+
+            toast.show('Configuracion guardada correctamente', 'success');
+        } catch (error) {
+            console.error('[configuracion] Error al guardar configuracion:', error);
+            toast.show(`No se pudo guardar la configuracion: ${error.message || 'error desconocido'}`, 'error');
+        } finally {
+            if (elements.saveAllBtn) {
+                elements.saveAllBtn.disabled = false;
+            }
+        }
     };
 
-    // ==========================================
-    // EVENT LISTENERS
-    // ==========================================
+    const resetSettings = async () => {
+        if (!confirm('Estas seguro de que deseas restaurar la configuracion por defecto? Esta accion no se puede deshacer.')) {
+            return;
+        }
 
-    // Guardar todo
+        console.log('[configuracion] Restaurando configuracion por defecto...');
+
+        const api = window.api?.clinicConfig;
+        try {
+            if (elements.saveAllBtn) {
+                elements.saveAllBtn.disabled = true;
+            }
+
+            let persistedSettings = cloneDefaultSettings();
+            if (api?.saveSettings) {
+                persistedSettings = await api.saveSettings(cloneDefaultSettings());
+            }
+
+            const mergedSettings = syncSettingsMirror(persistedSettings);
+            applySettingsToInputs(mergedSettings);
+
+            window.dispatchEvent(new CustomEvent('configurationChanged', {
+                detail: mergedSettings
+            }));
+
+            toast.show('Configuracion restaurada a valores por defecto', 'success');
+        } catch (error) {
+            console.error('[configuracion] Error restaurando configuracion:', error);
+            toast.show(`No se pudo restaurar la configuracion: ${error.message || 'error desconocido'}`, 'error');
+        } finally {
+            if (elements.saveAllBtn) {
+                elements.saveAllBtn.disabled = false;
+            }
+        }
+    };
+
     elements.saveAllBtn?.addEventListener('click', saveSettings);
-
-    // Restaurar configuración
     elements.resetSettingsBtn?.addEventListener('click', resetSettings);
 
-    // Auto-guardar al cambiar tema (para feedback inmediato)
-    elements.themeRadios.forEach(radio => {
+    elements.themeRadios.forEach((radio) => {
         radio.addEventListener('change', (e) => {
             applyTheme(e.target.value);
             console.log('[configuracion] Tema cambiado a:', e.target.value);
         });
     });
 
-    // Auto-guardar si está habilitado
     const setupAutoSave = () => {
         const allInputs = [
             ...elements.themeRadios,
@@ -423,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.lunchStartInput,
             elements.lunchEndInput,
             elements.defaultDurationSelect,
-            elements.workDaysCheckboxes,
+            ...elements.workDaysCheckboxes,
             elements.appointmentIntervalSelect,
             elements.autoConfirmCheckbox,
             elements.weeklyViewCheckbox,
@@ -443,11 +546,11 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.clinicaDireccionInput
         ].filter(Boolean);
 
-        allInputs.forEach(input => {
-            input.addEventListener('change', () => {
+        allInputs.forEach((input) => {
+            input.addEventListener('change', async () => {
                 if (elements.autoSaveCheckbox?.checked) {
                     console.log('[configuracion] Auto-guardando...');
-                    saveSettings();
+                    await saveSettings();
                 }
             });
         });
@@ -457,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const openPasswordResetModal = () => {
         if (!window.api || typeof window.api.requestPasswordReset !== 'function') {
-            toast.show('No se encontró el servicio para cambiar contraseña.', 'error');
+            toast.show('No se encontro el servicio para cambiar contrasena.', 'error');
             return;
         }
 
@@ -466,8 +569,8 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.innerHTML = `
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
-                    <h3 class="text-xl font-bold">Cambiar contraseña</h3>
-                    <p class="text-white/70 text-sm mt-1">Recibirás un código en tu correo</p>
+                    <h3 class="text-xl font-bold">Cambiar contrasena</h3>
+                    <p class="text-white/70 text-sm mt-1">Recibiras un codigo en tu correo</p>
                 </div>
                 <div class="p-6 space-y-6">
                     <form id="pwRequestForm" class="space-y-4">
@@ -478,27 +581,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="flex gap-3">
                             <button type="button" id="pwCancel" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors">Cancelar</button>
-                            <button type="submit" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold shadow-lg shadow-cyan-500/20 transition-all">Enviar código</button>
+                            <button type="submit" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold shadow-lg shadow-cyan-500/20 transition-all">Enviar codigo</button>
                         </div>
                     </form>
                     <form id="pwConfirmForm" class="space-y-4 hidden">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Código de verificación</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Codigo de verificacion</label>
                             <input id="pwToken" type="text" required
                                 class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]"/>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nueva contraseña</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nueva contrasena</label>
                             <input id="pwNew" type="password" required minlength="8"
                                 class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]"/>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirmar contraseña</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirmar contrasena</label>
                             <input id="pwConfirm" type="password" required minlength="8"
                                 class="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#4EABBE]"/>
                         </div>
                         <div class="flex gap-3">
-                            <button type="button" id="pwBack" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors">Atrás</button>
+                            <button type="button" id="pwBack" class="flex-1 py-2.5 border border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors">Atras</button>
                             <button type="submit" class="flex-1 py-2.5 bg-[#4EABBE] text-white rounded-xl hover:bg-[#1D5D69] font-semibold shadow-lg shadow-cyan-500/20 transition-all">Actualizar</button>
                         </div>
                     </form>
@@ -537,14 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const result = await window.api.requestPasswordReset(email);
                 if (result?.success) {
-                    toast.show(result.message || 'Se envió un código al correo.', 'success');
+                    toast.show(result.message || 'Se envio un codigo al correo.', 'success');
                     requestForm.classList.add('hidden');
                     confirmForm.classList.remove('hidden');
                 } else {
-                    toast.show(result?.error || 'No se pudo enviar el código', 'error');
+                    toast.show(result?.error || 'No se pudo enviar el codigo', 'error');
                 }
             } catch (err) {
-                toast.show('Error solicitando el código de recuperación', 'error');
+                toast.show('Error solicitando el codigo de recuperacion', 'error');
             }
         });
 
@@ -555,28 +658,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const confirmPassword = confirmInput?.value || '';
 
             if (!token) {
-                toast.show('Ingresa el código de verificación', 'warning');
+                toast.show('Ingresa el codigo de verificacion', 'warning');
                 return;
             }
             if (newPassword.length < 8) {
-                toast.show('La contraseña debe tener al menos 8 caracteres', 'warning');
+                toast.show('La contrasena debe tener al menos 8 caracteres', 'warning');
                 return;
             }
             if (newPassword !== confirmPassword) {
-                toast.show('Las contraseñas no coinciden', 'warning');
+                toast.show('Las contrasenas no coinciden', 'warning');
                 return;
             }
 
             try {
                 const result = await window.api.resetPassword(token, newPassword);
                 if (result?.success) {
-                    toast.show(result.message || 'Contraseña actualizada', 'success');
+                    toast.show(result.message || 'Contrasena actualizada', 'success');
                     closeModal();
                 } else {
-                    toast.show(result?.error || 'No se pudo actualizar la contraseña', 'error');
+                    toast.show(result?.error || 'No se pudo actualizar la contrasena', 'error');
                 }
             } catch (err) {
-                toast.show('Error al actualizar la contraseña', 'error');
+                toast.show('Error al actualizar la contrasena', 'error');
             }
         });
     };
@@ -584,9 +687,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const openSessionsModal = () => {
         const session = safeParseJSON(localStorage.getItem('sesionActual'), {}) || {};
         const nombre = [session.nombre, session.apellido].filter(Boolean).join(' ') || 'Usuario';
-        const rol = session.rol || '—';
-        const userId = session.id || '—';
-        const lastLogin = localStorage.getItem('sesionLastLogin') || '—';
+        const rol = session.rol || '-';
+        const userId = session.id || '-';
+        const lastLogin = localStorage.getItem('sesionLastLogin') || '-';
 
         const overlay = document.createElement('div');
         overlay.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50';
@@ -594,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md mx-4 border border-gray-100 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] text-white p-6 rounded-t-2xl">
                     <h3 class="text-xl font-bold">Sesiones activas</h3>
-                    <p class="text-white/70 text-sm mt-1">Detalle de la sesión actual</p>
+                    <p class="text-white/70 text-sm mt-1">Detalle de la sesion actual</p>
                 </div>
                 <div class="p-6 space-y-4 text-sm text-gray-700 dark:text-gray-300">
                     <div class="flex items-center justify-between">
@@ -610,7 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="font-medium text-gray-900 dark:text-white">${userId}</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-gray-500 dark:text-gray-400">Último acceso</span>
+                        <span class="text-gray-500 dark:text-gray-400">Ultimo acceso</span>
                         <span class="font-medium text-gray-900 dark:text-white">${lastLogin}</span>
                     </div>
                     <div class="pt-4">
@@ -632,15 +735,20 @@ document.addEventListener('DOMContentLoaded', () => {
         overlay.querySelector('#closeSessionsModal')?.addEventListener('click', closeModal);
     };
 
-    // ==========================================
-    // INICIALIZACIÓN
-    // ==========================================
+    const initialize = async () => {
+        try {
+            await loadPersistedConfiguration({ migrateLegacySettings: true });
+            console.log('[configuracion] Inicializacion completa');
+        } catch (error) {
+            console.error('[configuracion] Error en inicializacion:', error);
+            toast.show('No se pudo cargar la configuracion guardada', 'warning');
+            applySettingsToInputs(defaultSettings);
+            applyClinicIdentityToInputs(readClinicIdentityCache());
+        }
+    };
 
-    loadSettings();
-    loadClinicIdentity();
+    void initialize();
 
     elements.changePasswordBtn?.addEventListener('click', openPasswordResetModal);
     elements.viewSessionsBtn?.addEventListener('click', openSessionsModal);
-
-    console.log('[configuracion] Inicialización completa');
 });

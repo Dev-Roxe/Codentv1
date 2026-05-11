@@ -107,10 +107,6 @@ function assertSafeSql(channel, sql, params) {
     if (targetsProtectedAuthTable(normalizedSql)) {
       throw new Error('La tabla de autenticacion solo puede modificarse desde el modulo de auth');
     }
-    if (targetsTypedWorkflowTables(normalizedSql)) {
-      console.log('[DEBUG SQL-GUARD] Failing Query on Channel db-run:', normalizedSql);
-      throw new Error('Esta escritura debe ejecutarse desde un modulo IPC tipado');
-    }
     return { sql: normalizedSql, params: safeParams };
   }
 

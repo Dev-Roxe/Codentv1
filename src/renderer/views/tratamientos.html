@@ -144,7 +144,7 @@
     :root {
       --tooth-w: clamp(54px, 4.7vw, 66px);
       --tooth-h: calc(var(--tooth-w) * 1.48);
-      --tooth-gap: clamp(12px, 1.45vw, 18px);
+      --tooth-gap: clamp(6px, 0.8vw, 10px);
     }
 
     .odonto-row {
@@ -155,7 +155,7 @@
       min-width: 100%;
       box-sizing: border-box;
       gap: var(--tooth-gap);
-      padding: 14px 14px 18px;
+      padding: 14px 10px 18px;
       overflow-x: auto;
       scroll-snap-type: x proximity;
       scrollbar-width: thin;
@@ -189,7 +189,7 @@
 
     .odonto-tooth {
       position: relative;
-      min-width: calc(var(--tooth-w) + 10px);
+      min-width: calc(var(--tooth-w) + 2px);
       display: flex;
       flex-direction: column;
       align-items: center;

@@ -8,6 +8,7 @@ function clampMoney(value, min = 0, max = Number.POSITIVE_INFINITY) {
 
 function createDbHelpers(db) {
     return {
+        db,
         all(sql, params = []) {
             return new Promise((resolve, reject) => {
                 db.all(sql, params, (err, rows) => {

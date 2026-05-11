@@ -58,6 +58,10 @@ const odontogramApi = Object.freeze({
 const clinicConfigApi = Object.freeze({
     getConfig: () => ipcRenderer.invoke('clinic-get-config'),
     saveConfig: (payload) => ipcRenderer.invoke('clinic-save-config', payload || {}),
+    getSettings: () => ipcRenderer.invoke('clinic-get-settings'),
+    saveSettings: (payload) => ipcRenderer.invoke('clinic-save-settings', payload || {}),
+    getSystemConfig: () => ipcRenderer.invoke('clinic-get-system-config'),
+    saveSystemConfig: (payload) => ipcRenderer.invoke('clinic-save-system-config', payload || {}),
 });
 
 const cajasReportApi = Object.freeze({
@@ -70,6 +74,10 @@ const cashApi = Object.freeze({
     openBox: (payload) => ipcRenderer.invoke('cash-open-box', payload || {}),
     closeBox: (payload) => ipcRenderer.invoke('cash-close-box', payload || {}),
     recordMovement: (payload) => ipcRenderer.invoke('cash-record-movement', payload || {}),
+});
+
+const printApi = Object.freeze({
+    previewCurrentPage: (options) => ipcRenderer.invoke('print-preview-current-page', options || {}),
 });
 
 const updatesApi = Object.freeze({
@@ -197,6 +205,7 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     clinicConfig: clinicConfigApi,
     cash: cashApi,
     cajasReport: cajasReportApi,
+    print: printApi,
 }));
 
 // API de Electron para IPC (email, etc.)

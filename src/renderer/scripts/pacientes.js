@@ -23,7 +23,8 @@ const ICONS = {
     mail: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>',
     calendar: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>',
     location: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11a3 3 0 100-6 3 3 0 000 6z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11c0 5-7 9-7 9s-7-4-7-9a7 7 0 1114 0z" /></svg>',
-    phone: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3a2 2 0 012 1.5l1 3a2 2 0 01-.5 2L9 11a11 11 0 005 5l1.5-1.5a2 2 0 012-.5l3 1A2 2 0 0121 17v3a2 2 0 01-2 2h-1C9.82 22 2 14.18 2 4V3a2 2 0 012-2h-1z" /></svg>'
+    phone: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3a2 2 0 012 1.5l1 3a2 2 0 01-.5 2L9 11a11 11 0 005 5l1.5-1.5a2 2 0 012-.5l3 1A2 2 0 0121 17v3a2 2 0 01-2 2h-1C9.82 22 2 14.18 2 4V3a2 2 0 012-2h-1z" /></svg>',
+    whatsapp: '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2C6.57 2 2.13 6.43 2.13 11.9c0 1.75.46 3.46 1.33 4.96L2 22l5.27-1.38a9.84 9.84 0 004.77 1.22h.01c5.46 0 9.9-4.43 9.9-9.9A9.9 9.9 0 0012.04 2zm0 18.18h-.01a8.18 8.18 0 01-4.17-1.14l-.3-.18-3.13.82.84-3.05-.2-.31a8.18 8.18 0 01-1.25-4.35c0-4.52 3.68-8.19 8.2-8.19a8.19 8.19 0 018.19 8.19c0 4.52-3.67 8.21-8.17 8.21zm4.49-6.14c-.25-.12-1.46-.72-1.68-.8-.23-.08-.39-.12-.56.12-.16.25-.64.8-.78.96-.14.16-.29.18-.54.06-.25-.12-1.04-.38-1.98-1.22-.73-.65-1.23-1.46-1.37-1.71-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.76-1.85-.2-.48-.4-.41-.56-.42h-.48c-.16 0-.43.06-.66.31-.23.25-.86.84-.86 2.05s.88 2.38 1 2.54c.12.16 1.73 2.64 4.2 3.7.59.25 1.04.4 1.4.52.59.19 1.12.16 1.54.1.47-.07 1.46-.6 1.66-1.17.21-.58.21-1.07.14-1.17-.06-.1-.22-.16-.47-.28z"/></svg>'
 };
 
 const masterFields = [
@@ -79,6 +80,23 @@ function getPatientStatus(patient) {
     if (daysSinceCreated <= 7) return { label: 'Nuevo', class: 'bg-purple-100 text-purple-700' };
     // TODO: Check last appointment date for active/inactive status
     return { label: 'Activo', class: 'bg-green-100 text-green-700' };
+}
+
+function getWhatsAppLink(telefono) {
+    if (!telefono) return '';
+    let number = String(telefono).replace(/\D/g, '');
+    if (number.length === 10) number = `52${number}`;
+    if (number.length < 11) return '';
+    return `https://web.whatsapp.com/send?phone=${number}`;
+}
+
+function renderPhoneWithWhatsApp(telefono, fallback = '-') {
+    const label = telefono || fallback;
+    const href = getWhatsAppLink(telefono);
+    const whatsappButton = href
+        ? `<a href="${href}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()" class="inline-flex items-center justify-center w-7 h-7 rounded-full text-green-600 hover:text-white hover:bg-green-500 dark:text-green-400 dark:hover:text-white dark:hover:bg-green-500 transition" title="Abrir chat en WhatsApp Web" aria-label="Abrir chat en WhatsApp Web">${ICONS.whatsapp}</a>`
+        : '';
+    return `<span class="truncate">${label}</span>${whatsappButton}`;
 }
 
 /* ============================================================================
@@ -327,7 +345,7 @@ function renderTableView(tbody, patients) {
                             <svg class="w-4 h-4 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                             </svg>
-                            ${p.telefono || '-'}
+                            ${renderPhoneWithWhatsApp(p.telefono)}
                         </p>
                     </div>
                 </td>
@@ -412,7 +430,7 @@ function renderGridView(container, patients) {
                         <svg class="w-4 h-4 flex-shrink-0 text-[#0F2532]/40 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                         </svg>
-                        ${p.telefono || 'Sin teléfono'}
+                        ${renderPhoneWithWhatsApp(p.telefono, 'Sin teléfono')}
                     </p>
                 </div>
                 <div class="mt-4 pt-4 border-t border-[#E6E6E6] dark:border-gray-700 flex items-center justify-between">

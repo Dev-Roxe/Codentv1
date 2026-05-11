@@ -27,6 +27,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { }
     };
 
+    const syncPersistedSettingsAfterAuth = async () => {
+        if (!window.api?.clinicConfig?.getSettings) return;
+
+        try {
+            const settings = await window.api.clinicConfig.getSettings();
+            if (!settings || typeof settings !== 'object') return;
+
+            localStorage.setItem('app_settings', JSON.stringify(settings));
+            if (settings.workStart != null) localStorage.setItem('work-start', settings.workStart);
+            if (settings.workEnd != null) localStorage.setItem('work-end', settings.workEnd);
+            if (settings.lunchStart != null) localStorage.setItem('lunch-start', settings.lunchStart);
+            if (settings.lunchEnd != null) localStorage.setItem('lunch-end', settings.lunchEnd);
+            if (settings.defaultDuration != null) localStorage.setItem('default-duration', settings.defaultDuration);
+            if (settings.appointmentInterval != null) localStorage.setItem('appointment-interval', settings.appointmentInterval);
+            if (settings.timeFormat != null) localStorage.setItem('time-format', settings.timeFormat);
+            if (settings.currency != null) localStorage.setItem('currency', settings.currency);
+            if (settings.firstDayWeek != null) localStorage.setItem('first-day-week', String(settings.firstDayWeek));
+            if (settings.autoLock != null) localStorage.setItem('auto-lock', settings.autoLock);
+            if (settings.theme != null) localStorage.setItem('theme', settings.theme);
+        } catch (error) {
+            console.warn('[login] No se pudo sincronizar configuracion persistida:', error);
+        }
+    };
+
     // Si llegamos al login, forzamos estado sin sesión
     clearSessionData();
 
@@ -103,6 +127,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.logToMain.log(`Auto-login temporal activo con ${user.email || user.nombre}`);
             }
 
+            await syncPersistedSettingsAfterAuth();
+
             if (window.api?.openView) {
                 await window.api.openView('pacientes');
             } else {
@@ -172,6 +198,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 } catch (storageErr) {
                     if (window.logToMain && window.logToMain.log) window.logToMain.log('Error guardando sesión: ' + storageErr.message);
                 }
+
+                await syncPersistedSettingsAfterAuth();
 
                 // Redirigir a la vista de pacientes
                 if (window.api && window.api.openView) {
@@ -288,6 +316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             localStorage.setItem('userName', displayName);
             localStorage.setItem('sesionLastLogin', new Date().toISOString());
 
+            await syncPersistedSettingsAfterAuth();
             await window.api.openView('pacientes');
             return true;
         } catch (err) {
@@ -412,6 +441,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }));
                     localStorage.setItem('userName', displayName);
                     localStorage.setItem('sesionLastLogin', new Date().toISOString());
+
+                    await syncPersistedSettingsAfterAuth();
 
                     // Hide modal
                     roleSelectionModal.classList.add('hidden');

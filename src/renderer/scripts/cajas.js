@@ -200,7 +200,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     onLogout: () => {
       if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-        localStorage.clear();
+        localStorage.removeItem('sesionActual');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('sesionLastLogin');
+        sessionStorage.removeItem('notified_appointments');
+        sessionStorage.removeItem('notifiedAppointments');
+        sessionStorage.removeItem('openAdminMenu');
         window.location.href = '../login.html';
       }
     }
@@ -763,6 +769,59 @@ function getChartColors() {
   };
 }
 
+function getCurrencySettings() {
+  let currency = 'MXN';
+
+  try {
+    const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
+    currency = settings.currency || localStorage.getItem('currency') || currency;
+  } catch (e) { }
+
+  const localeByCurrency = {
+    COP: 'es-CO',
+    MXN: 'es-MX',
+    EUR: 'es-ES',
+    USD: 'en-US',
+  };
+
+  return {
+    currency,
+    locale: localeByCurrency[currency] || 'es-ES',
+  };
+}
+
+function formatChartCurrency(value) {
+  const amount = Number(value || 0);
+  const { currency, locale } = getCurrencySettings();
+
+  if (amount === 0) return '$0';
+
+  if (Math.abs(amount) >= 1000000) {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(amount);
+  }
+
+  if (Math.abs(amount) >= 1000) {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+    }).format(amount / 1000) + 'K';
+  }
+
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
 // Crear gráfica de movimientos diarios
 function createMovimientosChart() {
   const ctx = document.getElementById('movimientosChart');
@@ -793,6 +852,8 @@ function createMovimientosChart() {
     ingresosData.push(dayData.ingresos || 0);
     egresosData.push(dayData.egresos || 0);
   }
+
+  const maxMovementValue = Math.max(...ingresosData, ...egresosData, 0);
 
   const data = {
     labels: labels,
@@ -852,7 +913,8 @@ function createMovimientosChart() {
           ticks: {
             color: colors.text,
             callback: function (value) {
-              return '$' + (value / 1000) + 'K';
+              if (maxMovementValue === 0 && Number(value) !== 0) return '';
+              return formatChartCurrency(value);
             }
           },
           grid: {

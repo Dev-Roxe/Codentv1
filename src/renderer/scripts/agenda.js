@@ -122,7 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
     },
     onLogout: () => {
       if (confirm('¿Estás seguro que deseas cerrar sesión?')) {
-        localStorage.clear();
+        localStorage.removeItem('sesionActual');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('sesionLastLogin');
+        sessionStorage.removeItem('notified_appointments');
+        sessionStorage.removeItem('notifiedAppointments');
+        sessionStorage.removeItem('openAdminMenu');
         window.location.href = '../login.html';
       }
     }

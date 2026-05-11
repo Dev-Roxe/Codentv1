@@ -259,6 +259,40 @@ const applyDateFormat = (dateFormat) => {
     }
 };
 
+const mirrorSettingsToLocalStorage = (settings = {}) => {
+    if (!settings || typeof settings !== 'object') return;
+
+    try {
+        localStorage.setItem('app_settings', JSON.stringify(settings));
+        if (settings.workStart != null) localStorage.setItem('work-start', settings.workStart);
+        if (settings.workEnd != null) localStorage.setItem('work-end', settings.workEnd);
+        if (settings.lunchStart != null) localStorage.setItem('lunch-start', settings.lunchStart);
+        if (settings.lunchEnd != null) localStorage.setItem('lunch-end', settings.lunchEnd);
+        if (settings.defaultDuration != null) localStorage.setItem('default-duration', settings.defaultDuration);
+        if (settings.appointmentInterval != null) localStorage.setItem('appointment-interval', settings.appointmentInterval);
+        if (settings.timeFormat != null) localStorage.setItem('time-format', settings.timeFormat);
+        if (settings.currency != null) localStorage.setItem('currency', settings.currency);
+        if (settings.firstDayWeek != null) localStorage.setItem('first-day-week', String(settings.firstDayWeek));
+        if (settings.autoLock != null) localStorage.setItem('auto-lock', settings.autoLock);
+        if (settings.theme != null) localStorage.setItem(THEME_STORAGE_KEY, settings.theme);
+    } catch (error) {
+        console.warn('[init] No se pudo reflejar configuracion en localStorage:', error);
+    }
+};
+
+const refreshSettingsFromDatabase = async () => {
+    if (!window.api?.clinicConfig?.getSettings) return null;
+    try {
+        const settings = await window.api.clinicConfig.getSettings();
+        if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return null;
+        mirrorSettingsToLocalStorage(settings);
+        return settings;
+    } catch (error) {
+        console.warn('[init] No se pudo leer configuracion desde BD:', error);
+        return null;
+    }
+};
+
 const initializePreferences = () => {
     const settings = safeParseJSON(localStorage.getItem('app_settings'), {});
     applyFontSize(settings.fontSize);
@@ -654,6 +688,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const settings = initializePreferences();
     setupAutoLock(settings.autoLock);
     startAppointmentReminders();
+    void refreshSettingsFromDatabase().then((dbSettings) => {
+        if (!dbSettings) return;
+        applyThemePreference(getStoredTheme());
+        applyFontSize(dbSettings.fontSize);
+        applyCompactMode(dbSettings.compactMode);
+        applyDateFormat(dbSettings.dateFormat);
+        window.dispatchEvent(new CustomEvent('configurationChanged', { detail: dbSettings }));
+    });
     // enhanceDateInputs(document);
 
     // Inyectar el Chatbot de Soporte solo si no estamos dentro de un iframe

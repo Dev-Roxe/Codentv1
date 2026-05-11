@@ -691,6 +691,7 @@ function reverseAmountFromInstallments(installments, amount) {
 
 function createDbHelpers(db) {
     return {
+        db,
         run(sql, params = []) {
             return new Promise((resolve, reject) => {
                 db.run(sql, params, function onRun(err) {

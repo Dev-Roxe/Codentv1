@@ -102,6 +102,29 @@ function getPeriodontogramaDetalles(perTooth) {
   return entries;
 }
 
+const FACE_LABELS = {
+  oclusal: 'Oclusal',
+  mesial: 'Mesial',
+  distal: 'Distal',
+  vestibular: 'Vestibular',
+  lingual: 'Lingual',
+  palatino: 'Palatino',
+};
+
+function formatDxNote(raw) {
+  if (typeof raw !== 'string' || !raw.startsWith('DX:')) return null;
+  try {
+    const data = JSON.parse(raw.slice(3));
+    if (!data || typeof data !== 'object') return null;
+    const parts = [];
+    const faceLabel = FACE_LABELS[String(data.face || '').toLowerCase()];
+    if (faceLabel) parts.push(`Cara: ${faceLabel}`);
+    return parts.join(' · ');
+  } catch (e) {
+    return null;
+  }
+}
+
 function summarizePeriodontograma(perTooth, maxTeeth = 6) {
   const entries = getPeriodontogramaDetalles(perTooth);
   if (entries.length === 0) return 'Periodontograma guardado (sin datos clínicos)';
@@ -118,6 +141,8 @@ function formatTratamientoNotas(tratamiento) {
   if (tratamiento.tratamiento_descripcion) return tratamiento.tratamiento_descripcion;
   const raw = String(tratamiento.notas || '').trim();
   if (!raw) return '';
+  const dxNote = formatDxNote(raw);
+  if (dxNote) return dxNote;
   if (!raw.startsWith('{')) return raw;
   try {
     const data = JSON.parse(raw);
@@ -164,11 +189,12 @@ async function loadTratamientos() {
     `, [pacienteId]);
 
     tratamientosAntiguos.forEach(t => {
+      const isDiagnostico = String(t.registro_tipo || '').toLowerCase() === 'diagnostico';
       tratamientos.push({
         ...t,
-        tipo: 'tratamiento',
+        tipo: isDiagnostico ? 'diagnostico' : 'tratamiento',
         nombre: t.procedimiento,
-        estado: 'completado',
+        estado: isDiagnostico ? 'diagnostico' : 'completado',
         fecha: t.fecha
       });
     });
@@ -288,6 +314,12 @@ function renderTratamientos() {
       textClass: 'text-orange-700 dark:text-orange-300',
       borderClass: 'border-orange-500'
     },
+    diagnostico: {
+      icon: 'DX',
+      bgClass: 'bg-cyan-100 dark:bg-cyan-900/50',
+      textClass: 'text-cyan-700 dark:text-cyan-300',
+      borderClass: 'border-cyan-500'
+    },
     cancelado: {
       icon: '✕',
       bgClass: 'bg-gray-100 dark:bg-gray-700',
@@ -306,6 +338,7 @@ function renderTratamientos() {
       completado: 'Completado',
       en_proceso: 'En Proceso',
       pendiente: 'Pendiente',
+      diagnostico: 'Diagnóstico',
       cancelado: 'Cancelado'
     }[tratamiento.estado] || 'Sin estado';
 
