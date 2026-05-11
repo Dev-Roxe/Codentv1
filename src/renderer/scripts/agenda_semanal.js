@@ -329,7 +329,7 @@ export async function initSemanal(container, referenceDate) {
                 lunchCell.style.gridColumn = 'span 7';
                 lunchCell.className = `border-r border-b border-[#F3F4F6] dark:border-gray-700 bg-amber-50 dark:bg-amber-900/15 flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold text-sm tracking-widest`;
                 const lunch = getLunchRangeMinutes();
-                lunchCell.innerHTML = `🍽️ HORA DE COMIDA (${minutesToTime(lunch.start)} - ${minutesToTime(lunch.end)})`;
+                lunchCell.innerHTML = `HORA DE COMIDA (${minutesToTime(lunch.start)} - ${minutesToTime(lunch.end)})`;
                 grid.appendChild(lunchCell);
                 
                 return;

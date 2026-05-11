@@ -64,7 +64,7 @@
     "asar": true,
     "win": {
       "icon": "src/renderer/assets/icons/app.ico",
-      "signAndEditExecutable": true,
+      "signAndEditExecutable": false,
       "target": [
         "nsis"
       ]
