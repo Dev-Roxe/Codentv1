@@ -1,6 +1,6 @@
 {
   "name": "sonalia",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Sonalia Dental Management",
   "main": "main.js",
   "scripts": {
@@ -72,8 +72,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "TU_USUARIO_GITHUB",
-        "repo": "TU_REPO_GITHUB",
+        "owner": "Dev-Roxe",
+        "repo": "Sonalia",
         "releaseType": "release"
       }
     ],
