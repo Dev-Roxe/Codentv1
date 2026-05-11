@@ -151,6 +151,25 @@ const clinicalApi = Object.freeze({
     listPrescriptions: (patientId) => ipcRenderer.invoke('clinical-list-prescriptions', patientId),
 });
 
+const accountingApi = Object.freeze({
+    getDashboard: (filters) => ipcRenderer.invoke('accounting-get-dashboard', filters || {}),
+    listGastos: (filters) => ipcRenderer.invoke('accounting-list-gastos', filters || {}),
+    saveGasto: (payload) => ipcRenderer.invoke('accounting-save-gasto', payload || {}),
+    deleteGasto: (id) => ipcRenderer.invoke('accounting-delete-gasto', id),
+    listCategorias: () => ipcRenderer.invoke('accounting-list-categorias'),
+    saveCategoria: (payload) => ipcRenderer.invoke('accounting-save-categoria', payload || {}),
+    deleteCategoria: (id) => ipcRenderer.invoke('accounting-delete-categoria', id),
+    listEmpleados: (soloActivos) => ipcRenderer.invoke('accounting-list-empleados', soloActivos),
+    saveEmpleado: (payload) => ipcRenderer.invoke('accounting-save-empleado', payload || {}),
+    deleteEmpleado: (id) => ipcRenderer.invoke('accounting-delete-empleado', id),
+    listNominaPagos: (filters) => ipcRenderer.invoke('accounting-list-nomina-pagos', filters || {}),
+    saveNominaPago: (payload) => ipcRenderer.invoke('accounting-save-nomina-pago', payload || {}),
+    deleteNominaPago: (id) => ipcRenderer.invoke('accounting-delete-nomina-pago', id),
+    listCompras: (filters) => ipcRenderer.invoke('accounting-list-compras', filters || {}),
+    saveCompra: (payload) => ipcRenderer.invoke('accounting-save-compra', payload || {}),
+    deleteCompra: (id) => ipcRenderer.invoke('accounting-delete-compra', id),
+});
+
 const crmApi = Object.freeze({
     saveTemplate: (payload) => ipcRenderer.invoke('crm-save-template', payload || {}),
     archiveTemplate: (templateId) => ipcRenderer.invoke('crm-archive-template', templateId),
@@ -206,6 +225,7 @@ contextBridge.exposeInMainWorld('api', Object.freeze({
     cash: cashApi,
     cajasReport: cajasReportApi,
     print: printApi,
+    accounting: accountingApi,
 }));
 
 // API de Electron para IPC (email, etc.)

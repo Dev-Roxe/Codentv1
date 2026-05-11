@@ -643,7 +643,17 @@ async function loadToothImagesFromPeriodontograma() {
     const columns = await dbAll("PRAGMA table_info(periodontograma)");
     const hasImagesColumn = Array.isArray(columns) && columns.some((column) => column?.name === "dientes_imagenes");
     const selectCols = hasImagesColumn ? "datos, dientes_imagenes" : "datos";
-    const row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+    let row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+
+    // Fallback: si no tiene imágenes, tomar las más recientes de la base de datos
+    if (hasImagesColumn && (!row || !row.dientes_imagenes || row.dientes_imagenes === '{}' || row.dientes_imagenes === 'null')) {
+      const fallbackRow = await dbGet(`SELECT dientes_imagenes FROM periodontograma WHERE dientes_imagenes IS NOT NULL AND dientes_imagenes != '{}' AND dientes_imagenes != 'null' AND length(dientes_imagenes) > 50 ORDER BY id DESC LIMIT 1`);
+      if (fallbackRow && fallbackRow.dientes_imagenes) {
+        if (!row) row = {};
+        row.dientes_imagenes = fallbackRow.dientes_imagenes;
+      }
+    }
+
     if (!row) return;
 
     if (row.datos) {

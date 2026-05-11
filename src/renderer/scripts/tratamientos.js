@@ -696,7 +696,17 @@ async function loadPlanToothImagesFromPeriodontograma() {
     const columns = await dbAll('PRAGMA table_info(periodontograma)');
     const hasImagesColumn = Array.isArray(columns) && columns.some(column => column?.name === 'dientes_imagenes');
     const selectCols = hasImagesColumn ? 'datos, dientes_imagenes' : 'datos';
-    const row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+    let row = await dbGet(`SELECT ${selectCols} FROM periodontograma WHERE paciente_id = ?`, [currentPacienteId]);
+
+    // Fallback: si no tiene imágenes, tomar las más recientes de la base de datos
+    if (hasImagesColumn && (!row || !row.dientes_imagenes || row.dientes_imagenes === '{}' || row.dientes_imagenes === 'null')) {
+      const fallbackRow = await dbGet(`SELECT dientes_imagenes FROM periodontograma WHERE dientes_imagenes IS NOT NULL AND dientes_imagenes != '{}' AND dientes_imagenes != 'null' AND length(dientes_imagenes) > 50 ORDER BY id DESC LIMIT 1`);
+      if (fallbackRow && fallbackRow.dientes_imagenes) {
+        if (!row) row = {};
+        row.dientes_imagenes = fallbackRow.dientes_imagenes;
+      }
+    }
+
     if (!row) return;
 
     if (row.datos) {
@@ -1003,7 +1013,7 @@ async function loadPlanesPendientes() {
       const offset = circumference * (1 - progreso / 100);
 
       htmlContent += `
-        <div class="rounded-xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg p-5 flex gap-6" data-plan-id="${p.id}">
+        <div class="rounded-3xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/50 dark:border-[#4EABBE]/30 shadow-lg shadow-[#8BCFDD]/10 dark:shadow-none p-6 flex flex-col md:flex-row gap-6 hover:shadow-xl transition-all duration-300" data-plan-id="${p.id}">
           <!-- Círculo de Progreso -->
           <div class="flex flex-col items-center gap-3 min-w-fit">
             <div style="position:relative; width:120px; height:120px;">
@@ -1027,60 +1037,57 @@ async function loadPlanesPendientes() {
           <div class="flex-1">
             <div class="flex justify-between items-start mb-4 pb-4 border-b border-[#8BCFDD]/20 dark:border-slate-700">
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400 uppercase">Tratamiento</p>
-                <p class="text-lg font-extrabold text-[#0F2532] dark:text-white">${escapeHtml(p.tratamiento_nombre)}</p>
+                <p class="text-[10px] font-bold text-[#4EABBE] dark:text-[#8BCFDD] uppercase tracking-widest mb-1">Tratamiento</p>
+                <p class="text-xl font-extrabold text-[#0F2532] dark:text-white leading-tight">${escapeHtml(p.tratamiento_nombre)}</p>
               </div>
-              <span class="px-3 py-1 rounded-lg text-xs font-bold ${
-                p.estado === 'completado' ? 'bg-green-100 text-green-700' :
-                p.estado === 'en_progreso' ? 'bg-blue-100 text-blue-700' :
-                'bg-orange-100 text-orange-700'
+              <span class="px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm ${
+                p.estado === 'completado' ? 'bg-emerald-100/80 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300' :
+                p.estado === 'en_progreso' ? 'bg-blue-100/80 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' :
+                'bg-amber-100/80 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'
               }">
-                ${p.estado.charAt(0).toUpperCase() + p.estado.slice(1)}
+                ${p.estado.charAt(0).toUpperCase() + p.estado.slice(1).replace('_', ' ')}
               </span>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-6 bg-[#F8F7F7] dark:bg-slate-800/40 rounded-2xl p-4 border border-[#8BCFDD]/20 dark:border-slate-700">
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Total Final</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Total Final</p>
                 <p class="text-lg font-bold text-[#4EABBE] dark:text-[#8BCFDD]">$${totalFinal.toFixed(2)}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Duración</p>
-                <p class="text-[#0F2532] dark:text-slate-100">${p.duracion_estimada || 30} min</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Duración</p>
+                <p class="font-semibold text-[#0F2532] dark:text-slate-100">${p.duracion_estimada || 30} min</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Especialista</p>
+                <p class="font-semibold text-[#0F2532] dark:text-slate-100">${escapeHtml(p.especialista_asignado || 'Sin asignar')}</p>
+              </div>
+              <div>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Categoría</p>
+                <p class="font-semibold text-[#0F2532] dark:text-slate-100">${escapeHtml(p.categoria || 'General')}</p>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-6">
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Especialista</p>
-                <p class="text-[#0F2532] dark:text-slate-100">${escapeHtml(p.especialista_asignado || 'Sin asignar')}</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Descuento</p>
+                <p class="font-medium text-[#0F2532] dark:text-slate-100">$${descuentoMonto.toFixed(2)}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Categoría</p>
-                <p class="text-[#0F2532] dark:text-slate-100">${escapeHtml(p.categoria || 'General')}</p>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm mb-4">
-              <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Descuento</p>
-                <p class="text-[#0F2532] dark:text-slate-100">$${descuentoMonto.toFixed(2)}</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Impuesto</p>
+                <p class="font-medium text-[#0F2532] dark:text-slate-100">$${impuestoMonto.toFixed(2)}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Impuesto</p>
-                <p class="text-[#0F2532] dark:text-slate-100">$${impuestoMonto.toFixed(2)}</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Cobro</p>
+                <p class="font-medium text-[#0F2532] dark:text-slate-100">${Number(p.tiene_financiamiento) ? 'En cuotas' : 'Pago libre'}</p>
               </div>
               <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Cobro</p>
-                <p class="text-[#0F2532] dark:text-slate-100">${Number(p.tiene_financiamiento) ? 'En cuotas' : 'Pago libre'}</p>
-              </div>
-              <div>
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Version</p>
-                <p class="text-[#0F2532] dark:text-slate-100">v${versionComercial}</p>
+                <p class="text-[10px] uppercase tracking-wider font-semibold text-[#1D5D69] dark:text-slate-400">Version</p>
+                <p class="font-medium text-[#0F2532] dark:text-slate-100">v${versionComercial}</p>
               </div>
             </div>
 
-            <div class="bg-[#0F2532]/5 dark:bg-slate-800/40 rounded-lg p-3 border border-[#8BCFDD]/20 dark:border-slate-700 mb-4">
+            <div class="bg-[#F8F7F7] dark:bg-slate-800/40 rounded-2xl p-4 border border-[#8BCFDD]/30 dark:border-slate-700 mb-6">
               <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400">Pagos / Cuotas</p>
                 <p class="text-xs text-[#0F2532]/70 dark:text-slate-300">
@@ -1118,7 +1125,8 @@ async function loadPlanesPendientes() {
                         <th class="py-2 pr-3 font-semibold">Monto</th>
                         <th class="py-2 pr-3 font-semibold">Abonado</th>
                         <th class="py-2 pr-3 font-semibold">Saldo</th>
-                        <th class="py-2 font-semibold">Estado</th>
+                        <th class="py-2 pr-3 font-semibold">Estado</th>
+                        <th class="py-2 font-semibold text-right">Acción</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1134,10 +1142,18 @@ async function loadPlanesPendientes() {
                             <td class="py-2 pr-3 text-[#0F2532] dark:text-slate-100">${formatCurrency(scheduled)}</td>
                             <td class="py-2 pr-3 text-emerald-600 dark:text-emerald-400">${formatCurrency(paid)}</td>
                             <td class="py-2 pr-3 ${pending > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatCurrency(pending)}</td>
-                            <td class="py-2">
+                            <td class="py-2 pr-3">
                               <span class="px-2 py-1 rounded-full text-[11px] font-semibold ${badge.className}">
                                 ${badge.label}
                               </span>
+                            </td>
+                            <td class="py-2 text-right">
+                              ${pending > 0 ? `
+                                <button type="button" class="px-3 py-1.5 rounded-lg bg-[#4EABBE]/15 text-[#1D5D69] dark:text-[#8BCFDD] text-[11px] font-semibold hover:bg-[#4EABBE]/25 transition"
+                                        onclick="abrirModalPago(${p.id}, ${item.id}, ${pending}, '${item.es_anticipo ? 'Anticipo' : 'Cuota #' + item.numero}')">
+                                  Abonar
+                                </button>
+                              ` : ''}
                             </td>
                           </tr>
                         `;
@@ -1151,17 +1167,17 @@ async function loadPlanesPendientes() {
             </div>
 
             ${target ? `
-              <div class="bg-[#0F2532]/5 dark:bg-slate-800/40 rounded-lg p-3 border border-[#8BCFDD]/20 dark:border-slate-700 mb-4">
-                <p class="text-xs font-semibold text-[#1D5D69] dark:text-slate-400 mb-1">Pieza objetivo</p>
-                <p class="text-sm font-semibold text-[#0F2532] dark:text-slate-100">${escapeHtml(target.title)}</p>
-                <p class="text-sm text-[#0F2532]/70 dark:text-slate-300">${escapeHtml(target.detail)}</p>
+              <div class="bg-[#8BCFDD]/10 dark:bg-[#4EABBE]/10 rounded-2xl p-4 border border-[#8BCFDD]/30 dark:border-[#4EABBE]/20 mb-5">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-[#1D5D69] dark:text-[#8BCFDD] mb-1">Pieza objetivo</p>
+                <p class="text-base font-bold text-[#0F2532] dark:text-white">${escapeHtml(target.title)}</p>
+                <p class="text-sm text-[#0F2532]/80 dark:text-slate-300 mt-1">${escapeHtml(target.detail)}</p>
               </div>
             ` : ''}
 
             ${p.notas ? `
-              <div class="bg-[#8BCFDD]/10 rounded-lg p-3 border border-[#8BCFDD]/20 mb-4">
-                <p class="text-xs font-semibold text-[#1D5D69] mb-1">Notas</p>
-                <p class="text-sm text-[#0F2532]">${escapeHtml(p.notas)}</p>
+              <div class="bg-amber-50 dark:bg-amber-900/10 rounded-2xl p-4 border border-amber-200/60 dark:border-amber-700/40 mb-5">
+                <p class="text-[10px] uppercase tracking-wider font-bold text-amber-700 dark:text-amber-500 mb-1">Notas del Plan</p>
+                <p class="text-sm text-amber-900 dark:text-amber-100/90 leading-relaxed">${escapeHtml(p.notas)}</p>
               </div>
             ` : ''}
 
@@ -2058,3 +2074,83 @@ if (document.readyState === 'loading') {
 } else {
   init();
 }
+window.closeModalPago = () => {
+  const modal = document.getElementById('modal-pago');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
+};
+
+window.abrirModalPago = (planId, cuotaId, maxMonto, cuotaDesc) => {
+  const modal = document.getElementById('modal-pago');
+  const form = document.getElementById('form-pago');
+  
+  if (!modal || !form) return;
+
+  form.reset();
+  
+  document.getElementById('pago-plan-id').value = planId;
+  document.getElementById('pago-cuota-id').value = cuotaId;
+  document.getElementById('pago-cuota-info').textContent = `${cuotaDesc} • Pendiente: ${formatCurrency(maxMonto)}`;
+  
+  const montoInput = document.getElementById('pago-monto');
+  montoInput.value = maxMonto;
+  montoInput.max = maxMonto;
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+};
+
+document.getElementById('close-modal-pago')?.addEventListener('click', window.closeModalPago);
+document.getElementById('cancel-pago')?.addEventListener('click', window.closeModalPago);
+
+document.getElementById('form-pago')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const submitBtn = document.getElementById('submit-pago-btn');
+  const originalText = submitBtn.textContent;
+  submitBtn.textContent = 'Procesando...';
+  submitBtn.disabled = true;
+
+  try {
+    const sessionStr = localStorage.getItem('sesionActual') || sessionStorage.getItem('sesionActual');
+    const session = sessionStr ? JSON.parse(sessionStr) : {};
+    const userId = session.id || session.usuario_id || session.user_id;
+
+    if (!userId) {
+      throw new Error("No se pudo validar la sesión del usuario. Cierra sesión y vuelve a entrar.");
+    }
+
+    const payload = {
+      paciente_id: Number(currentPacienteId),
+      usuario_id: userId,
+      user_id: userId,
+      monto: parseFloat(document.getElementById('pago-monto').value || 0),
+      metodo: document.getElementById('pago-metodo').value,
+      plan_tratamiento_id: document.getElementById('pago-plan-id').value,
+      cuota_financiamiento_id: document.getElementById('pago-cuota-id').value,
+      descripcion: document.getElementById('pago-descripcion').value.trim()
+    };
+
+    if (!window.api || !window.api.finance) {
+      throw new Error("API de finanzas no disponible.");
+    }
+
+    await window.api.finance.registerPayment(payload);
+    
+    showToast('Abono registrado correctamente', 'success');
+    window.closeModalPago();
+    await loadPlanesPendientes(); // Recargar la lista de planes para reflejar el pago
+  } catch (error) {
+    console.error('Error al registrar abono:', error);
+    let msg = error.message || 'Error al procesar el pago';
+    if (msg.toLowerCase().includes('caja propia') || msg.toLowerCase().includes('abrir una caja')) {
+      msg = '¡Caja cerrada! Debes abrir una caja en la sección de Cajas antes de poder registrar pagos.';
+    }
+    showToast(msg, 'error');
+  } finally {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  }
+});

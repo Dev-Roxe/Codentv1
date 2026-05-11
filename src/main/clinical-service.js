@@ -326,10 +326,38 @@ async function getPeriodontogram(db, patientId) {
     if (!id) return null;
     await ensurePeriodontogramSchema(dbHelpers);
 
-    return dbHelpers.get(
+    let record = await dbHelpers.get(
         'SELECT datos, dientes_imagenes, dientes_bloqueados, fecha, fecha_creacion, fecha_actualizacion FROM periodontograma WHERE paciente_id = ?',
         [id]
     );
+
+    // Fallback: si no tiene imágenes, tomar las más recientes de la base de datos (imágenes globales/por defecto)
+    if (!record || !record.dientes_imagenes || record.dientes_imagenes === '{}' || record.dientes_imagenes === 'null') {
+        const fallback = await dbHelpers.get(
+            `SELECT dientes_imagenes FROM periodontograma 
+             WHERE dientes_imagenes IS NOT NULL 
+               AND dientes_imagenes != '{}' 
+               AND dientes_imagenes != 'null' 
+               AND length(dientes_imagenes) > 50 
+             ORDER BY id DESC LIMIT 1`
+        );
+        if (fallback && fallback.dientes_imagenes) {
+            if (!record) {
+                record = {
+                    datos: null,
+                    dientes_imagenes: fallback.dientes_imagenes,
+                    dientes_bloqueados: 0,
+                    fecha: new Date().toISOString().slice(0, 10),
+                    fecha_creacion: new Date().toISOString(),
+                    fecha_actualizacion: new Date().toISOString()
+                };
+            } else {
+                record.dientes_imagenes = fallback.dientes_imagenes;
+            }
+        }
+    }
+
+    return record;
 }
 
 function normalizePeriodontogramImageEntry(entry) {

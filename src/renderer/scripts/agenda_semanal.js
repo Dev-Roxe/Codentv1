@@ -311,22 +311,44 @@ export async function initSemanal(container, referenceDate) {
         });
 
         // Filas de tiempo
+        let lunchRendered = false;
+
         timeSlots.forEach(time => {
             const lunchTimeSlot = isLunchSlot(time);
+            
+            if (lunchTimeSlot) {
+                if (lunchRendered) return;
+                lunchRendered = true;
+                
+                const timeCell = document.createElement('div');
+                timeCell.className = `time-cell border-r border-b border-[#E5E7EB] dark:border-gray-700 bg-amber-100/70 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold`;
+                timeCell.textContent = 'Comida';
+                grid.appendChild(timeCell);
+
+                const lunchCell = document.createElement('div');
+                lunchCell.style.gridColumn = 'span 7';
+                lunchCell.className = `border-r border-b border-[#F3F4F6] dark:border-gray-700 bg-amber-50 dark:bg-amber-900/15 flex items-center justify-center text-amber-700 dark:text-amber-300 font-bold text-sm tracking-widest`;
+                const lunch = getLunchRangeMinutes();
+                lunchCell.innerHTML = `🍽️ HORA DE COMIDA (${minutesToTime(lunch.start)} - ${minutesToTime(lunch.end)})`;
+                grid.appendChild(lunchCell);
+                
+                return;
+            }
+
             // Celda de hora
             const timeCell = document.createElement('div');
-            timeCell.className = `time-cell border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors ${lunchTimeSlot ? 'bg-amber-100/70 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold' : 'bg-[#F9FAFB] dark:bg-gray-900'}`;
+            timeCell.className = `time-cell border-r border-b border-[#E5E7EB] dark:border-gray-700 text-gray-500 dark:text-gray-400 transition-colors bg-[#F9FAFB] dark:bg-gray-900`;
             timeCell.textContent = formatDisplayTimeFromString(time, config.timeFormat);
             grid.appendChild(timeCell);
 
             // Celdas por día
             days.forEach(day => {
                 const cell = document.createElement('div');
-                cell.className = `grid-cell border-r border-b border-[#F3F4F6] dark:border-gray-700 transition-colors ${day.isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5 dark:bg-[#8BCFDD]/5' : ''} ${lunchTimeSlot ? 'bg-amber-50 dark:bg-amber-900/15' : ''}`;
+                cell.className = `grid-cell border-r border-b border-[#F3F4F6] dark:border-gray-700 transition-colors ${day.isWeekend ? 'bg-gray-50 dark:bg-gray-800/50' : ''} ${day.isToday ? 'bg-[#8BCFDD]/5 dark:bg-[#8BCFDD]/5' : ''}`;
                 cell.dataset.date = day.date;
                 cell.dataset.time = time;
                 cell.dataset.isWeekend = day.isWeekend ? '1' : '0';
-                cell.dataset.isLunch = lunchTimeSlot ? '1' : '0';
+                cell.dataset.isLunch = '0';
 
                 const key = `${day.date}|${time}`;
                 const apt = appointmentsMap[key];
@@ -338,12 +360,6 @@ export async function initSemanal(container, referenceDate) {
                         <div class="appointment-block status-${status} shadow-sm hover:shadow-md transition-all" data-apt-id="${apt.id}">
                             <div class="font-medium text-white truncate">${apt.nombre} ${apt.apellido}</div>
                             <div class="text-white/80 text-xs truncate">${apt.motivo || 'Sin motivo'}</div>
-                        </div>
-                    `;
-                } else if (!day.isWeekend && lunchTimeSlot) {
-                    cell.innerHTML = `
-                        <div class="h-full flex items-center justify-center text-[11px] font-semibold text-amber-700 dark:text-amber-300">
-                            Comida
                         </div>
                     `;
                 } else if (!day.isWeekend) {

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self' 'unsafe-inline' file:; style-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob: file:; font-src 'self' data: file:; connect-src 'self' file:;">
+  <title>Contabilidad - Sonalia</title>
+  <link href="../styles/output.css" rel="stylesheet">
+  <script src="../components/navbar-component.js" type="module"></script>
+  <script src="../scripts/init.js" type="module"></script>
+</head>
+
+<body class="min-h-screen bg-[#F8F7F7] text-[#0F2532] dark:bg-[#0B1721] dark:text-slate-100">
+  <app-navbar current="contabilidad"></app-navbar>
+
+  <main class="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <p class="text-xs font-semibold tracking-widest uppercase text-[#1D5D69] dark:text-[#8BCFDD]">Finanzas</p>
+        <h1 class="text-3xl font-bold text-[#1D5D69] dark:text-white">Contabilidad</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Control de gastos, nóminas y adquisiciones.</p>
+      </div>
+      <div class="flex gap-3">
+        <!-- Dashboard summary inside header if needed or buttons -->
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-sm border border-[#8BCFDD]/20 p-1.5 flex gap-1 overflow-x-auto">
+      <button data-tab="dashboard" class="tab-btn flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-sm font-semibold transition-all bg-[#4EABBE] text-white">Dashboard</button>
+      <button data-tab="gastos" class="tab-btn flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-sm font-semibold transition-all bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100">Gastos</button>
+      <button data-tab="nomina" class="tab-btn flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-sm font-semibold transition-all bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100">Nómina</button>
+      <button data-tab="compras" class="tab-btn flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-sm font-semibold transition-all bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100">Compras</button>
+    </div>
+
+    <!-- Tab Contents -->
+    <div id="tab-container">
+      
+      <!-- DASHBOARD TAB -->
+      <section id="content-dashboard" class="tab-content space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-white dark:bg-[#0E1A25] p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Gastos Operativos</p>
+            <h3 id="dash-gastos" class="text-2xl font-bold mt-1 text-[#1D5D69] dark:text-white">$0.00</h3>
+            <p class="text-[10px] text-gray-400 mt-2">Mes actual</p>
+          </div>
+          <div class="bg-white dark:bg-[#0E1A25] p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Nómina</p>
+            <h3 id="dash-nomina" class="text-2xl font-bold mt-1 text-[#1D5D69] dark:text-white">$0.00</h3>
+            <p class="text-[10px] text-gray-400 mt-2">Pagos realizados</p>
+          </div>
+          <div class="bg-white dark:bg-[#0E1A25] p-5 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
+            <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Compras</p>
+            <h3 id="dash-compras" class="text-2xl font-bold mt-1 text-[#1D5D69] dark:text-white">$0.00</h3>
+            <p class="text-[10px] text-gray-400 mt-2">Insumos y productos</p>
+          </div>
+          <div class="bg-[#1D5D69] p-5 rounded-2xl shadow-md text-white">
+            <p class="text-xs font-medium opacity-80 uppercase">Total Egresos</p>
+            <h3 id="dash-total" class="text-2xl font-bold mt-1">$0.00</h3>
+            <p class="text-[10px] opacity-70 mt-2">Período actual</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-2 bg-white dark:bg-[#0E1A25] rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm">
+            <h4 class="font-bold text-[#1D5D69] dark:text-white mb-4">Gastos por Categoría</h4>
+            <div id="chart-categorias" class="space-y-4">
+              <!-- Dynamically filled -->
+            </div>
+          </div>
+          <div class="bg-white dark:bg-[#0E1A25] rounded-2xl p-6 border border-gray-100 dark:border-slate-800 shadow-sm">
+            <h4 class="font-bold text-[#1D5D69] dark:text-white mb-4">Pendientes de Pago</h4>
+            <div class="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-100 dark:border-yellow-900/30">
+              <div>
+                <p id="dash-pendientes-count" class="text-2xl font-bold text-yellow-700 dark:text-yellow-500">0</p>
+                <p class="text-xs text-yellow-600 dark:text-yellow-400">Gastos próximos</p>
+              </div>
+              <div class="text-right">
+                <p id="dash-pendientes" class="text-lg font-bold text-yellow-700 dark:text-yellow-500">$0.00</p>
+                <p class="text-[10px] text-yellow-600 dark:text-yellow-400">Monto total</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GASTOS TAB -->
+      <section id="content-gastos" class="tab-content hidden space-y-6">
+        <div class="flex flex-col md:flex-row gap-4 items-end bg-white dark:bg-[#0E1A25] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Inicio</label>
+            <input type="date" id="g-fecha-inicio" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#4EABBE]">
+          </div>
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Fin</label>
+            <input type="date" id="g-fecha-fin" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#4EABBE]">
+          </div>
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Categoría</label>
+            <select id="g-cat-filter" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#4EABBE]"></select>
+          </div>
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Estado</label>
+            <select id="g-estado-filter" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-[#4EABBE]">
+              <option value="">Todos</option>
+              <option value="pagado">Pagado</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="vencido">Vencido</option>
+            </select>
+          </div>
+          <button id="btn-filtrar-gastos" class="px-6 py-2.5 bg-[#1D5D69] text-white rounded-xl text-sm font-bold hover:bg-[#16444d] transition-colors">Filtrar</button>
+          <button id="btn-nuevo-gasto" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl text-sm font-bold hover:bg-[#3d8b9b] transition-colors whitespace-nowrap">+ Nuevo Gasto</button>
+        </div>
+
+        <div class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-gray-50 dark:bg-slate-800/50">
+              <tr>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Concepto</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Categoría</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Monto</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="gastos-tbody" class="divide-y divide-gray-100 dark:divide-slate-800">
+              <!-- Rows here -->
+            </tbody>
+            <tfoot class="bg-gray-50/50 dark:bg-slate-800/30">
+              <tr>
+                <td colspan="2" class="px-6 py-4 text-right font-bold text-gray-500">TOTAL:</td>
+                <td id="gastos-total" class="px-6 py-4 font-bold text-[#1D5D69] dark:text-white">$0.00</td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+      <!-- NOMINA TAB -->
+      <section id="content-nomina" class="tab-content hidden space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="lg:col-span-1 space-y-6">
+            <div class="bg-white dark:bg-[#0E1A25] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-[#1D5D69] dark:text-white">Personal</h4>
+                <button id="btn-nuevo-empleado" class="text-xs font-bold text-[#4EABBE] hover:underline">+ Registrar</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <tbody id="empleados-tbody" class="divide-y divide-gray-100 dark:divide-slate-800">
+                    <!-- Rows here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-[#0E1A25] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-[#1D5D69] dark:text-white">Pagos Realizados</h4>
+                <button id="btn-nuevo-pago" class="px-4 py-2 bg-[#4EABBE] text-white rounded-xl text-xs font-bold hover:bg-[#3d8b9b] transition-colors">Registrar Pago</button>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-gray-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Empleado</th>
+                      <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Período</th>
+                      <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Neto</th>
+                      <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase">Estado</th>
+                      <th class="px-4 py-3 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pagos-tbody" class="divide-y divide-gray-100 dark:divide-slate-800">
+                    <!-- Rows here -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMPRAS TAB -->
+      <section id="content-compras" class="tab-content hidden space-y-6">
+        <div class="flex flex-col md:flex-row gap-4 items-end bg-white dark:bg-[#0E1A25] p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800">
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Inicio</label>
+            <input type="date" id="c-fecha-inicio" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm">
+          </div>
+          <div class="flex-1 space-y-1">
+            <label class="text-xs font-semibold text-gray-500 uppercase">Fin</label>
+            <input type="date" id="c-fecha-fin" class="w-full bg-gray-50 dark:bg-slate-800 border-0 rounded-xl p-2.5 text-sm">
+          </div>
+          <button id="btn-filtrar-compras" class="px-6 py-2.5 bg-[#1D5D69] text-white rounded-xl text-sm font-bold">Filtrar</button>
+          <button id="btn-nueva-compra" class="px-6 py-2.5 bg-[#4EABBE] text-white rounded-xl text-sm font-bold">+ Registrar Compra</button>
+        </div>
+
+        <div class="bg-white dark:bg-[#0E1A25] rounded-2xl shadow-sm border border-gray-100 dark:border-slate-800 overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 dark:bg-slate-800/50">
+              <tr>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Producto</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Proveedor</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Cantidad</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Unitario</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Total</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Fecha</th>
+                <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="compras-tbody" class="divide-y divide-gray-100 dark:divide-slate-800">
+              <!-- Rows here -->
+            </tbody>
+            <tfoot class="bg-gray-50/50 dark:bg-slate-800/30">
+              <tr>
+                <td colspan="4" class="px-6 py-4 text-right font-bold text-gray-500">TOTAL:</td>
+                <td id="compras-total" class="px-6 py-4 font-bold text-[#1D5D69] dark:text-white">$0.00</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- MODAL GASTO -->
+  <div id="modal-gasto" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-[#0E1A25] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800">
+      <div class="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Detalle de Gasto</h3>
+        <button data-close-modal="modal-gasto" class="text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
+      <form id="form-gasto" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2 space-y-1">
+            <label class="text-xs font-bold text-gray-500">Concepto *</label>
+            <input type="text" name="concepto" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Monto *</label>
+            <input type="number" step="0.01" name="monto" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Fecha *</label>
+            <input type="date" name="fecha_gasto" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Categoría</label>
+            <select name="categoria_id" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0"></select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Estado</label>
+            <select name="estado" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+              <option value="pagado">Pagado</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="vencido">Vencido</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 p-3 bg-[#4EABBE]/5 rounded-xl border border-[#4EABBE]/10">
+          <input type="checkbox" id="g-deducir-caja" name="deducir_caja" class="w-4 h-4 rounded text-[#4EABBE]">
+          <label for="g-deducir-caja" class="text-sm font-medium text-[#1D5D69] dark:text-[#8BCFDD]">Deducir monto de mi caja abierta actual</label>
+        </div>
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500">Proveedor</label>
+          <input type="text" name="proveedor" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+        </div>
+        <input type="hidden" name="metodo_pago" value="efectivo">
+        <input type="hidden" name="referencia" value="">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500">Descripción / Notas</label>
+          <textarea name="descripcion" rows="2" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0"></textarea>
+        </div>
+        <div class="pt-4 flex gap-3">
+          <button type="button" data-close-modal="modal-gasto" class="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold">Cancelar</button>
+          <button type="submit" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-xl font-bold shadow-lg shadow-[#4EABBE]/20">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EMPLEADO -->
+  <div id="modal-empleado" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-[#0E1A25] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800">
+      <div class="p-6 border-b border-gray-100 dark:border-slate-800">
+        <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Empleado / Colaborador</h3>
+      </div>
+      <form id="form-empleado" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Nombre *</label>
+            <input type="text" name="nombre" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Apellido *</label>
+            <input type="text" name="apellido" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Puesto</label>
+            <input type="text" name="puesto" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Tipo</label>
+            <select name="tipo" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+              <option value="empleado">Empleado</option>
+              <option value="doctor">Doctor</option>
+              <option value="practicante">Practicante</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Salario Base</label>
+            <input type="number" name="salario_base" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Frecuencia</label>
+            <select name="frecuencia_pago" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+              <option value="semanal">Semanal</option>
+              <option value="quincenal">Quincenal</option>
+              <option value="mensual">Mensual</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-4 flex gap-3">
+          <button type="button" data-close-modal="modal-empleado" class="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold">Cerrar</button>
+          <button type="submit" class="flex-1 py-3 bg-[#1D5D69] text-white rounded-xl font-bold">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PAGO NOMINA -->
+  <div id="modal-pago" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-[#0E1A25] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800">
+      <div class="p-6 border-b border-gray-100 dark:border-slate-800">
+        <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Registro de Pago de Nómina</h3>
+      </div>
+      <form id="form-pago" class="p-6 space-y-4">
+        <div class="space-y-1">
+          <label class="text-xs font-bold text-gray-500">Empleado *</label>
+          <select name="empleado_id" id="pago-empleado-select" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0"></select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Período Inicio *</label>
+            <input type="date" name="periodo_inicio" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Período Fin *</label>
+            <input type="date" name="periodo_fin" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Monto Bruto</label>
+            <input type="number" step="0.01" name="monto_bruto" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Deducciones</label>
+            <input type="number" step="0.01" name="deducciones" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Fecha Pago</label>
+            <input type="date" name="fecha_pago" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+        </div>
+        <div class="flex items-center gap-2 p-3 bg-[#4EABBE]/5 rounded-xl border border-[#4EABBE]/10">
+          <input type="checkbox" id="n-deducir-caja" name="deducir_caja" class="w-4 h-4 rounded text-[#4EABBE]">
+          <label for="n-deducir-caja" class="text-sm font-medium text-[#1D5D69] dark:text-[#8BCFDD]">Deducir de mi caja abierta actual</label>
+        </div>
+        <div class="pt-4 flex gap-3">
+          <button type="button" data-close-modal="modal-pago" class="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold">Cancelar</button>
+          <button type="submit" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-xl font-bold">Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL COMPRA -->
+  <div id="modal-compra" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden">
+    <div class="bg-white dark:bg-[#0E1A25] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800">
+      <div class="p-6 border-b border-gray-100 dark:border-slate-800">
+        <h3 class="text-xl font-bold text-[#1D5D69] dark:text-white">Entrada de Productos / Compra</h3>
+      </div>
+      <form id="form-compra" class="p-6 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Producto / Insumo *</label>
+            <input type="text" name="producto_nombre" id="c-producto-nombre" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Vincular con Inventario (Opcional)</label>
+            <select id="c-catalogo-select" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+              <option value="">-- No vincular --</option>
+            </select>
+            <input type="hidden" name="actualizar_inventario" value="0">
+            <input type="hidden" name="catalogo_id" value="">
+            <input type="hidden" name="catalogo_tipo" value="">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Proveedor</label>
+            <input type="text" name="proveedor" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Fecha Compra *</label>
+            <input type="date" name="fecha_compra" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Cantidad</label>
+            <input type="number" step="0.1" name="cantidad" value="1" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Costo Unitario</label>
+            <input type="number" step="0.01" name="costo_unitario" required class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0">
+          </div>
+          <div class="space-y-1">
+            <label class="text-xs font-bold text-gray-500">Costo Total</label>
+            <input type="number" step="0.01" name="costo_total" class="w-full bg-gray-50 dark:bg-slate-800 rounded-xl p-2.5 text-sm border-0" readonly>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 p-3 bg-[#4EABBE]/5 rounded-xl border border-[#4EABBE]/10">
+          <input type="checkbox" id="c-deducir-caja" name="deducir_caja" class="w-4 h-4 rounded text-[#4EABBE]">
+          <label for="c-deducir-caja" class="text-sm font-medium text-[#1D5D69] dark:text-[#8BCFDD]">Deducir de mi caja abierta actual</label>
+        </div>
+        <div class="pt-4 flex gap-3">
+          <button type="button" data-close-modal="modal-compra" class="flex-1 py-3 bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 rounded-xl font-bold">Cancelar</button>
+          <button type="submit" class="flex-1 py-3 bg-[#4EABBE] text-white rounded-xl font-bold">Registrar Compra</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="../scripts/contabilidad.js" type="module"></script>
+</body>
+
+</html>

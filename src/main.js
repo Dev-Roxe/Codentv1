@@ -18,6 +18,8 @@ const catalogService = require('./main/catalog-service');
 const clinicalService = require('./main/clinical-service');
 const { assertSafeSql } = require('./main/sql-guard');
 const backupService = require('./main/backup-service');
+const { registerAccountingHandlers } = require('./main/accounting-service');
+
 const {
   DEFAULT_MIN_WIDTH,
   DEFAULT_MIN_HEIGHT,
@@ -2166,10 +2168,106 @@ ipcMain.handle('send-appointment-notification', async (event, appointmentData) =
   }
 });
 
+ipcMain.removeHandler('backup-run-manual');
+ipcMain.handle('backup-run-manual', async (event) => {
+  assertAuthorizedAppSession(event);
+  return backupService.runManualBackup();
+});
+
+ipcMain.removeHandler('backup-list');
+ipcMain.handle('backup-list', async (event) => {
+  assertAuthorizedAppSession(event);
+  return backupService.listBackups();
+});
+
+ipcMain.removeHandler('send-bulk-email');
+ipcMain.handle('send-bulk-email', async (event, payload = {}) => {
+  assertAuthorizedAppSession(event);
+
+  const recipients = Array.isArray(payload.recipients) ? payload.recipients : [];
+  const subject = payload.subject || '';
+  const body = payload.body || '';
+  const attachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+  const throttleMs = Number(payload.throttleMs || 0);
+  const delayMs = Number.isFinite(throttleMs) ? Math.max(0, throttleMs) : 0;
+
+  if (!recipients.length) {
+    return { success: false, sent: 0, failed: 0, error: 'No recipients provided' };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+
+  for (let i = 0; i < recipients.length; i += 1) {
+    const recipient = recipients[i] || {};
+    const personalizedSubject = replaceTemplateVars(subject, recipient);
+    const personalizedBody = replaceTemplateVars(body, recipient);
+
+    try {
+      await sendEmail({
+        to: recipient.email,
+        subject: personalizedSubject,
+        html: toHtmlBody(personalizedBody),
+        attachments,
+      });
+      sent += 1;
+    } catch (e) {
+      failed += 1;
+      errors.push({ email: recipient.email || '', error: e.message || 'send failed' });
+    }
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('email-progress', {
+        current: i + 1,
+        total: recipients.length,
+      });
+    }
+
+    if (delayMs && i < recipients.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return {
+    success: failed === 0,
+    sent,
+    failed,
+    errors,
+    error: failed ? 'Some emails failed' : null,
+  };
+});
+
+ipcMain.removeHandler('gmail-send');
+ipcMain.handle('gmail-send', async (event, { to, subject, html, attachments }) => {
+  assertAuthorizedAppSession(event);
+  try {
+    await sendEmail({ to, subject, html, attachments });
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.removeHandler('send-appointment-notification');
+ipcMain.handle('send-appointment-notification', async (event, appointmentData) => {
+  assertAuthorizedAppSession(event);
+  try {
+    const success = await sendAppointmentNotification(appointmentData);
+    return { success };
+  } catch (e) {
+    console.error('[IPC] Error sending appointment notification:', e);
+    return { success: false, error: e.message };
+  }
+});
+
 ipcMain.handle("open-external", async (event, url) => {
   const { shell } = require("electron");
   await shell.openExternal(url);
   return true;
 });
 
-
+// -------------------------------------------------------------
+// ACCOUNTING HANDLERS
+// -------------------------------------------------------------
+registerAccountingHandlers(ipcMain, db, assertAuthorizedAppSession);

@@ -757,6 +757,9 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'crm':
                 window.location.href = '../views/crm.html';
                 break;
+            case 'contabilidad':
+                window.location.href = '../views/contabilidad.html';
+                break;
             case 'perfil':
                 window.location.href = '../views/perfil.html';
                 break;
