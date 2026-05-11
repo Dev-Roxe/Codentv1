@@ -158,34 +158,78 @@ const FACE_LABELS = {
 };
 
 const DIAGNOSES = [
-  // target:"tooth"  → Afecta la pieza entera; se guarda en state.tooth
-  { id: "crown-ok",  name: "Corona",              cssClass: "tooth-crown-ok",  target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.star },
-  { id: "crown-bad", name: "Corona (Mal Estado)",  cssClass: "tooth-crown-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
-  { id: "absent",    name: "Ausente",              cssClass: "tooth-absent",    target: "tooth", status: "Pendiente", color: "#6b7280", icon: ICONS.x },
+  // Preexistencias
+  { id: "crown-ok", name: "Corona", cssClass: "tooth-crown-ok", target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.star },
+  { id: "provisional-ok", name: "Corona provisoria", cssClass: "tooth-provisional-ok", target: "tooth", status: "Realizado", color: "#60a5fa", icon: ICONS.star },
+  { id: "endo", name: "Endodoncia", cssClass: "state-endo", target: "whole", status: "Realizado", color: "#a855f7", icon: ICONS.bolt },
+  { id: "rest-ok", name: "Restauración", cssClass: "state-rest-ok", target: "face", status: "Realizado", color: "#3b82f6", icon: ICONS.check },
+  { id: "implante", name: "Implante", cssClass: "state-implante", target: "whole", status: "Realizado", color: "#059669", icon: ICONS.link },
+  { id: "perno", name: "Perno muñón", cssClass: "state-perno", target: "whole", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
+  { id: "removible-ok", name: "Prótesis removible", cssClass: "state-removible-ok", target: "tooth", status: "Realizado", color: "#14b8a6", icon: ICONS.link },
+  { id: "amalgam", name: "Amalgama", cssClass: "state-amalgam", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
+  { id: "sealant", name: "Sellante", cssClass: "state-sealant", target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
+  { id: "puente-ok", name: "Puente dental", cssClass: "state-puente-ok", target: "tooth", status: "Realizado", color: "#8b5cf6", icon: ICONS.link },
+  { id: "carilla-ok", name: "Carilla dental", cssClass: "state-carilla-ok", target: "tooth", status: "Realizado", color: "#ec4899", icon: ICONS.star },
+  { id: "ortodoncia", name: "Ortodoncia", cssClass: "state-ortodoncia", target: "tooth", status: "Realizado", color: "#6366f1", icon: ICONS.adjust },
+  { id: "brackets", name: "Brackets", cssClass: "state-brackets", target: "tooth", status: "Realizado", color: "#3b82f6", icon: ICONS.adjust },
+  { id: "otro-pre", name: "Otro", cssClass: "state-otro-pre", target: "tooth", status: "Realizado", color: "#9ca3af", icon: ICONS.circle },
 
-  // target:"face"   → Afecta una o más caras puntuales; se guarda en state.faces[cara]
-  { id: "caries-dx", name: "Caries",                     cssClass: "state-caries",   target: "face", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
-  { id: "rest-ok",   name: "Restauración",               cssClass: "state-rest-ok",  target: "face", status: "Realizado", color: "#3b82f6", icon: ICONS.check },
-  { id: "rest-bad",  name: "Restauración (Mal Estado)",  cssClass: "state-rest-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
-  { id: "sealant",   name: "Sellante",                   cssClass: "state-sealant",  target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
-  { id: "amalgam",   name: "Amalgama",                   cssClass: "state-amalgam",  target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
-  { id: "sano",      name: "Sano",                       cssClass: "clean",          target: "face", status: "Realizado", color: "#10b981", icon: ICONS.check },
+  // Preexistencias (mal estado)
+  { id: "crown-bad", name: "Corona (mal estado)", cssClass: "tooth-crown-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "provisional-bad", name: "Corona provisoria (mal estado)", cssClass: "tooth-provisional-bad", target: "tooth", status: "Pendiente", color: "#f87171", icon: ICONS.alert },
+  { id: "rest-bad", name: "Restauración (mal estado)", cssClass: "state-rest-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
+  { id: "implante-bad", name: "Implante (mal estado)", cssClass: "state-implante-bad", target: "whole", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "perno-bad", name: "Perno muñón (mal estado)", cssClass: "state-perno-bad", target: "whole", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "amalgam-bad", name: "Amalgama (mal estado)", cssClass: "state-amalgam-bad", target: "face", status: "Pendiente", color: "#f97316", icon: ICONS.alert },
+  { id: "endo-bad", name: "Endodoncia (mal estado)", cssClass: "state-endo-bad", target: "whole", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "removible-bad", name: "Prótesis removible (mal estado)", cssClass: "state-removible-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "puente-bad", name: "Puente dental (mal estado)", cssClass: "state-puente-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "carilla-bad", name: "Carilla dental (mal estado)", cssClass: "state-carilla-bad", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
 
-  // target:"whole"  → Afecta la pieza completa visualmente (overlay); se guarda en state.tooth (face=null en BD)
-  { id: "endo",      name: "Endodoncia",       cssClass: "state-endo",    target: "whole", status: "Realizado", color: "#a855f7", icon: ICONS.bolt },
-  { id: "implante",  name: "Implante",         cssClass: "state-implante",target: "whole", status: "Realizado", color: "#059669", icon: ICONS.link },
-  { id: "perno",     name: "Perno Muñón",      cssClass: "state-perno",   target: "whole", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
-  { id: "fractura",  name: "Fractura",         cssClass: "state-fractura",target: "whole", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
-  { id: "pulpar",    name: "Infección Pulpar", cssClass: "state-pulpar",  target: "whole", status: "Pendiente", color: "#f87171", icon: ICONS.bolt },
-  { id: "movilidad", name: "Movilidad",        cssClass: "state-mov",     target: "whole", status: "Pendiente", color: "#0ea5e9", icon: ICONS.adjust },
-  { id: "resto",     name: "Resto Radicular",  cssClass: "state-resto",   target: "whole", status: "Pendiente", color: "#0f172a", icon: ICONS.x },
-  { id: "erupcion",  name: "Sin Erupcionar",   cssClass: "state-erup",    target: "whole", status: "Pendiente", color: "#cbd5e1", icon: ICONS.circle },
+  // Lesiones
+  { id: "caries-dx", name: "Caries", cssClass: "state-caries", target: "face", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
+  { id: "pulpar", name: "Infección pulpar", cssClass: "state-pulpar", target: "whole", status: "Pendiente", color: "#f87171", icon: ICONS.bolt },
+  { id: "fractura", name: "Fractura", cssClass: "state-fractura", target: "whole", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "movilidad", name: "Movilidad", cssClass: "state-mov", target: "whole", status: "Pendiente", color: "#0ea5e9", icon: ICONS.adjust },
+  { id: "resto", name: "Residuo radicular", cssClass: "state-resto", target: "whole", status: "Pendiente", color: "#0f172a", icon: ICONS.x },
+  { id: "erosion", name: "Erosión", cssClass: "state-erosion", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "atricion", name: "Atrición", cssClass: "state-atricion", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "abfraccion", name: "Abfracción", cssClass: "state-abfraccion", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.alert },
+  { id: "recesion", name: "Recesión gingival", cssClass: "state-recesion", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.drop },
+  { id: "bolsa", name: "Bolsa periodontal", cssClass: "state-bolsa", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.drop },
+  { id: "sangrado", name: "Sangrado gingival", cssClass: "state-sangrado", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.drop },
+  { id: "calculo", name: "Cálculo dental", cssClass: "state-calculo", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.circle },
+  { id: "gingivitis", name: "Gingivitis", cssClass: "state-gingivitis", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.drop },
+  { id: "necrosis", name: "Necrosis pulpar", cssClass: "state-necrosis", target: "tooth", status: "Pendiente", color: "#0f172a", icon: ICONS.alert },
+  { id: "fistula", name: "Fístula", cssClass: "state-fistula", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "absceso", name: "Absceso", cssClass: "state-absceso", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.alert },
+  { id: "hipoplasia", name: "Hipoplasia", cssClass: "state-hipoplasia", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.circle },
+  { id: "desgaste", name: "Desgaste dental", cssClass: "state-desgaste", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.circle },
+  { id: "pigmentacion", name: "Pigmentación", cssClass: "state-pigmentacion", target: "tooth", status: "Pendiente", color: "#0ea5e9", icon: ICONS.circle },
+  { id: "sensibilidad", name: "Sensibilidad dental", cssClass: "state-sensibilidad", target: "tooth", status: "Pendiente", color: "#3b82f6", icon: ICONS.bolt },
+  { id: "otro-lesion", name: "Otro", cssClass: "state-otro-lesion", target: "tooth", status: "Pendiente", color: "#9ca3af", icon: ICONS.circle },
+
+  // Otras simbologías
+  { id: "sano", name: "Diente sano", cssClass: "clean", target: "face", status: "Realizado", color: "#10b981", icon: ICONS.check },
+  { id: "sano-plus", name: "Diente sano+", cssClass: "clean-plus", target: "tooth", status: "Realizado", color: "#059669", icon: ICONS.check },
+  { id: "erupcion", name: "Sin erupcionar", cssClass: "state-erup", target: "whole", status: "Pendiente", color: "#cbd5e1", icon: ICONS.circle },
+  { id: "absent", name: "Ausente", cssClass: "tooth-absent", target: "tooth", status: "Pendiente", color: "#6b7280", icon: ICONS.x },
+  { id: "supernumerario", name: "Supernumerario", cssClass: "state-supernumerario", target: "tooth", status: "Pendiente", color: "#3b82f6", icon: ICONS.plus },
+  { id: "retenido", name: "Retenido", cssClass: "state-retenido", target: "tooth", status: "Pendiente", color: "#f59e0b", icon: ICONS.circle },
+  { id: "impactado", name: "Impactado", cssClass: "state-impactado", target: "tooth", status: "Pendiente", color: "#ef4444", icon: ICONS.circle },
+  { id: "temporal", name: "Diente temporal", cssClass: "state-temporal", target: "tooth", status: "Pendiente", color: "#3b82f6", icon: ICONS.circle },
+  { id: "permanente", name: "Diente permanente", cssClass: "state-permanente", target: "tooth", status: "Pendiente", color: "#10b981", icon: ICONS.circle },
+  { id: "extrusion", name: "Extrusión", cssClass: "state-extrusion", target: "tooth", status: "Pendiente", color: "#8b5cf6", icon: ICONS.adjust },
+  { id: "intrusion", name: "Intrusión", cssClass: "state-intrusion", target: "tooth", status: "Pendiente", color: "#8b5cf6", icon: ICONS.adjust },
+  { id: "giroversion", name: "Giroversión", cssClass: "state-giroversion", target: "tooth", status: "Pendiente", color: "#8b5cf6", icon: ICONS.adjust },
+  { id: "diastema", name: "Diastema", cssClass: "state-diastema", target: "tooth", status: "Pendiente", color: "#8b5cf6", icon: ICONS.adjust }
 ];
 
 const DX_CATEGORIES = [
-  { title: "Preexistencias", ids: ["crown-ok", "endo", "implante", "perno", "rest-ok", "amalgam", "absent"] },
-  { title: "Lesiones", ids: ["caries-dx", "fractura", "pulpar", "movilidad", "resto", "rest-bad"] },
-  { title: "Otras Simbologías", ids: ["sano", "sealant", "erupcion", "crown-bad"] },
+  { title: "Preexistencias", ids: ["crown-ok", "provisional-ok", "endo", "rest-ok", "implante", "perno", "removible-ok", "amalgam", "sealant", "puente-ok", "carilla-ok", "ortodoncia", "brackets", "otro-pre"] },
+  { title: "Preexistencias (mal estado)", ids: ["crown-bad", "provisional-bad", "rest-bad", "implante-bad", "perno-bad", "amalgam-bad", "endo-bad", "removible-bad", "puente-bad", "carilla-bad"] },
+  { title: "Lesiones", ids: ["caries-dx", "pulpar", "fractura", "movilidad", "resto", "erosion", "atricion", "abfraccion", "recesion", "bolsa", "sangrado", "calculo", "gingivitis", "necrosis", "fistula", "absceso", "hipoplasia", "desgaste", "pigmentacion", "sensibilidad", "otro-lesion"] },
+  { title: "Otras simbologías", ids: ["sano", "sano-plus", "erupcion", "absent", "supernumerario", "retenido", "impactado", "temporal", "permanente", "extrusion", "intrusion", "giroversion", "diastema"] }
 ];
 
 // IDs de diagnósticos de tipo cara que sólo aplican a una cara puntual seleccionada
