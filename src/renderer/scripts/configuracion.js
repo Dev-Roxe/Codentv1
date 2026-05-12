@@ -751,4 +751,210 @@ document.addEventListener('DOMContentLoaded', () => {
 
     elements.changePasswordBtn?.addEventListener('click', openPasswordResetModal);
     elements.viewSessionsBtn?.addEventListener('click', openSessionsModal);
+
+    // ── Updates UI Logic ──────────────────────────────────────────────────
+    const initUpdatesUI = async () => {
+        if (!window.api?.updates) {
+            console.warn('[actualizaciones] API de actualizaciones no disponible.');
+            return;
+        }
+
+        const uElements = {
+            currentVersion: document.getElementById('updates-current-version'),
+            statusBadge: document.getElementById('updates-status-badge'),
+            statusText: document.getElementById('updates-status-text'),
+            releaseSummary: document.getElementById('updates-release-summary'),
+            checkBtn: document.getElementById('check-updates-btn'),
+            downloadBtn: document.getElementById('download-update-btn'),
+            installBtn: document.getElementById('install-update-btn'),
+            refreshHistoryBtn: document.getElementById('refresh-updates-history-btn'),
+            historyList: document.getElementById('updates-history-list'),
+            releaseNotes: document.getElementById('updates-release-notes'),
+        };
+
+        let currentAppVersion = '--';
+
+        const updateUIState = (state) => {
+            if (!state) return;
+            
+            if (state.currentVersion && state.currentVersion !== 'unknown') {
+                currentAppVersion = state.currentVersion;
+                if (uElements.currentVersion) {
+                    uElements.currentVersion.textContent = `Version actual: ${state.currentVersion}`;
+                }
+            }
+
+            if (uElements.statusBadge) {
+                uElements.statusBadge.className = 'inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold';
+            }
+
+            if (uElements.checkBtn) uElements.checkBtn.classList.remove('hidden');
+            if (uElements.downloadBtn) uElements.downloadBtn.classList.add('hidden');
+            if (uElements.installBtn) uElements.installBtn.classList.add('hidden');
+
+            switch (state.status) {
+                case 'idle':
+                case 'development-mode':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = state.status === 'idle' ? 'Al dia' : 'Modo Dev';
+                        uElements.statusBadge.classList.add('bg-emerald-100', 'text-emerald-700', 'dark:bg-emerald-900/30', 'dark:text-emerald-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = 'La aplicación está actualizada.';
+                    if (uElements.releaseSummary) uElements.releaseSummary.textContent = 'No hay actualizaciones pendientes.';
+                    break;
+                case 'checking':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = 'Buscando...';
+                        uElements.statusBadge.classList.add('bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/30', 'dark:text-blue-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = 'Buscando nuevas versiones...';
+                    if (uElements.checkBtn) uElements.checkBtn.disabled = true;
+                    break;
+                case 'update-available':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = 'Nueva versión';
+                        uElements.statusBadge.classList.add('bg-amber-100', 'text-amber-700', 'dark:bg-amber-900/30', 'dark:text-amber-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = `Versión ${state.updateInfo?.version || ''} disponible.`;
+                    if (uElements.releaseSummary) uElements.releaseSummary.textContent = 'Haz clic en descargar para comenzar.';
+                    if (uElements.checkBtn) uElements.checkBtn.classList.add('hidden');
+                    if (uElements.downloadBtn) uElements.downloadBtn.classList.remove('hidden');
+                    break;
+                case 'downloading':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = `Descargando ${Math.round(state.progress?.percent || 0)}%`;
+                        uElements.statusBadge.classList.add('bg-cyan-100', 'text-cyan-700', 'dark:bg-cyan-900/30', 'dark:text-cyan-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = 'Descargando actualización...';
+                    if (uElements.checkBtn) uElements.checkBtn.classList.add('hidden');
+                    break;
+                case 'downloaded':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = 'Lista para instalar';
+                        uElements.statusBadge.classList.add('bg-emerald-100', 'text-emerald-700', 'dark:bg-emerald-900/30', 'dark:text-emerald-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = 'La actualización se ha descargado correctamente.';
+                    if (uElements.releaseSummary) uElements.releaseSummary.textContent = 'Instala y reinicia para aplicar los cambios.';
+                    if (uElements.checkBtn) uElements.checkBtn.classList.add('hidden');
+                    if (uElements.installBtn) uElements.installBtn.classList.remove('hidden');
+                    break;
+                case 'error':
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = 'Error';
+                        uElements.statusBadge.classList.add('bg-red-100', 'text-red-700', 'dark:bg-red-900/30', 'dark:text-red-400');
+                    }
+                    if (uElements.statusText) uElements.statusText.textContent = 'Error al actualizar.';
+                    if (uElements.releaseSummary) uElements.releaseSummary.textContent = state.error?.message || 'Error desconocido';
+                    if (uElements.checkBtn) uElements.checkBtn.disabled = false;
+                    break;
+                default:
+                    if (uElements.statusBadge) {
+                        uElements.statusBadge.textContent = 'Desconocido';
+                        uElements.statusBadge.classList.add('bg-gray-100', 'text-gray-700');
+                    }
+                    if (uElements.checkBtn) uElements.checkBtn.disabled = false;
+            }
+            
+            if (state.status !== 'checking' && state.status !== 'error') {
+                if (uElements.checkBtn) uElements.checkBtn.disabled = false;
+            }
+        };
+
+        const formatDate = (isoString) => {
+            if (!isoString) return '';
+            const d = new Date(isoString);
+            return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+        };
+
+        const loadHistory = async (force = false) => {
+            if (!uElements.historyList) return;
+            if (force) {
+                uElements.historyList.innerHTML = 'Actualizando historial...';
+            }
+            
+            try {
+                const res = await window.api.updates.getHistory({ force });
+                if (!res.success) {
+                    uElements.historyList.innerHTML = \`<span class="text-red-500">\${res.error}</span>\`;
+                    return;
+                }
+                
+                const releases = res.releases || [];
+                if (releases.length === 0) {
+                    uElements.historyList.innerHTML = 'No hay versiones publicadas.';
+                    return;
+                }
+                
+                uElements.historyList.innerHTML = releases.map((rel, index) => {
+                    const isLatest = index === 0;
+                    const isCurrent = rel.version.replace('v', '') === currentAppVersion;
+                    return \`
+                        <div class="flex items-start justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded transition" data-release-id="\${rel.id}">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">\${rel.title || rel.version}</span>
+                                    \${isLatest ? '<span class="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400 text-[10px] rounded uppercase tracking-wider font-bold">Latest</span>' : ''}
+                                    \${isCurrent ? '<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[10px] rounded uppercase tracking-wider font-bold">Instalada</span>' : ''}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1">\${formatDate(rel.publishedAt)}</div>
+                            </div>
+                        </div>
+                    \`;
+                }).join('');
+
+                const items = uElements.historyList.querySelectorAll('[data-release-id]');
+                items.forEach((el, index) => {
+                    el.addEventListener('click', () => {
+                        const rel = releases[index];
+                        if (uElements.releaseNotes) {
+                            uElements.releaseNotes.innerHTML = \`
+                                <h4 class="font-bold text-gray-800 dark:text-white mb-2">\${rel.title} (\${rel.version})</h4>
+                                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">\${rel.notes || 'Sin notas de lanzamiento'}</div>
+                            \`;
+                        }
+                    });
+                });
+                
+                if (releases.length > 0 && uElements.releaseNotes) {
+                    uElements.releaseNotes.innerHTML = \`
+                        <h4 class="font-bold text-gray-800 dark:text-white mb-2">\${releases[0].title} (\${releases[0].version})</h4>
+                        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">\${releases[0].notes || 'Sin notas de lanzamiento'}</div>
+                    \`;
+                }
+
+            } catch (err) {
+                uElements.historyList.innerHTML = '<span class="text-red-500">Error al cargar historial</span>';
+            }
+        };
+
+        if (window.api.updates.onStatusChange) {
+            window.api.updates.onStatusChange(updateUIState);
+        }
+
+        const initialState = await window.api.updates.getState();
+        updateUIState(initialState);
+        
+        await loadHistory();
+
+        uElements.checkBtn?.addEventListener('click', async () => {
+            uElements.checkBtn.disabled = true;
+            await window.api.updates.check();
+        });
+
+        uElements.downloadBtn?.addEventListener('click', async () => {
+            uElements.downloadBtn.classList.add('hidden');
+            await window.api.updates.download();
+        });
+
+        uElements.installBtn?.addEventListener('click', async () => {
+            uElements.installBtn.disabled = true;
+            await window.api.updates.install();
+        });
+
+        uElements.refreshHistoryBtn?.addEventListener('click', () => {
+            loadHistory(true);
+        });
+    };
+
+    initUpdatesUI();
 });
