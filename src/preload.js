@@ -86,6 +86,7 @@ const updatesApi = Object.freeze({
     download: () => ipcRenderer.invoke('updates-download'),
     install: () => ipcRenderer.invoke('updates-install'),
     getHistory: (options) => ipcRenderer.invoke('updates-get-history', options || {}),
+    onStatusChange: (callback) => ipcRenderer.on('updates-status', (event, payload) => callback(payload)),
 });
 
 const patientsApi = Object.freeze({

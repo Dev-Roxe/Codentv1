@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await window.api.updates.getHistory({ force });
                 if (!res.success) {
-                    uElements.historyList.innerHTML = \`<span class="text-red-500">\${res.error}</span>\`;
+                    uElements.historyList.innerHTML = `<span class="text-red-500">${res.error}</span>`;
                     return;
                 }
                 
@@ -888,18 +888,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 uElements.historyList.innerHTML = releases.map((rel, index) => {
                     const isLatest = index === 0;
                     const isCurrent = rel.version.replace('v', '') === currentAppVersion;
-                    return \`
-                        <div class="flex items-start justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded transition" data-release-id="\${rel.id}">
+                    return `
+                        <div class="flex items-start justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 rounded transition" data-release-id="${rel.id}">
                             <div>
                                 <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-gray-800 dark:text-gray-200">\${rel.title || rel.version}</span>
-                                    \${isLatest ? '<span class="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400 text-[10px] rounded uppercase tracking-wider font-bold">Latest</span>' : ''}
-                                    \${isCurrent ? '<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[10px] rounded uppercase tracking-wider font-bold">Instalada</span>' : ''}
+                                    <span class="font-semibold text-gray-800 dark:text-gray-200">${rel.title || rel.version}</span>
+                                    ${isLatest ? '<span class="px-1.5 py-0.5 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400 text-[10px] rounded uppercase tracking-wider font-bold">Latest</span>' : ''}
+                                    ${isCurrent ? '<span class="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 text-[10px] rounded uppercase tracking-wider font-bold">Instalada</span>' : ''}
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">\${formatDate(rel.publishedAt)}</div>
+                                <div class="text-xs text-gray-500 mt-1">${formatDate(rel.publishedAt)}</div>
                             </div>
                         </div>
-                    \`;
+                    `;
                 }).join('');
 
                 const items = uElements.historyList.querySelectorAll('[data-release-id]');
@@ -907,19 +907,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.addEventListener('click', () => {
                         const rel = releases[index];
                         if (uElements.releaseNotes) {
-                            uElements.releaseNotes.innerHTML = \`
-                                <h4 class="font-bold text-gray-800 dark:text-white mb-2">\${rel.title} (\${rel.version})</h4>
-                                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">\${rel.notes || 'Sin notas de lanzamiento'}</div>
-                            \`;
+                            uElements.releaseNotes.innerHTML = `
+                                <h4 class="font-bold text-gray-800 dark:text-white mb-2">${rel.title} (${rel.version})</h4>
+                                <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">${rel.notes || 'Sin notas de lanzamiento'}</div>
+                            `;
                         }
                     });
                 });
                 
                 if (releases.length > 0 && uElements.releaseNotes) {
-                    uElements.releaseNotes.innerHTML = \`
-                        <h4 class="font-bold text-gray-800 dark:text-white mb-2">\${releases[0].title} (\${releases[0].version})</h4>
-                        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">\${releases[0].notes || 'Sin notas de lanzamiento'}</div>
-                    \`;
+                    uElements.releaseNotes.innerHTML = `
+                        <h4 class="font-bold text-gray-800 dark:text-white mb-2">${releases[0].title} (${releases[0].version})</h4>
+                        <div class="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">${releases[0].notes || 'Sin notas de lanzamiento'}</div>
+                    `;
                 }
 
             } catch (err) {
