@@ -44,25 +44,14 @@ function getAutoUpdater() {
 }
 
 function getGithubPublishConfig() {
-  const publishConfig = packageJson?.build?.publish;
-  if (Array.isArray(publishConfig)) {
-    return publishConfig.find((entry) => entry && entry.provider === 'github') || null;
-  }
-
-  if (publishConfig && publishConfig.provider === 'github') {
-    return publishConfig;
-  }
-
-  return null;
+  return {
+    provider: 'github',
+    owner: 'Dev-Roxe',
+    repo: 'Sonalia'
+  };
 }
 
 function hasValidGithubPublishConfig() {
-  const config = getGithubPublishConfig();
-  const owner = String(config?.owner || '').trim();
-  const repo = String(config?.repo || '').trim();
-
-  if (!owner || !repo) return false;
-  if (owner.startsWith('TU_') || repo.startsWith('TU_')) return false;
   return true;
 }
 
