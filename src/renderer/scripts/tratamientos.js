@@ -311,7 +311,7 @@ const DIAGNOSIS_LOOKUP = {
   'implante': { id: 'implante', name: 'Implante', cssClass: 'state-implante', color: '#059669', status: 'Realizado', target: 'whole' },
   'perno': { id: 'perno', name: 'Perno muñón', cssClass: 'state-perno', color: '#0f172a', status: 'Realizado', target: 'whole' },
   'removible-ok': { id: 'removible-ok', name: 'Prótesis removible', cssClass: 'state-removible-ok', color: '#14b8a6', status: 'Realizado', target: 'tooth' },
-  'amalgam': { id: 'amalgam', name: 'Amalgama', cssClass: 'state-amalgam', color: '#0f172a', status: 'Realizado', target: 'face' },
+  'amalgam': { id: 'amalgam', name: 'Amalgama', cssClass: 'state-amalgam', color: '#64748b', status: 'Realizado', target: 'face' },
   'sealant': { id: 'sealant', name: 'Sellante', cssClass: 'state-sealant', color: '#facc15', status: 'Realizado', target: 'face' },
   'puente-ok': { id: 'puente-ok', name: 'Puente dental', cssClass: 'state-puente-ok', color: '#8b5cf6', status: 'Realizado', target: 'tooth' },
   'carilla-ok': { id: 'carilla-ok', name: 'Carilla dental', cssClass: 'state-carilla-ok', color: '#ec4899', status: 'Realizado', target: 'tooth' },
@@ -1724,7 +1724,7 @@ function createPlanToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, 
 
   const w = 80;
   const h = 104;
-  const surfaceColor = treatmentColor || '#EF4444';
+  const surfaceColor = treatmentColor || BRAND.primary;
   const overlays = !isMissing && surfaces ? renderSurfaceMarks(surfaces, isUpper, surfaceColor, w, h) : '';
   const missingMark = isMissing ? `
     <line x1="${w * 0.2}" y1="${h * 0.2}" x2="${w * 0.8}" y2="${h * 0.8}" stroke="#EF4444" stroke-width="3.5" opacity="0.85" stroke-linecap="round"/>
@@ -1954,7 +1954,19 @@ function renderMiniTooth(num, isUpper, offset) {
   const label = treatment?.name || '';
   const title = escapeAttr(`${getDiagnosisSummaryTitle(num)}${label ? ` | Tratamiento: ${label}` : ''}`);
   const selectedCls = isSelected ? 'shadow-ring' : '';
-  const svg = createPlanToothSVG(num, !isUpper, isSelected, treatColor, hasSurfaces ? surfaces : null, isMissing);
+
+  const selection = getPlanSelectionState();
+  const selectedFacesSet = selection.tooth === String(num) && selection.mode === 'face'
+    ? new Set(selection.faces)
+    : new Set();
+  
+  const mergedSurfaces = { ...(hasSurfaces ? surfaces : {}) };
+  for(const f of selectedFacesSet) {
+    mergedSurfaces[f] = true;
+  }
+  const hasMergedSurfaces = Object.values(mergedSurfaces).some(Boolean);
+
+  const svg = createPlanToothSVG(num, isUpper, isSelected, treatColor, hasMergedSurfaces ? mergedSurfaces : null, isMissing);
   const geoHtml = renderMiniGeoCircle(num, dx);
   const baseBtn =
     `tooth-btn rounded-[24px] border-[2.5px] bg-white

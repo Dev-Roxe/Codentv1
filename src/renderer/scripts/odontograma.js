@@ -166,7 +166,7 @@ const DIAGNOSES = [
   { id: "implante", name: "Implante", cssClass: "state-implante", target: "whole", status: "Realizado", color: "#059669", icon: ICONS.link },
   { id: "perno", name: "Perno muñón", cssClass: "state-perno", target: "whole", status: "Realizado", color: "#0f172a", icon: ICONS.pin },
   { id: "removible-ok", name: "Prótesis removible", cssClass: "state-removible-ok", target: "tooth", status: "Realizado", color: "#14b8a6", icon: ICONS.link },
-  { id: "amalgam", name: "Amalgama", cssClass: "state-amalgam", target: "face", status: "Realizado", color: "#0f172a", icon: ICONS.square },
+  { id: "amalgam", name: "Amalgama", cssClass: "state-amalgam", target: "face", status: "Realizado", color: "#64748b", icon: ICONS.square },
   { id: "sealant", name: "Sellante", cssClass: "state-sealant", target: "face", status: "Realizado", color: "#facc15", icon: ICONS.square },
   { id: "puente-ok", name: "Puente dental", cssClass: "state-puente-ok", target: "tooth", status: "Realizado", color: "#8b5cf6", icon: ICONS.link },
   { id: "carilla-ok", name: "Carilla dental", cssClass: "state-carilla-ok", target: "tooth", status: "Realizado", color: "#ec4899", icon: ICONS.star },
@@ -1295,31 +1295,50 @@ function renderTreatments() {
 
 
 
+let currentDxCategory = 0;
+
 function renderDxOptions() {
   const cont = $("dxOptions");
   if (!cont) return;
 
-  cont.innerHTML = DX_CATEGORIES.map(cat => `
-    <div>
-      <p class="text-[11px] uppercase tracking-[0.18em] text-black/50 dark:text-white/50 mb-2 font-bold">${cat.title}</p>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-        ${cat.ids.map(id => {
-    const dx = findDiagnosis(id);
-    if (!dx) return "";
-    const badge = dx.icon
-      ? `<span class="inline-flex items-center justify-center w-9 h-9 rounded-xl" style="background:${hexToRgba(dx.color || '#4EABBE', 0.14)}; color:${dx.color}; border:1px solid ${hexToRgba(dx.color || '#4EABBE', 0.35)}">${dx.icon}</span>`
-      : `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${dx.color || '#4EABBE'}"></span>`;
-    return `
-            <button class="dx-option w-full p-3 rounded-xl border border-[#8BCFDD]/30 dark:border-slate-700 hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition text-left font-semibold flex items-start gap-3"
-              data-dx="${dx.id}">
-              ${badge}
-              <span class="min-w-0 text-sm leading-snug whitespace-normal">${dx.name}</span>
-            </button>
-          `;
-  }).join("")}
-      </div>
+  const tabsHtml = `
+    <div class="flex overflow-x-auto gap-2 pb-2 mb-4 no-scrollbar border-b border-[#8BCFDD]/30 dark:border-slate-700">
+      ${DX_CATEGORIES.map((cat, idx) => `
+        <button class="dx-tab-btn px-4 py-2 rounded-t-xl whitespace-nowrap text-xs font-bold transition-all ${idx === currentDxCategory ? 'text-[#1D5D69] dark:text-white border-b-2 border-[#4EABBE] bg-[#8BCFDD]/10 dark:bg-slate-800' : 'text-black/50 dark:text-white/50 hover:bg-black/5 dark:hover:bg-white/5'}" data-index="${idx}">
+          ${cat.title}
+        </button>
+      `).join('')}
     </div>
-  `).join("");
+  `;
+
+  const cat = DX_CATEGORIES[currentDxCategory];
+  const itemsHtml = `
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+      ${cat.ids.map(id => {
+        const dx = findDiagnosis(id);
+        if (!dx) return "";
+        const badge = dx.icon
+          ? `<span class="inline-flex items-center justify-center w-9 h-9 rounded-xl" style="background:${hexToRgba(dx.color || '#4EABBE', 0.14)}; color:${dx.color}; border:1px solid ${hexToRgba(dx.color || '#4EABBE', 0.35)}">${dx.icon}</span>`
+          : `<span class="inline-block w-2.5 h-2.5 rounded-full" style="background:${dx.color || '#4EABBE'}"></span>`;
+        return `
+          <button class="dx-option w-full p-3 rounded-xl border border-[#8BCFDD]/30 dark:border-slate-700 hover:bg-[#8BCFDD]/10 dark:hover:bg-slate-800 transition text-left font-semibold flex items-start gap-3"
+            data-dx="${dx.id}">
+            ${badge}
+            <span class="min-w-0 text-sm leading-snug whitespace-normal">${dx.name}</span>
+          </button>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  cont.innerHTML = tabsHtml + itemsHtml;
+
+  cont.querySelectorAll(".dx-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      currentDxCategory = parseInt(btn.getAttribute("data-index"), 10);
+      renderDxOptions();
+    });
+  });
 
   cont.querySelectorAll("[data-dx]").forEach(btn => {
     btn.addEventListener("click", () => applyDiagnosis(btn.getAttribute("data-dx")));

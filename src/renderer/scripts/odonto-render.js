@@ -253,7 +253,7 @@ window.OdontoRender = (function () {
         // If lower tooth, flip it vertically
         const transformScale = isUpper ? "" : `transform="scale(1, -1) translate(0, -${h})"`;
 
-        const surfaceColor = treatmentColor || "#EF4444";
+        const surfaceColor = treatmentColor || BRAND.primary;
         const overlays = !isMissing && surfaces ? renderSurfaceMarks(surfaces, isUpper, surfaceColor, w, h) : "";
 
         const missingMark = isMissing ? `
