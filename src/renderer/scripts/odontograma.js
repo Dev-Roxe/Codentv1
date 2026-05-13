@@ -1728,8 +1728,10 @@ async function init() {
     }
   });
 
-  // Panel tratamientos eliminado
-
+  // Print button
+  $("btn-print-odontograma")?.addEventListener("click", () => {
+    window.print();
+  });
   // Load treatment catalog first
   await loadTreatmentCatalog();
 

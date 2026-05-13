@@ -812,6 +812,32 @@
       stroke-width: 4;
     }
 
+    @media print {
+      body {
+        background-color: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print, .toolbar, .codent-top {
+        display: none !important;
+      }
+      .codent-mode .perio-wrap {
+        border: none !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+      }
+      .perio-section {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      .perio-table {
+        transform: scale(0.9);
+        transform-origin: top center;
+      }
+    }
+
   </style>
 </head>
 
@@ -861,7 +887,7 @@
     </header>
 
     <!-- Toolbar -->
-    <div class="toolbar">
+    <div class="toolbar no-print">
       <div class="flex gap-2">
         <button id="btnGuardar"
           class="px-4 py-1.5 rounded-md text-xs font-bold text-white bg-gradient-to-r from-[#1D5D69] to-[#4EABBE] hover:brightness-110 transition">
@@ -870,6 +896,12 @@
         <button id="btnReset"
           class="px-4 py-1.5 rounded-md text-xs font-bold border border-[#8BCFDD] text-[#1D5D69] bg-white hover:bg-[#F0FAFC] transition">
           Limpiar
+        </button>
+      </div>
+      <div>
+        <button id="btn-print-periodontograma" class="flex items-center gap-2 px-4 py-1.5 bg-[#1D5D69] hover:bg-[#0F2532] text-white rounded-md text-xs font-bold shadow-md transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          Imprimir
         </button>
       </div>
     </div>

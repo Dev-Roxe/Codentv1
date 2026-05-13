@@ -812,10 +812,14 @@ function formatPlanTarget(diente, carasRaw) {
   };
 }
 
+let globalTratamientosList = [];
+
 function getSelectedTreatmentCosts() {
-  const select = document.getElementById('select-tratamiento');
-  const option = select?.selectedOptions?.[0];
-  if (!option) {
+  const hiddenInput = document.getElementById('select-tratamiento');
+  const selectedId = Number(hiddenInput?.value);
+  const selectedObj = globalTratamientosList.find(t => t.id === selectedId);
+
+  if (!selectedObj) {
     return {
       costoBase: 0,
       costoMedicina: 0,
@@ -824,9 +828,9 @@ function getSelectedTreatmentCosts() {
   }
 
   return {
-    costoBase: parseFloat(option.dataset.costoBas || 0),
-    costoMedicina: parseFloat(option.dataset.costoMedicina || 0),
-    costoMiscelanea: parseFloat(option.dataset.costoMiscelanea || 0),
+    costoBase: parseFloat(selectedObj.costo_base || 0),
+    costoMedicina: parseFloat(selectedObj.costo_medicina_estandar || 0),
+    costoMiscelanea: parseFloat(selectedObj.costo_miscelanea_estandar || 0),
   };
 }
 
@@ -848,44 +852,39 @@ function recalculateFinancialPreview() {
   let taxAmount = 0;
 
   if (discountType === 'porcentaje') {
-    discountAmount = roundMoney((costoTotal * Math.max(0, discountValue)) / 100);
+    discountAmount = roundMoney(costoTotal * (discountValue / 100));
   } else if (discountType === 'monto_fijo') {
-    discountAmount = roundMoney(Math.max(0, discountValue));
+    discountAmount = roundMoney(discountValue);
   }
 
-  discountAmount = Math.min(discountAmount, costoTotal);
-  const subtotalNeto = roundMoney(Math.max(0, costoTotal - discountAmount));
+  let subtotal = costoTotal - discountAmount;
+  if (subtotal < 0) subtotal = 0;
 
   if (taxType === 'porcentaje') {
-    taxAmount = roundMoney((subtotalNeto * Math.max(0, taxValue)) / 100);
+    taxAmount = roundMoney(subtotal * (taxValue / 100));
   } else if (taxType === 'monto_fijo') {
-    taxAmount = roundMoney(Math.max(0, taxValue));
+    taxAmount = roundMoney(taxValue);
   }
 
-  const totalFinal = roundMoney(subtotalNeto + taxAmount);
+  const totalFinal = roundMoney(subtotal + taxAmount);
 
-  const descuentoEl = document.getElementById('info-descuento-monto');
-  const impuestoEl = document.getElementById('info-impuesto-monto');
-  const totalFinalEl = document.getElementById('info-total-final');
-  if (descuentoEl) descuentoEl.textContent = `$${discountAmount.toFixed(2)}`;
-  if (impuestoEl) impuestoEl.textContent = `$${taxAmount.toFixed(2)}`;
-  if (totalFinalEl) totalFinalEl.textContent = `$${totalFinal.toFixed(2)}`;
+  const discountEl = document.getElementById('info-descuento-monto');
+  if (discountEl) discountEl.textContent = `-${formatCurrency(discountAmount)}`;
 
-  return {
-    costoTotal,
-    discountAmount,
-    subtotalNeto,
-    taxAmount,
-    totalFinal,
-  };
+  const taxEl = document.getElementById('info-impuesto-monto');
+  if (taxEl) taxEl.textContent = `+${formatCurrency(taxAmount)}`;
+
+  const finalEl = document.getElementById('info-total-final');
+  if (finalEl) finalEl.textContent = formatCurrency(totalFinal);
+
+  updateFinancingVisibility();
 }
 
-function getFinancingPayload(fechaInicio) {
+function parseFinancingData() {
   const financingEnabled = document.getElementById('plan-financiar')?.checked;
-  if (!financingEnabled) {
-    return { enabled: false };
-  }
+  if (!financingEnabled) return null;
 
+  const fechaInicio = document.getElementById('plan-fecha-inicio')?.value;
   return {
     enabled: true,
     downPayment: parseFloat(document.getElementById('plan-anticipo')?.value || 0),
@@ -900,36 +899,93 @@ function getFinancingPayload(fechaInicio) {
 async function loadTratamientosCatalogo() {
   try {
     const tratamientos = await dbAll('SELECT id, nombre, descripcion, costo_base, costo_medicina_estandar, costo_miscelanea_estandar, activo FROM tratamientos_catalogo ORDER BY nombre ASC');
-
-    const select = document.getElementById('select-tratamiento');
-    if (!select) return;
-
-    select.innerHTML = '<option value="">Seleccionar tratamiento...</option>';
-
-    if (tratamientos.length === 0) {
-      select.innerHTML = '<option value="">No hay tratamientos en el catalogo</option>';
-      return;
-    }
-
-    tratamientos.forEach(t => {
-      const isActive = t.activo === 1 || t.activo === true || t.activo === '1';
-      const option = document.createElement('option');
-      option.value = t.id;
-      option.textContent = isActive ? t.nombre : `${t.nombre} (inactivo)`;
-      option.disabled = !isActive;
-      option.dataset.descripcion = t.descripcion || '';
-      option.dataset.costoBas = t.costo_base || 0;
-      option.dataset.costoMedicina = t.costo_medicina_estandar || 0;
-      option.dataset.costoMiscelanea = t.costo_miscelanea_estandar || 0;
-      select.appendChild(option);
-    });
+    globalTratamientosList = tratamientos;
+    renderTratamientoDropdown();
   } catch (e) {
     console.error('Error cargando catalogo:', e);
-    const select = document.getElementById('select-tratamiento');
-    if (select) {
-      select.innerHTML = '<option value="">Error cargando catalogo</option>';
-    }
     showToast('Error cargando catalogo: ' + (e && e.message ? e.message : e), 'error');
+  }
+}
+
+function renderTratamientoDropdown(filter = '') {
+  const listEl = document.getElementById('tratamiento-list');
+  const addActionEl = document.getElementById('tratamiento-add-action');
+  const addTermEl = document.getElementById('add-tratamiento-term');
+  if (!listEl) return;
+
+  const searchStr = filter.trim().toLowerCase();
+  let html = '';
+  let exactMatch = false;
+  let matchCount = 0;
+
+  globalTratamientosList.forEach(t => {
+    const isActive = t.activo === 1 || t.activo === true || t.activo === '1';
+    if (!isActive) return;
+
+    const nombreLow = t.nombre.toLowerCase();
+    if (!searchStr || nombreLow.includes(searchStr)) {
+      if (nombreLow === searchStr) exactMatch = true;
+      matchCount++;
+      html += `<li class="px-4 py-2 hover:bg-[#8BCFDD]/20 dark:hover:bg-slate-700 cursor-pointer transition select-tratamiento-item" data-id="${t.id}" data-nombre="${t.nombre}">
+        <div class="font-medium">${t.nombre}</div>
+        <div class="text-xs text-slate-500 truncate">${t.descripcion || 'Sin descripción'} - ${formatCurrency(t.costo_base || 0)}</div>
+      </li>`;
+    }
+  });
+
+  if (matchCount === 0) {
+    html = `<li class="px-4 py-3 text-sm text-slate-500 italic">No se encontraron tratamientos</li>`;
+  }
+
+  listEl.innerHTML = html;
+
+  if (searchStr && !exactMatch) {
+    addTermEl.textContent = filter.trim();
+    addActionEl.classList.remove('hidden');
+  } else {
+    addActionEl.classList.add('hidden');
+  }
+
+  // Bind clicks
+  listEl.querySelectorAll('.select-tratamiento-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.getAttribute('data-id');
+      const nombre = item.getAttribute('data-nombre');
+      selectTratamiento(id, nombre);
+    });
+  });
+}
+
+function selectTratamiento(id, nombre) {
+  const hiddenInput = document.getElementById('select-tratamiento');
+  const searchInput = document.getElementById('search-tratamiento');
+  const dropdown = document.getElementById('tratamiento-dropdown');
+  
+  if (hiddenInput && searchInput) {
+    hiddenInput.value = id;
+    searchInput.value = nombre;
+    dropdown.classList.add('hidden');
+    
+    // Trigger onTratamientoSelected
+    onTratamientoSelected({ target: { value: id } });
+  }
+}
+
+async function addNuevoTratamiento(nombre) {
+  if (!db) return;
+  try {
+    const insert = await dbRun(
+      `INSERT INTO tratamientos_catalogo (nombre, descripcion, categoria, costo_base, duracion_estimada, activo, costo_medicina_estandar, costo_miscelanea_estandar)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [nombre, 'Agregado rápidamente', 'General', 0, 30, 1, 0, 0]
+    );
+    
+    await loadTratamientosCatalogo();
+    selectTratamiento(insert.lastID, nombre);
+    showToast('Tratamiento agregado y seleccionado', 'success');
+  } catch (e) {
+    console.error('Error agregando tratamiento:', e);
+    showToast('Error al agregar: ' + e.message, 'error');
   }
 }
 
@@ -1210,7 +1266,15 @@ async function loadPlanesPendientes() {
                   </table>
                 </div>
               ` : `
-                <p class="text-xs text-[#0F2532]/70 dark:text-slate-300 mt-3">No hay cuotas programadas para este plan.</p>
+                <div class="flex items-center justify-between mt-3">
+                  <p class="text-xs text-[#0F2532]/70 dark:text-slate-300">Cobro libre (sin cuotas).</p>
+                  ${saldoPendiente > 0 ? `
+                    <button type="button" class="px-3 py-1.5 rounded-lg bg-[#4EABBE]/15 text-[#1D5D69] dark:text-[#8BCFDD] text-[11px] font-semibold hover:bg-[#4EABBE]/25 transition"
+                            onclick="abrirModalPago(${p.id}, null, ${saldoPendiente}, 'Pago libre')">
+                      Abonar
+                    </button>
+                  ` : ''}
+                </div>
               `}
             </div>
 
@@ -1682,31 +1746,27 @@ function buildPlanNotesFromSelection(selection = {}) {
 function suggestTreatmentFromSelection(selection = {}) {
   const diagnoses = getDiagnosesForSelection(selection);
   const ids = new Set(diagnoses.map(item => item.id));
-  const select = document.getElementById('select-tratamiento');
-  if (!select) return;
 
-  const options = Array.from(select.options);
   let match = null;
 
   if (ids.has('pulpar') || ids.has('endo')) {
-    match = options.find(option => option.text.toLowerCase().includes('endodon'));
+    match = globalTratamientosList.find(t => t.nombre.toLowerCase().includes('endodon'));
   } else if (ids.has('absent')) {
-    match = options.find(option => {
-      const text = option.text.toLowerCase();
+    match = globalTratamientosList.find(t => {
+      const text = t.nombre.toLowerCase();
       return text.includes('implante') || text.includes('puente');
     });
   } else if (ids.has('crown-bad') || ids.has('crown-ok')) {
-    match = options.find(option => option.text.toLowerCase().includes('corona'));
+    match = globalTratamientosList.find(t => t.nombre.toLowerCase().includes('corona'));
   } else if (ids.has('fractura') || ids.has('caries-dx') || ids.has('rest-bad')) {
-    match = options.find(option => {
-      const text = option.text.toLowerCase();
+    match = globalTratamientosList.find(t => {
+      const text = t.nombre.toLowerCase();
       return text.includes('restauraci') || text.includes('obturaci');
     });
   }
 
   if (!match) return;
-  select.value = match.value;
-  select.dispatchEvent(new Event('change'));
+  selectTratamiento(match.id, match.nombre);
 }
 
 function createPlanToothSVG(num, isUpper, isSelected, treatmentColor, surfaces, isMissing) {
@@ -2112,13 +2172,52 @@ async function init() {
   document.getElementById('cancel-plan')?.addEventListener('click', closeModalPlan);
   document.getElementById('clear-plan-target')?.addEventListener('click', () => clearPlanTargetSelection());
   document.getElementById('form-plan')?.addEventListener('submit', savePlan);
-  document.getElementById('select-tratamiento')?.addEventListener('change', onTratamientoSelected);
   document.getElementById('plan-descuento-tipo')?.addEventListener('change', recalculateFinancialPreview);
   document.getElementById('plan-descuento-valor')?.addEventListener('input', recalculateFinancialPreview);
   document.getElementById('plan-impuesto-tipo')?.addEventListener('change', recalculateFinancialPreview);
   document.getElementById('plan-impuesto-valor')?.addEventListener('input', recalculateFinancialPreview);
   document.getElementById('plan-financiar')?.addEventListener('change', updateFinancingVisibility);
   document.getElementById('plan-anticipo')?.addEventListener('input', recalculateFinancialPreview);
+
+  // Searchable dropdown listeners
+  const searchInput = document.getElementById('search-tratamiento');
+  const dropdownList = document.getElementById('tratamiento-dropdown');
+  const btnAdd = document.getElementById('btn-add-tratamiento');
+  
+  if (searchInput) {
+    searchInput.addEventListener('focus', () => {
+      dropdownList?.classList.remove('hidden');
+      renderTratamientoDropdown(searchInput.value);
+    });
+    
+    searchInput.addEventListener('input', (e) => {
+      dropdownList?.classList.remove('hidden');
+      renderTratamientoDropdown(e.target.value);
+      // Clear hidden input if user types
+      const hiddenInput = document.getElementById('select-tratamiento');
+      if (hiddenInput && hiddenInput.value) {
+        hiddenInput.value = '';
+        onTratamientoSelected({ target: { value: '' } });
+      }
+    });
+
+    // Close dropdown on outside click
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('tratamiento-dropdown-container');
+      if (container && !container.contains(e.target)) {
+        dropdownList?.classList.add('hidden');
+      }
+    });
+  }
+
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      const term = document.getElementById('add-tratamiento-term')?.textContent || '';
+      if (term) {
+        addNuevoTratamiento(term);
+      }
+    });
+  }
 
   // Load initial data
   await loadPlanesPendientes();

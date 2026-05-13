@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es" class="h-full">
 
 <head>
@@ -1037,6 +1037,29 @@
         transition: opacity .01s linear !important;
       }
     }
+    @media print {
+      body {
+        background-color: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #odontogramaCanvas {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: scale(0.9);
+        transform-origin: top center;
+      }
+      /* Force light mode colors for print */
+      .geo-sector { fill: #ffffff !important; stroke: #94a3b8 !important; }
+      .tooth-shell { stroke: #94a3b8 !important; }
+      .tooth-number-badge { background: #f1f5f9 !important; color: #0F2532 !important; border: 1px solid #cbd5e1 !important; }
+    }
   </style>
   <script src="../scripts/init.js" type="module"></script>
 </head>
@@ -1053,7 +1076,7 @@
 
     <!-- Toolbar -->
     <header
-      class="rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg shadow-[#8BCFDD]/20 p-5">
+      class="rounded-2xl bg-white dark:bg-[#0E1A25] border border-[#8BCFDD]/30 dark:border-slate-800 shadow-lg shadow-[#8BCFDD]/20 p-5 no-print">
       <div class="flex items-center justify-between gap-4 flex-wrap">
         <div class="flex items-center gap-3 flex-wrap">
           <div
@@ -1062,6 +1085,10 @@
             <span id="denticionAuto" class="font-extrabold text-[#1D5D69] dark:text-white ml-1">Adulto</span>
           </div>
         </div>
+        <button id="btn-print-odontograma" class="flex items-center gap-2 px-4 py-2 bg-[#1D5D69] hover:bg-[#0F2532] text-white rounded-xl text-sm font-bold shadow-md transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          Imprimir
+        </button>
       </div>
     </header>
 
@@ -1078,11 +1105,6 @@
           </span>
         </div>
         <div id="filaSuperior" class="odonto-row odonto-row-top"></div>
-      </div>
-
-      <!-- Separator -->
-      <div class="relative my-8">
-        <div class="h-px bg-gradient-to-r from-transparent via-[#8BCFDD]/30 dark:via-slate-700 to-transparent"></div>
       </div>
 
       <!-- Inferior -->

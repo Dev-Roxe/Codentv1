@@ -410,6 +410,20 @@ function populateInstallmentSelect(planId, selectedInstallmentId = '') {
     if (selectedInstallmentId) {
         select.value = String(selectedInstallmentId);
     }
+    
+    // Auto-fill monto
+    const montoInput = document.getElementById('pago-monto');
+    if (montoInput) {
+        if (selectedInstallmentId) {
+            const inst = State.installments.find(i => String(i.id) === String(selectedInstallmentId));
+            if (inst) montoInput.value = inst.saldo_pendiente;
+        } else if (planId) {
+            const plan = State.plans.find(p => String(p.id) === String(planId));
+            if (plan) montoInput.value = plan.saldo_pendiente;
+        } else {
+            montoInput.value = '';
+        }
+    }
 }
 
 function openModal(mode = 'payment', planId = '', installmentId = '') {
@@ -430,6 +444,8 @@ function openModal(mode = 'payment', planId = '', installmentId = '') {
     if (planId) {
         document.getElementById('pago-plan').value = String(planId);
         populateInstallmentSelect(planId, installmentId);
+    } else {
+        document.getElementById('pago-monto').value = '';
     }
 
     modal.classList.remove('hidden');
@@ -595,6 +611,22 @@ function setupEventListeners() {
     document.getElementById('form-pago')?.addEventListener('submit', handleFormSubmit);
     document.getElementById('pago-plan')?.addEventListener('change', event => {
         populateInstallmentSelect(event.target.value);
+    });
+    document.getElementById('pago-cuota')?.addEventListener('change', event => {
+        const cuotaId = event.target.value;
+        const planId = document.getElementById('pago-plan')?.value;
+        const montoInput = document.getElementById('pago-monto');
+        if (montoInput) {
+            if (cuotaId) {
+                const inst = State.installments.find(i => String(i.id) === String(cuotaId));
+                if (inst) montoInput.value = inst.saldo_pendiente;
+            } else if (planId) {
+                const plan = State.plans.find(p => String(p.id) === String(planId));
+                if (plan) montoInput.value = plan.saldo_pendiente;
+            } else {
+                montoInput.value = '';
+            }
+        }
     });
 
     document.getElementById('plans-list')?.addEventListener('click', event => {

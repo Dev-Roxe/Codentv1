@@ -310,14 +310,16 @@ function buildPlanLifecycle(plan = {}, installments = [], netPaid = 0) {
     const isStoredCompletedWithBalance = normalizedCurrentStatus === 'completed_with_balance';
     const hasActivity = clinicalProgress > 0 || safeNetPaid > 0.01;
     const hasClinicalCompletionPendingCollection = !isCancelled && clinicalStatus === 'completado' && pending > 0.01;
+    const canComplete = !isCancelled && clinicalProgress >= 100 && pending <= 0.01;
     const suggestedStatus = isCancelled
         ? 'cancelado'
+        : canComplete
+            ? 'completado'
         : hasClinicalCompletionPendingCollection
             ? 'terminado_con_saldo'
         : hasActivity
             ? 'en_progreso'
             : 'pendiente';
-    const canComplete = !isCancelled && clinicalProgress >= 100 && pending <= 0.01;
     const canFinishClinically = !isCancelled && clinicalProgress < 100;
     const completionBlockCode = isCancelled
         ? 'cancelado'

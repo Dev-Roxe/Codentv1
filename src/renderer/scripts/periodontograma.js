@@ -1080,6 +1080,9 @@ async function init() {
     await guardar({ silent: false });
   });
   $('btnReset')?.addEventListener('click', limpiar);
+  $('btn-print-periodontograma')?.addEventListener('click', () => {
+    window.print();
+  });
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
